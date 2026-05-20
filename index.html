@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中国防火长城攻防时间线</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0e1a;
+    color: #e0e6f0;
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+    overflow-x: hidden;
+  }
+
+  header {
+    text-align: center;
+    padding: 32px 20px 16px;
+    background: linear-gradient(180deg, #0d1525 0%, transparent 100%);
+  }
+
+  header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    background: linear-gradient(90deg, #e74c3c, #f39c12, #3498db);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  header p {
+    margin-top: 8px;
+    color: #8892a4;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    padding: 12px 0 8px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: #8892a4;
+  }
+  .legend-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+  }
+
+  /* Timeline container */
+  .timeline-wrap {
+    position: relative;
+    padding: 20px 0 60px;
+    overflow-x: auto;
+  }
+
+  /* Central spine */
+  .spine {
+    position: absolute;
+    left: 50%;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, transparent, #2a3550 5%, #2a3550 95%, transparent);
+    transform: translateX(-50%);
+  }
+
+  /* Era sections */
+  .era {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    padding: 0 20px 0;
+    margin-bottom: 8px;
+  }
+
+  /* Era label — centered on spine */
+  .era-label {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a2035;
+    border: 1.5px solid #2a3a5c;
+    border-radius: 6px;
+    padding: 6px 16px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #7eb4ea;
+    white-space: nowrap;
+    z-index: 10;
+    top: 0;
+  }
+
+  /* Left side = GFW (red), Right side = circumvention (teal) */
+  .side {
+    width: calc(50% - 60px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .side-left { align-items: flex-end; padding-right: 28px; }
+  .side-right { align-items: flex-start; padding-left: 28px; margin-left: auto; }
+
+  /* Event cards */
+  .event {
+    position: relative;
+    max-width: 340px;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    cursor: default;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .event:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  /* Year badge inside card */
+  .event-year {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    opacity: 0.7;
+    margin-bottom: 3px;
+  }
+  .event-title {
+    font-weight: 700;
+    font-size: 0.88rem;
+    margin-bottom: 4px;
+  }
+  .event-desc {
+    opacity: 0.82;
+    font-size: 0.79rem;
+  }
+  .event-tag {
+    display: inline-block;
+    font-size: 0.68rem;
+    border-radius: 3px;
+    padding: 1px 6px;
+    margin-top: 5px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  /* GFW side — red/orange palette */
+  .gfw .event {
+    background: linear-gradient(135deg, #1e0f0f, #2a1515);
+    border: 1px solid #5a2020;
+  }
+  .gfw .event-year { color: #e87777; }
+  .gfw .event-title { color: #f28080; }
+  .gfw .event-tag { background: #4a1515; color: #e87777; }
+
+  /* Connector dot on spine side */
+  .event::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .side-left .event::before {
+    right: -22px;
+    background: #e05555;
+    box-shadow: 0 0 6px #e05555;
+  }
+  .side-right .event::before {
+    left: -22px;
+    background: #3ab5a0;
+    box-shadow: 0 0 6px #3ab5a0;
+  }
+
+  /* Circumvention side — teal/green palette */
+  .circ .event {
+    background: linear-gradient(135deg, #0c1e1a, #0f2520);
+    border: 1px solid #1e5048;
+  }
+  .circ .event-year { color: #5ecfb8; }
+  .circ .event-title { color: #5ecfb8; }
+  .circ .event-tag { background: #0f3028; color: #5ecfb8; }
+
+  /* Connector lines */
+  .side-left .event::after {
+    content: '';
+    position: absolute;
+    top: 18px;
+    right: -20px;
+    width: 14px;
+    height: 1px;
+    background: #3a2525;
+  }
+  .side-right .event::after {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: -20px;
+    width: 14px;
+    height: 1px;
+    background: #1a3830;
+  }
+
+  /* Spacer for era header */
+  .era-spacer {
+    height: 48px;
+    width: 100%;
+  }
+
+  /* Era wrapper with proper top padding for label */
+  .era-block {
+    padding-top: 52px;
+    position: relative;
+    margin-bottom: 4px;
+  }
+
+  .era-block .era {
+    padding-top: 0;
+  }
+
+  /* Section dividers */
+  .era-divider {
+    border: none;
+    border-top: 1px dashed #1e2a40;
+    margin: 24px auto;
+    width: 70%;
+  }
+
+  footer {
+    text-align: center;
+    padding: 24px;
+    color: #3a4a60;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+  }
+
+  /* Spine nodes for eras */
+  .spine-node {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #1a2540;
+    border: 2px solid #3a5080;
+    top: 18px;
+    z-index: 5;
+  }
+
+  @media (max-width: 700px) {
+    .side { width: calc(50% - 30px); }
+    .side-left { padding-right: 18px; }
+    .side-right { padding-left: 18px; }
+    .event { max-width: 100%; font-size: 0.76rem; }
+    .era-label { font-size: 0.78rem; padding: 4px 10px; }
+    header h1 { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>防火长城攻防时间线</h1>
+  <p>THE GREAT FIREWALL · CAT &amp; MOUSE · 1994 — 2025</p>
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#e05555;box-shadow:0 0 6px #e05555"></div>
+      <span>防火墙方（GFW）封锁动作</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#3ab5a0;box-shadow:0 0 6px #3ab5a0"></div>
+      <span>翻墙方 反制技术</span>
+    </div>
+  </div>
+</header>
+
+<div class="timeline-wrap">
+  <div class="spine"></div>
+
+  <!-- ═══════════════ 1990s ═══════════════ -->
+  <div class="era-block">
+    <div class="era-label">1990s — 建墙初期</div>
+    <div class="spine-node"></div>
+    <div class="era">
+      <div class="side side-left gfw">
+        <div class="event">
+          <div class="event-year">1994</div>
+          <div class="event-title">中国接入国际互联网</div>
+          <div class="event-desc">中国以 64 Kbps 专线正式接入 Internet，政府意识到需要"管理"互联网内容。</div>
+          <span class="event-tag">奠基</span>
+        </div>
+        <div class="event">
+          <div class="event-year">1997</div>
+          <div class="event-title">《计算机信息网络国际联网安全保护管理办法》</div>
+          <div class="event-desc">首部互联网管理法规出台，明确列出九类禁止内容，确立"中央管控"原则。</div>
+          <span class="event-tag">立法</span>
+        </div>
+        <div class="event">
+          <div class="event-year">1998</div>
+          <div class="event-title">金盾工程（Golden Shield）立项</div>
+          <div class="event-desc">公安部正式启动"金盾工程"，涵盖全国网络监控、内容过滤系统，外界称之为"防火长城（GFW）"。</div>
+          <span class="event-tag">系统化</span>
+        </div>
+        <div class="event">
+          <div class="event-year">1999</div>
+          <div class="event-title">初步 IP 封锁 &amp; DNS 污染</div>
+          <div class="event-desc">开始批量封锁境外敏感网站 IP，DNS 解析返回错误结果（污染），VoA等境外媒体率先遭屏蔽。</div>
+          <span class="event-tag">IP封锁</span>
+        </div>
+      </div>
+      <div class="side side-right circ">
+        <div class="event">
+          <div class="event-year">1994–1999</div>
+          <div class="event-title">Web 代理 / 镜像站</div>
+          <div class="event-desc">用户通过境外 CGI 代理或镜像站访问被封内容，技术门槛极低，管控初期几乎畅通无阻。</div>
+          <span class="event-tag">代理</span>
+        </div>
+        <div class="event">
+          <div class="event-year">1998</div>
+          <div class="event-title">手动修改 Hosts 文件</div>
+          <div class="event-desc">直接在本地 hosts 文件写入正确 IP，绕过 DNS 污染，是最原始的反 DNS 污染手段。</div>
+          <span class="event-tag">DNS绕过</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="era-divider">
+
+  <!-- ═══════════════ 2000–2008 ═══════════════ -->
+  <div class="era-block">
+    <div class="era-label">2000–2008 — 规模扩张</div>
+    <div class="spine-node"></div>
+    <div class="era">
+      <div class="side side-left gfw">
+        <div class="event">
+          <div class="event-year">2002</div>
+          <div class="event-title">Google 首次被封</div>
+          <div class="event-desc">Google.com 遭短暂封锁（约两周），此后长期处于时断时续状态，标志着搜索引擎管控开始。</div>
+          <span class="event-tag">内容过滤</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2003</div>
+          <div class="event-title">金盾工程一期正式运营</div>
+          <div class="event-desc">全国骨干网部署关键词过滤，HTTP 明文流量中含敏感词即触发 TCP Reset 断开连接。</div>
+          <span class="event-tag">关键词过滤</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2005</div>
+          <div class="event-title">博客 / BBS 实名制试点</div>
+          <div class="event-desc">要求博客平台对用户实名注册，国内各大 BBS 展开实名制试点，论坛内容自我审查加剧。</div>
+          <span class="event-tag">实名制</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2008</div>
+          <div class="event-title">奥运前夕 Tor 遭封锁</div>
+          <div class="event-desc">北京奥运会前，GFW 封锁 Tor 公开节点 IP，同时强化 VPN 检测，境外媒体访问受限。</div>
+          <span class="event-tag">Tor封锁</span>
+        </div>
+      </div>
+      <div class="side side-right circ">
+        <div class="event">
+          <div class="event-year">2000–2003</div>
+          <div class="event-title">商业 VPN 普及</div>
+          <div class="event-desc">PPTP / L2TP VPN 商业服务兴起，企业用户和科研人员大量使用，成为最主流翻墙方式。</div>
+          <span class="event-tag">VPN</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2006</div>
+          <div class="event-title">自由门（Freegate）广泛传播</div>
+          <div class="event-desc">法轮功相关团队开发 Freegate，利用动态 IP 池对抗封锁，在境内用户中大量流传。</div>
+          <span class="event-tag">动态IP池</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2008</div>
+          <div class="event-title">Tor Bridges 桥接节点</div>
+          <div class="event-desc">Tor 项目推出 Bridge 机制（不公开列入目录的节点），应对 GFW 对公开节点的批量封锁。</div>
+          <span class="event-tag">隐匿节点</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="era-divider">
+
+  <!-- ═══════════════ 2009 ═══════════════ -->
+  <div class="era-block">
+    <div class="era-label">2009 — 决定性封锁年</div>
+    <div class="spine-node"></div>
+    <div class="era">
+      <div class="side side-left gfw">
+        <div class="event">
+          <div class="event-year">2009.3</div>
+          <div class="event-title">YouTube 封锁（至今）</div>
+          <div class="event-desc">西藏骚乱周年前夕，YouTube 遭永久封锁，成为迄今最长的封锁记录之一。</div>
+          <span class="event-tag">永久封锁</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2009.6</div>
+          <div class="event-title">天安门事件 20 周年管控</div>
+          <div class="event-desc">Twitter、Hotmail、Flickr、Bing 等短暂封锁，大规模"敏感纪念日"管控模式成型。</div>
+          <span class="event-tag">节点封锁</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2009.7</div>
+          <div class="event-title">新疆事件 → 全面封锁</div>
+          <div class="event-desc">乌鲁木齐骚乱后，Facebook、Twitter 遭永久封锁，新疆断网数月，标志 GFW 进入"零容忍"阶段。</div>
+          <span class="event-tag">社交媒体封锁</span>
+        </div>
+      </div>
+      <div class="side side-right circ">
+        <div class="event">
+          <div class="event-year">2009</div>
+          <div class="event-title">商业 VPN 市场爆发</div>
+          <div class="event-desc">Facebook、Twitter 封锁直接推动中国用户大量购买 ExpressVPN、HideMyAss 等境外商业 VPN 服务。</div>
+          <span class="event-tag">商业VPN</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2009</div>
+          <div class="event-title">SSH 隧道翻墙</div>
+          <div class="event-desc">技术用户大量采用 SSH -D 本地 SOCKS5 代理方式，利用境外服务器建立加密隧道。</div>
+          <span class="event-tag">SSH隧道</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="era-divider">
+
+  <!-- ═══════════════ 2010–2012 ═══════════════ -->
+  <div class="era-block">
+    <div class="era-label">2010–2012 — DPI 深度包检测时代</div>
+    <div class="spine-node"></div>
+    <div class="era">
+      <div class="side side-left gfw">
+        <div class="event">
+          <div class="event-year">2010.3</div>
+          <div class="event-title">Google 退出中国大陆</div>
+          <div class="event-desc">谷歌因拒绝配合内容审查且遭受 Aurora 网络攻击，将搜索服务迁至香港，正式退出大陆市场。</div>
+          <span class="event-tag">谷歌封锁</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2011</div>
+          <div class="event-title">全面部署 DPI（深度包检测）</div>
+          <div class="event-desc">GFW 引入商用 DPI 设备（Cisco、Huawei），可识别 VPN 协议特征（OpenVPN handshake、L2TP/IPSec），开始主动干扰。</div>
+          <span class="event-tag">DPI</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2012</div>
+          <div class="event-title">OpenVPN 遭 DPI 精准识别</div>
+          <div class="event-desc">GFW 通过 TLS 握手指纹识别 OpenVPN，大量连接被 TCP Reset 强制中断，商业 VPN 大规模失效。</div>
+          <span class="event-tag">协议指纹识别</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2012</div>
+          <div class="event-title">敏感日期"流量暴风"</div>
+          <div class="event-desc">重大纪念日前后，GFW 对所有加密流量（含合法 TLS）实施速率限制，导致境外网站大规模不可用。</div>
+          <span class="event-tag">流量限速</span>
+        </div>
+      </div>
+      <div class="side side-right circ">
+        <div class="event">
+          <div class="event-year">2011</div>
+          <div class="event-title">Shadowsocks 诞生（clowwindy）</div>
+          <div class="event-desc">中国程序员 clowwindy 开发 Shadowsocks，基于 SOCKS5 + 对称加密，流量特征极像随机数据，专为对抗 DPI 设计。</div>
+          <span class="event-tag">划时代工具</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2012</div>
+          <div class="event-title">obfs3（流量混淆）</div>
+          <div class="event-desc">Tor 项目发布 obfs3 混淆插件，将 Tor 流量伪装成随机字节流，对抗基于协议特征的 DPI 识别。</div>
+          <span class="event-tag">流量混淆</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="era-divider">
+
+  <!-- ═══════════════ 2013–2015 ═══════════════ -->
+  <div class="era-block">
+    <div class="era-label">2013–2015 — Shadowsocks 黄金期 &amp; 机器学习入场</div>
+    <div class="spine-node"></div>
+    <div class="era">
+      <div class="side side-left gfw">
+        <div class="event">
+          <div class="event-year">2013</div>
+          <div class="event-title">GitHub 首次遭封（后恢复）</div>
+          <div class="event-desc">GitHub 因托管翻墙工具源码遭短暂封锁；因影响国内开发者，数日后解封，但埋下后续多次封锁隐患。</div>
+          <span class="event-tag">附带伤害</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2014</div>
+          <div class="event-title">流量行为分析（统计识别）</div>
+          <div class="event-desc">GFW 引入基于流量行为的统计模型，通过数据包时序、大小分布识别 Shadowsocks 等"看似随机"的加密流量。</div>
+          <span class="event-tag">机器学习</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2015</div>
+          <div class="event-title">主动探测（Active Probing）</div>
+          <div class="event-desc">GFW 对疑似代理服务器主动发送探测包，通过服务器响应模式（replay attack）确认并封锁，极大提升准确率。</div>
+          <span class="event-tag">主动探测</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2015</div>
+          <div class="event-title">clowwindy 被"喝茶"</div>
+          <div class="event-desc">Shadowsocks 原作者 clowwindy 被警方约谈，随后删除代码库并宣布停止开发，震动翻墙社区。</div>
+          <span class="event-tag">开发者打压</span>
+        </div>
+      </div>
+      <div class="side side-right circ">
+        <div class="event">
+          <div class="event-year">2013</div>
+          <div class="event-title">Shadowsocks 开源，快速扩散</div>
+          <div class="event-desc">SS 代码开源至 GitHub，各平台客户端（iOS/Android/Win/Mac）涌现，成为技术圈最流行翻墙工具。</div>
+          <span class="event-tag">开源爆发</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2014</div>
+          <div class="event-title">obfs4 + meek（域前置）</div>
+          <div class="event-desc">Tor 发布 obfs4 及 meek 插件；meek 利用 CDN（如 Google、Azure）进行域前置，让流量看起来像正常 HTTPS 请求。</div>
+          <span class="event-tag">域前置</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2015</div>
+          <div class="event-title">ShadowsocksR（SSR）fork 出现</div>
+          <div class="event-desc">breakwa11 开发 SSR，增加混淆插件（http_simple、tls1.2_ticket_auth），让流量伪装成正常 HTTP/TLS，应对行为分析。</div>
+          <span class="event-tag">协议混淆</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="era-divider">
+
+  <!-- ═══════════════ 2016–2018 ═══════════════ -->
+  <div class="era-block">
+    <div class="era-label">2016–2018 — 全面收紧</div>
+    <div class="spine-node"></div>
+    <div class="era">
+      <div class="side side-left gfw">
+        <div class="event">
+          <div class="event-year">2016</div>
+          <div class="event-title">SNI 嗅探 &amp; TLS 封锁</div>
+          <div class="event-desc">GFW 开始分析 TLS ClientHello 中的 SNI（服务器名称指示）字段，精确封锁特定域名而无需解密内容。</div>
+          <span class="event-tag">SNI封锁</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2017.1</div>
+          <div class="event-title">《互联网信息服务管理办法》修订</div>
+          <div class="event-desc">要求所有 VPN 服务商必须获得政府许可证，未经授权向公众提供 VPN 服务正式入罪。</div>
+          <span class="event-tag">立法打压</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2017.7</div>
+          <div class="event-title">breakwa11 被迫停止开发 SSR</div>
+          <div class="event-desc">SSR 作者 breakwa11 遭受 DDoS 和人肉搜索，被迫删库并宣布停止开发，官方收紧力度再次震动社区。</div>
+          <span class="event-tag">开发者打压</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2017.8</div>
+          <div class="event-title">苹果下架中国区 VPN App</div>
+          <div class="event-desc">Apple 应要求将 ExpressVPN 等数十款 VPN 应用从中国区 App Store 下架，移动端翻墙门槛大幅提升。</div>
+          <span class="event-tag">平台合规</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2018</div>
+          <div class="event-title">GitHub Pages / Raw 遭间歇封锁</div>
+          <div class="event-desc">GitHub 托管的翻墙配置文件、订阅链接频繁遭封；GFW 开始封锁 raw.githubusercontent.com 等子域名。</div>
+          <span class="event-tag">精准封锁</span>
+        </div>
+      </div>
+      <div class="side side-right circ">
+        <div class="event">
+          <div class="event-year">2016</div>
+          <div class="event-title">V2Ray 发布（Project V）</div>
+          <div class="event-desc">v2fly 团队开发 V2Ray，引入 VMess 协议——带时间戳认证的加密协议，支持多路复用、动态端口等反追踪特性。</div>
+          <span class="event-tag">新一代协议</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2016</div>
+          <div class="event-title">域前置 (Domain Fronting) 流行</div>
+          <div class="event-desc">利用 Cloudflare、Google CDN 做域前置，让翻墙流量在外层 TLS 中显示 CDN 域名，绕过 SNI 封锁。</div>
+          <span class="event-tag">域前置</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2018</div>
+          <div class="event-title">Trojan 协议诞生</div>
+          <div class="event-desc">Trojan 将代理流量包裹在正常 TLS 层中，使用真实域名和证书，与普通 HTTPS 网站流量完全一致，极难识别。</div>
+          <span class="event-tag">仿真HTTPS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="era-divider">
+
+  <!-- ═══════════════ 2019–2021 ═══════════════ -->
+  <div class="era-block">
+    <div class="era-label">2019–2021 — AI 识别 &amp; 生态分裂</div>
+    <div class="spine-node"></div>
+    <div class="era">
+      <div class="side side-left gfw">
+        <div class="event">
+          <div class="event-year">2019</div>
+          <div class="event-title">机器学习流量分类器上线</div>
+          <div class="event-desc">GFW 引入基于神经网络的实时流量分类，能以极低误报率识别 Shadowsocks / V2Ray VMess 等"无特征"流量。</div>
+          <span class="event-tag">AI识别</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2019.6</div>
+          <div class="event-title">六四 30 周年 大规模封锁</div>
+          <div class="event-desc">多款知名 VPN 工具同时失效，出现 "六四封锁周期" 现象——每逢六四前后 GFW 明显收紧，敏感日结束后回弹。</div>
+          <span class="event-tag">周期性强化</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2020</div>
+          <div class="event-title">Vmess 探测攻击</div>
+          <div class="event-desc">GFW 针对 VMess 协议发动重放攻击（replay），通过服务端响应差异确认节点，并自动加入封锁列表。</div>
+          <span class="event-tag">主动探测升级</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2021</div>
+          <div class="event-title">GitHub 间歇性封锁</div>
+          <div class="event-desc">GitHub 遭多次短时完全封锁（数小时至数天），引发国内开发者强烈反弹，GFW 每次均在舆论压力下恢复。</div>
+          <span class="event-tag">附带伤害</span>
+        </div>
+      </div>
+      <div class="side side-right circ">
+        <div class="event">
+          <div class="event-year">2019</div>
+          <div class="event-title">V2Ray WebSocket + TLS + CDN</div>
+          <div class="event-desc">社区发展出 WS+TLS+Cloudflare 组合方案，将 V2Ray 流量完全伪装为 CDN 转发的 WebSocket HTTPS 连接。</div>
+          <span class="event-tag">CDN中转</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2020</div>
+          <div class="event-title">VLESS + XTLS 发布</div>
+          <div class="event-desc">Xray 团队推出 VLESS 协议和 XTLS（直接复用 TLS 内层数据，零二次加密开销），性能提升同时减少可识别特征。</div>
+          <span class="event-tag">XTLS</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2021</div>
+          <div class="event-title">Hysteria（QUIC-based）</div>
+          <div class="event-desc">基于 QUIC/UDP 的 Hysteria 协议出现，专门针对高丢包、高延迟环境优化（恰好对应 GFW 的 UDP 限速策略）。</div>
+          <span class="event-tag">QUIC协议</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="era-divider">
+
+  <!-- ═══════════════ 2022–2025 ═══════════════ -->
+  <div class="era-block">
+    <div class="era-label">2022–2025 — Reality 时代 &amp; 持续升级</div>
+    <div class="spine-node"></div>
+    <div class="era">
+      <div class="side side-left gfw">
+        <div class="event">
+          <div class="event-year">2022</div>
+          <div class="event-title">TLS 1.3 / ECH 被阻断研究</div>
+          <div class="event-desc">GFW 开始干扰 TLS 1.3 Encrypted Client Hello（ECH）试验，试图维持 SNI 可见性以实现精准域名封锁。</div>
+          <span class="event-tag">TLS攻防</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2022</div>
+          <div class="event-title">党代会 / 敏感事件超级管控</div>
+          <div class="event-desc">二十大前后出现史上最大规模 VPN 封锁潮，大量节点同时失效，部分商业服务被迫暂停提供中国用户服务。</div>
+          <span class="event-tag">政治性封锁</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2023</div>
+          <div class="event-title">AI 流量识别持续迭代</div>
+          <div class="event-desc">GFW 进一步强化基于时序分析的流量分类模型，能识别 Trojan、VLESS-XTLS 等"无特征"协议的微小行为差异。</div>
+          <span class="event-tag">AI升级</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2024–2025</div>
+          <div class="event-title">境外 IP 质量库实时更新</div>
+          <div class="event-desc">GFW 与主要云服务商 IP 数据合作，实现对 AWS/GCP/Azure/Cloudflare 出口 IP 的动态精准封锁。</div>
+          <span class="event-tag">云IP封锁</span>
+        </div>
+      </div>
+      <div class="side side-right circ">
+        <div class="event">
+          <div class="event-year">2022</div>
+          <div class="event-title">Reality 协议（防主动探测）</div>
+          <div class="event-desc">Xray-core 推出 Reality，代理服务器直接借用真实网站的 TLS 证书和握手，让主动探测也无法区分真实服务器与代理。</div>
+          <span class="event-tag">反探测</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2022</div>
+          <div class="event-title">Sing-box 统一客户端</div>
+          <div class="event-desc">Sing-box 出现，单一内核支持 SS/V2Ray/Trojan/VLESS/Hysteria 等所有主流协议，降低使用门槛，加速协议生态整合。</div>
+          <span class="event-tag">生态整合</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2023</div>
+          <div class="event-title">Hysteria2 / TUIC</div>
+          <div class="event-desc">第二代 QUIC 翻墙工具（Hysteria2、TUIC）发布，进一步优化抗封锁能力和传输效率，应对 GFW 的 UDP 限速。</div>
+          <span class="event-tag">QUIC进化</span>
+        </div>
+        <div class="event">
+          <div class="event-year">2024–2025</div>
+          <div class="event-title">去中心化 &amp; Warp / 隧道多跳</div>
+          <div class="event-desc">Cloudflare Warp（基于 WireGuard）、多跳中转（落地机+中转机）架构流行，通过分散流量特征对抗精准封锁。</div>
+          <span class="event-tag">架构分散</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="era-divider">
+
+  <!-- ═══════════════ 规律总结 ═══════════════ -->
+  <div class="era-block">
+    <div class="era-label">攻防规律 &amp; 核心洞察</div>
+    <div class="spine-node"></div>
+    <div class="era">
+      <div class="side side-left gfw">
+        <div class="event">
+          <div class="event-title">GFW 核心策略演进</div>
+          <div class="event-desc">
+            IP 黑名单 → DNS 污染 → 关键词过滤 → DPI 协议识别 → 流量行为分析 → 主动探测 → AI 机器学习分类
+          </div>
+          <span class="event-tag">封锁升级路线</span>
+        </div>
+        <div class="event">
+          <div class="event-title">政治事件驱动周期</div>
+          <div class="event-desc">
+            每逢六四、国庆、党代会、重大社会事件，GFW 明显收紧，事后部分回弹——"脉冲式"管控已成规律。
+          </div>
+          <span class="event-tag">政治周期</span>
+        </div>
+      </div>
+      <div class="side side-right circ">
+        <div class="event">
+          <div class="event-title">翻墙技术演进路线</div>
+          <div class="event-desc">
+            Web代理 → VPN → SSH隧道 → Shadowsocks → 混淆插件 → Trojan/VLESS → Reality/Hysteria → 去中心化多跳
+          </div>
+          <span class="event-tag">反制路线</span>
+        </div>
+        <div class="event">
+          <div class="event-title">开发者代价</div>
+          <div class="event-desc">
+            SS 作者 clowwindy、SSR 作者 breakwa11 均因警方压力被迫停止开发，中国翻墙工具开发者长期面临法律风险。
+          </div>
+          <span class="event-tag">人的代价</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  数据整理截至 2025 年 &nbsp;·&nbsp; 内容仅供技术研究与历史记录 &nbsp;·&nbsp; Great Firewall Timeline
+</footer>
+
+</body>
+</html>
