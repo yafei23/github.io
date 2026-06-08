@@ -1,0 +1,78 @@
+baseURL = "https://yafei23.github.io/github.io/"
+title = "Yafei 的博客"
+theme = "PaperMod"
+defaultContentLanguage = "zh-cn"
+hasCJKLanguage = true
+
+[languages.zh-cn]
+  locale = "zh_CN"
+
+enableRobotsTXT = true
+enableEmoji = true
+
+[pagination]
+  pagerSize = 10
+
+# 让带 .html 的内链/草稿等保持稳定
+[outputs]
+  home = ["HTML", "RSS", "JSON"]   # JSON 用于站内搜索
+
+[params]
+  description = "记录与分享"
+  defaultTheme = "auto"            # 跟随系统深/浅色
+  ShowReadingTime = true
+  ShowShareButtons = false
+  ShowCodeCopyButtons = true
+  ShowBreadCrumbs = true
+  ShowPostNavLinks = true
+  ShowToc = true
+  TocOpen = false
+
+  [params.homeInfoParams]
+    Title = "你好 👋"
+    Content = "欢迎来到我的博客。这里记录技术、阅读与思考。"
+
+  [[params.socialIcons]]
+    name = "github"
+    url = "https://github.com/yafei23"
+
+  # 站内搜索（基于 Fuse.js，纯静态，无后端）
+  [params.fuseOpts]
+    isCaseSensitive = false
+    shouldSort = true
+    threshold = 0.4
+    minMatchCharLength = 1
+    keys = ["title", "permalink", "summary", "content"]
+
+[menu]
+  [[menu.main]]
+    identifier = "posts"
+    name = "文章"
+    url = "/posts/"
+    weight = 10
+  [[menu.main]]
+    identifier = "search"
+    name = "搜索"
+    url = "/search/"
+    weight = 20
+  [[menu.main]]
+    identifier = "archives"
+    name = "归档"
+    url = "/archives/"
+    weight = 30
+  [[menu.main]]
+    identifier = "about"
+    name = "关于"
+    url = "/about/"
+    weight = 40
+  [[menu.main]]
+    identifier = "timeline"
+    name = "GFW 时间线"
+    url = "/gfw-timeline/"
+    weight = 50
+
+[markup]
+  [markup.highlight]
+    noClasses = false
+    codeFences = true
+    guessSyntax = true
