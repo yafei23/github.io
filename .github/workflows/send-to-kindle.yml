@@ -1,0 +1,68 @@
+name: Send to Kindle
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  send:
+    # Only the repo owner may trigger sending (the SMTP secrets belong to them)
+    if: >-
+      github.event.issue.user.login == github.repository_owner &&
+      (contains(github.event.issue.title, 'http') || contains(github.event.issue.body || '', 'http'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract article URL from issue
+        id: url
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          URL=$(printf '%s\n%s' "$ISSUE_TITLE" "$ISSUE_BODY" | grep -oE 'https?://[^ >)"'"'"']+' | head -n1)
+          if [ -z "$URL" ]; then
+            echo "no URL found in issue" >&2
+            exit 1
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests readability-lxml 'lxml[html_clean]' ebooklib
+
+      - name: Fetch, convert and send
+        id: send
+        env:
+          KINDLE_EMAIL: ${{ secrets.KINDLE_EMAIL }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+        run: python scripts/send_to_kindle.py "${{ steps.url.outputs.url }}"
+
+      - name: Comment and close on success
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "📖 已发送 **${{ steps.send.outputs.title }}** 到 Kindle。"
+          gh issue close ${{ github.event.issue.number }} --repo ${{ github.repository }}
+
+      - name: Comment on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "❌ 发送失败，详见 [运行日志](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})。"

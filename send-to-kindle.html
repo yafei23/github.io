@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Send to Kindle</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0e1a;
+    color: #e0e6f0;
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  main { max-width: 560px; width: 100%; }
+  h1 {
+    font-size: 1.8rem;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, #f39c12, #3498db);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  .sub { color: #8892a4; font-size: 0.9rem; margin-bottom: 28px; }
+  form { display: flex; gap: 10px; margin-bottom: 32px; }
+  input[type="url"] {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid #2a3550;
+    background: #0d1525;
+    color: #e0e6f0;
+    font-size: 0.95rem;
+    outline: none;
+  }
+  input[type="url"]:focus { border-color: #3498db; }
+  button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #e67e22, #f39c12);
+    color: #0a0e1a;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  button:hover { filter: brightness(1.1); }
+  section { margin-bottom: 24px; }
+  h2 { font-size: 1rem; color: #f39c12; margin-bottom: 10px; }
+  p, li { font-size: 0.88rem; line-height: 1.7; color: #b8c2d4; }
+  ol { padding-left: 1.4em; }
+  code {
+    background: #0d1525;
+    border: 1px solid #2a3550;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 0.82em;
+  }
+  .bookmarklet {
+    display: inline-block;
+    padding: 10px 18px;
+    border-radius: 8px;
+    background: #0d1525;
+    border: 1px dashed #3498db;
+    color: #3498db;
+    text-decoration: none;
+    font-size: 0.9rem;
+    cursor: grab;
+  }
+  a { color: #3498db; }
+</style>
+</head>
+<body>
+<main>
+  <h1>📖 Send to Kindle</h1>
+  <p class="sub">粘贴文章链接，自动提取正文、生成 EPUB 并推送到你的 Kindle</p>
+
+  <form id="form">
+    <input type="url" id="url" placeholder="https://example.com/article" required>
+    <button type="submit">发送到 Kindle</button>
+  </form>
+
+  <section>
+    <h2>书签工具（Bookmarklet）</h2>
+    <p>把下面的按钮拖到浏览器书签栏，在任何文章页面点击它即可一键发送当前页面：</p>
+    <p style="margin-top:10px"><a class="bookmarklet" id="bm" href="#">📖 Send to Kindle</a></p>
+  </section>
+
+  <section>
+    <h2>工作原理</h2>
+    <ol>
+      <li>提交后会打开一个预填好链接的 GitHub Issue，确认创建即可；</li>
+      <li>GitHub Actions 抓取文章、用 Readability 提取正文并打包成 EPUB；</li>
+      <li>通过 SMTP 发送到你的 <code>@kindle.com</code> 邮箱，随后自动关闭 Issue。</li>
+      <li>首次使用需要配置仓库 Secrets，见 <a href="https://github.com/yafei23/github.io/blob/main/SEND_TO_KINDLE.md">配置说明</a>。</li>
+    </ol>
+  </section>
+</main>
+<script>
+  const REPO = 'yafei23/github.io';
+  function issueUrl(articleUrl, title) {
+    return 'https://github.com/' + REPO + '/issues/new'
+      + '?title=' + encodeURIComponent('[Kindle] ' + (title || articleUrl))
+      + '&body=' + encodeURIComponent(articleUrl);
+  }
+  document.getElementById('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const url = document.getElementById('url').value.trim();
+    if (url) window.open(issueUrl(url), '_blank');
+  });
+  document.getElementById('bm').setAttribute('href',
+    "javascript:(function(){window.open('https://github.com/" + REPO + "/issues/new?title='"
+    + "+encodeURIComponent('[Kindle] '+document.title)+'&body='+encodeURIComponent(location.href),'_blank');})()"
+  );
+</script>
+</body>
+</html>
