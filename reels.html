@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>纸上快刷 · Instapaper Reels</title>
+<style>
+  :root {
+    --bg: #000;
+    --card: #0a0a0a;
+    --text: #f5f5f5;
+    --text-dim: rgba(245,245,245,.62);
+    --accent: #ff2d55;
+    --rail-w: 64px;
+    --topbar-h: 52px;
+    --font-scale: 1;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+      "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+    overscroll-behavior-y: contain; }
+
+  /* ===== 桌面端：居中手机窗口，两侧留黑 ===== */
+  #stage { height: 100dvh; display: flex; justify-content: center; background: #000; }
+  #phone { position: relative; width: 100%; max-width: 480px; height: 100%;
+    background: var(--card); overflow: hidden; }
+  @media (min-width: 560px) {
+    #phone { border-left: 1px solid #1c1c1c; border-right: 1px solid #1c1c1c; }
+  }
+
+  /* ===== 竖向滑动 feed（scroll-snap）===== */
+  #feed { height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory;
+    scrollbar-width: none; overscroll-behavior: contain; }
+  #feed::-webkit-scrollbar { display: none; }
+
+  .reel { position: relative; height: 100dvh; max-height: 100%;
+    scroll-snap-align: start; scroll-snap-stop: always; overflow: hidden;
+    background: var(--card); }
+
+  /* 卡片内正文：可独立上下滚动，滚到底后继续滑动进入下一篇 */
+  .reel-scroll { height: 100%; overflow-y: auto; scrollbar-width: none;
+    padding: calc(var(--topbar-h) + 14px) calc(var(--rail-w) + 8px) 110px 20px; }
+  .reel-scroll::-webkit-scrollbar { display: none; }
+
+  .reel h1 { font-size: calc(1.45rem * var(--font-scale)); line-height: 1.35;
+    font-weight: 700; margin-bottom: 10px; letter-spacing: .01em; }
+  .reel .byline { display: flex; align-items: center; gap: 8px;
+    color: var(--text-dim); font-size: .8rem; margin-bottom: 18px; }
+  .reel .avatar { width: 26px; height: 26px; border-radius: 50%; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .8rem; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg, #fd5949, #d6249f 60%, #285AEB); }
+  .reel .byline .dot { opacity: .5; }
+
+  .body-text { font-size: calc(1.02rem * var(--font-scale)); line-height: 1.85;
+    color: var(--text); word-break: break-word; }
+  .body-text p { margin: 0 0 1.1em; }
+  .body-text h2, .body-text h3, .body-text h4 { margin: 1.4em 0 .6em; line-height: 1.4;
+    font-size: calc(1.15rem * var(--font-scale)); }
+  .body-text img { max-width: 100%; height: auto; border-radius: 10px; margin: 6px 0 14px; }
+  .body-text a { color: #6db3ff; text-decoration: none; border-bottom: 1px solid rgba(109,179,255,.35); }
+  .body-text blockquote { border-left: 3px solid #444; padding-left: 12px;
+    color: var(--text-dim); margin: 0 0 1.1em; }
+  .body-text ul, .body-text ol { margin: 0 0 1.1em 1.3em; }
+  .body-text li { margin-bottom: .4em; }
+  .body-text pre { background: #161616; border-radius: 8px; padding: 12px;
+    overflow-x: auto; font-size: .82rem; margin: 0 0 1.1em; }
+  .body-text code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
+  .body-text hr { border: none; border-top: 1px solid #2a2a2a; margin: 1.4em 0; }
+
+  .fulltext-status { display: flex; align-items: center; gap: 8px; color: var(--text-dim);
+    font-size: .82rem; margin: 14px 0 8px; }
+  .fulltext-status button { background: #1e1e1e; color: var(--text); border: 1px solid #333;
+    border-radius: 999px; padding: 6px 14px; font-size: .82rem; cursor: pointer; }
+  .end-mark { text-align: center; color: var(--text-dim); font-size: .78rem;
+    padding: 26px 0 8px; letter-spacing: .3em; }
+
+  .spinner { width: 15px; height: 15px; border: 2px solid #333; flex: none;
+    border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== Reels 式上下渐变遮罩 ===== */
+  .fade-top, .fade-bottom { position: absolute; left: 0; right: 0; pointer-events: none; z-index: 3; }
+  .fade-top { top: 0; height: 90px;
+    background: linear-gradient(rgba(0,0,0,.72), rgba(0,0,0,0)); }
+  .fade-bottom { bottom: 0; height: 120px;
+    background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.8)); }
+
+  /* ===== 右侧操作栏（Reels 风格）===== */
+  .rail { position: absolute; right: 6px; bottom: 88px; width: var(--rail-w);
+    display: flex; flex-direction: column; align-items: center; gap: 20px; z-index: 5; }
+  .rail button { background: none; border: none; color: #fff; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: .68rem; font-family: inherit;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,.6)); }
+  .rail svg { width: 28px; height: 28px; fill: none; stroke: #fff; stroke-width: 1.9;
+    stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
+  .rail button:active svg { transform: scale(1.2); }
+  .rail button.liked svg { fill: var(--accent); stroke: var(--accent); }
+  .rail .aa { font-size: 1.15rem; font-weight: 700; line-height: 28px; }
+
+  /* ===== 底部信息条（Reels caption 区）===== */
+  .caption { position: absolute; left: 16px; right: calc(var(--rail-w) + 10px);
+    bottom: 18px; z-index: 5; pointer-events: none; }
+  .caption .site { display: flex; align-items: center; gap: 8px; font-size: .82rem;
+    font-weight: 600; margin-bottom: 6px; text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+  .caption .site .avatar { width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: .72rem;
+    font-weight: 700; background: linear-gradient(135deg, #fd5949, #d6249f 60%, #285AEB); }
+  .caption .snippet { font-size: .78rem; color: var(--text-dim); line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+    text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+
+  /* ===== 顶栏 ===== */
+  #topbar { position: absolute; top: 0; left: 0; right: 0; height: var(--topbar-h);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px; z-index: 8; }
+  #topbar .brand { font-weight: 800; font-size: 1rem; letter-spacing: .02em;
+    text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+  #topbar .brand small { font-weight: 400; color: var(--text-dim); margin-left: 6px; font-size: .72rem; }
+  #topbar .tools { display: flex; align-items: center; gap: 4px; }
+  #topbar .counter { font-size: .74rem; color: var(--text-dim); margin-right: 6px;
+    font-variant-numeric: tabular-nums; }
+  #topbar button { background: none; border: none; color: #fff; cursor: pointer; padding: 8px; }
+  #topbar svg { width: 21px; height: 21px; fill: none; stroke: #fff; stroke-width: 1.9;
+    stroke-linecap: round; stroke-linejoin: round; }
+
+  /* 阅读进度条 */
+  #progress { position: absolute; top: 0; left: 0; height: 2.5px; width: 0;
+    background: var(--accent); z-index: 9; transition: width .1s linear; }
+
+  /* ===== 双击点赞爱心 ===== */
+  .heart-burst { position: absolute; z-index: 7; pointer-events: none;
+    width: 84px; height: 84px; transform: translate(-50%, -50%) scale(0);
+    animation: burst .9s ease forwards; }
+  .heart-burst svg { width: 100%; height: 100%; fill: var(--accent);
+    filter: drop-shadow(0 2px 10px rgba(0,0,0,.5)); }
+  @keyframes burst {
+    15% { transform: translate(-50%, -50%) scale(1.15) rotate(-8deg); opacity: 1; }
+    30% { transform: translate(-50%, -50%) scale(.95) rotate(4deg); }
+    45% { transform: translate(-50%, -50%) scale(1) ; opacity: 1; }
+    100% { transform: translate(-50%, -70%) scale(1); opacity: 0; }
+  }
+
+  /* ===== 设置弹层 ===== */
+  #settings { position: absolute; inset: 0; z-index: 20; display: none;
+    background: rgba(0,0,0,.72); backdrop-filter: blur(6px);
+    align-items: flex-end; }
+  #settings.open { display: flex; }
+  #settings .sheet { width: 100%; background: #141414; border-radius: 18px 18px 0 0;
+    padding: 22px 20px calc(24px + env(safe-area-inset-bottom)); max-height: 82%; overflow-y: auto; }
+  #settings h2 { font-size: 1.05rem; margin-bottom: 4px; }
+  #settings .sub { color: var(--text-dim); font-size: .8rem; line-height: 1.6; margin-bottom: 16px; }
+  #settings .sub b { color: var(--text); }
+  #settings label { display: block; font-size: .78rem; color: var(--text-dim); margin-bottom: 6px; }
+  #settings input { width: 100%; background: #0d0d0d; border: 1px solid #333; color: var(--text);
+    border-radius: 10px; padding: 12px; font-size: .88rem; margin-bottom: 14px; }
+  #settings input:focus { outline: none; border-color: var(--accent); }
+  #settings .row { display: flex; gap: 10px; }
+  #settings .btn { flex: 1; border: none; border-radius: 10px; padding: 13px;
+    font-size: .9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+  #settings .btn.primary { background: var(--accent); color: #fff; }
+  #settings .btn.ghost { background: #222; color: var(--text); }
+  #settings .hint { margin-top: 16px; font-size: .74rem; color: var(--text-dim); line-height: 1.7; }
+  #settings .hint code { background: #222; padding: 1px 5px; border-radius: 4px; font-size: .95em; }
+
+  /* ===== 全局加载/空状态 ===== */
+  #status { position: absolute; inset: 0; z-index: 15; display: none;
+    flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    background: var(--card); text-align: center; padding: 0 32px; }
+  #status.show { display: flex; }
+  #status .big { font-size: 2.2rem; }
+  #status p { color: var(--text-dim); font-size: .86rem; line-height: 1.7; }
+  #status button { background: var(--accent); color: #fff; border: none; border-radius: 999px;
+    padding: 11px 26px; font-size: .9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+  .toast { position: absolute; left: 50%; bottom: 130px; transform: translateX(-50%);
+    background: rgba(30,30,30,.95); color: #fff; font-size: .8rem; padding: 9px 18px;
+    border-radius: 999px; z-index: 30; animation: toastIn 2.2s ease forwards; white-space: nowrap; }
+  @keyframes toastIn { 0% { opacity: 0; translate: 0 8px; } 10%, 80% { opacity: 1; translate: 0 0; }
+    100% { opacity: 0; } }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="phone">
+    <div id="progress"></div>
+    <div id="topbar">
+      <div class="brand">纸上快刷<small>Instapaper</small></div>
+      <div class="tools">
+        <span class="counter" id="counter"></span>
+        <button id="btn-refresh" title="刷新列表" aria-label="刷新">
+          <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
+        </button>
+        <button id="btn-settings" title="设置" aria-label="设置">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.98 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.98a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09c0 .68.4 1.3 1.03 1.56a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9c.26.63.88 1.03 1.56 1.03H21a2 2 0 1 1 0 4h-.09c-.68 0-1.3.4-1.51.97z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="feed"></div>
+
+    <div id="status">
+      <div class="big">📖</div>
+      <p id="status-text">加载中…</p>
+      <button id="status-btn" style="display:none">设置订阅源</button>
+    </div>
+
+    <div id="settings">
+      <div class="sheet">
+        <h2>连接 Instapaper</h2>
+        <p class="sub">Instapaper 为每个账号提供只读 <b>RSS 接口</b>，无需密码即可读取你的稍后读列表，适合本页这种纯前端应用。</p>
+        <label for="feed-url">你的 Instapaper RSS 地址</label>
+        <input id="feed-url" type="url" placeholder="https://www.instapaper.com/rss/123456/xxxxxxxx"
+               autocomplete="off" spellcheck="false">
+        <div class="row">
+          <button class="btn ghost" id="btn-demo">先看演示</button>
+          <button class="btn primary" id="btn-save">保存并加载</button>
+        </div>
+        <p class="hint">
+          获取方式：登录 <code>instapaper.com</code> 网页版 → 打开任意文件夹页面，
+          拉到页面最底部，右下角有 <b>“RSS”</b> 链接（This folder's RSS feed），
+          复制该链接粘贴到上面即可。<br><br>
+          也可以粘贴任何标准 RSS/Atom 地址（博客、新闻源均可）。
+          正文全文通过 <code>r.jina.ai</code> 阅读器接口抓取；列表通过公共 CORS
+          代理读取，均为只读操作。
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ================= 状态 ================= */
+const LS = {
+  feed: 'reels.feedUrl',
+  likes: 'reels.likes',
+  font: 'reels.fontScale',
+};
+const state = {
+  items: [],           // { title, link, snippet, date, domain, loaded, loading }
+  active: 0,
+  demo: false,
+  likes: safeParse(localStorage.getItem(LS.likes)) || {},
+  fontScale: parseFloat(localStorage.getItem(LS.font) || '1'),
+};
+const FONT_STEPS = [0.9, 1, 1.15, 1.3];
+const fulltextCache = new Map();
+
+const $ = (s, el) => (el || document).querySelector(s);
+const feedEl = $('#feed');
+
+function safeParse(s) { try { return JSON.parse(s); } catch { return null; } }
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function domainOf(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+}
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  $('#phone').appendChild(t);
+  setTimeout(() => t.remove(), 2300);
+}
+
+/* ================= 网络：CORS 代理 & 全文抓取 ================= */
+const PROXIES = [
+  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  u => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
+  u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
+];
+
+async function fetchWithTimeout(url, ms) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms || 15000);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.text();
+  } finally { clearTimeout(t); }
+}
+
+async function fetchViaProxies(url) {
+  let lastErr;
+  for (const wrap of PROXIES) {
+    try { return await fetchWithTimeout(wrap(url)); }
+    catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error('所有代理均失败');
+}
+
+/* r.jina.ai：免费的网页→Markdown 阅读器接口，自带 CORS 支持 */
+async function fetchFulltext(url, itemTitle) {
+  if (fulltextCache.has(url)) return fulltextCache.get(url);
+  const md = await fetchWithTimeout('https://r.jina.ai/' + url, 25000);
+  const html = markdownToHtml(md, itemTitle);
+  fulltextCache.set(url, html);
+  return html;
+}
+
+/* ================= RSS / Atom 解析 ================= */
+function parseFeed(xmlText) {
+  const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+  if (doc.querySelector('parsererror')) throw new Error('订阅源格式无法解析');
+  const items = [];
+  const rssItems = doc.querySelectorAll('item');
+  const atomEntries = doc.querySelectorAll('entry');
+  const text = (parent, tag) => {
+    const el = parent.querySelector(tag);
+    return el ? el.textContent.trim() : '';
+  };
+  if (rssItems.length) {
+    rssItems.forEach(it => {
+      const link = text(it, 'link');
+      items.push({
+        title: text(it, 'title') || '（无标题）',
+        link,
+        snippet: stripHtml(text(it, 'description')),
+        date: text(it, 'pubDate'),
+        domain: domainOf(link),
+      });
+    });
+  } else {
+    atomEntries.forEach(it => {
+      const linkEl = it.querySelector('link[rel="alternate"]') || it.querySelector('link');
+      const link = linkEl ? (linkEl.getAttribute('href') || '') : '';
+      items.push({
+        title: text(it, 'title') || '（无标题）',
+        link,
+        snippet: stripHtml(text(it, 'summary') || text(it, 'content')),
+        date: text(it, 'updated') || text(it, 'published'),
+        domain: domainOf(link),
+      });
+    });
+  }
+  return items.filter(i => i.link);
+}
+
+function stripHtml(s) {
+  const div = document.createElement('div');
+  div.innerHTML = s || '';
+  return (div.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+function fmtDate(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  if (isNaN(d)) return '';
+  const diff = (Date.now() - d.getTime()) / 864e5;
+  if (diff < 1) return '今天';
+  if (diff < 2) return '昨天';
+  if (diff < 30) return Math.floor(diff) + ' 天前';
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* ================= Markdown（r.jina.ai 输出）→ HTML ================= */
+function markdownToHtml(md, itemTitle) {
+  // 去掉 jina 的头部元信息
+  const marker = md.indexOf('Markdown Content:');
+  if (marker >= 0) md = md.slice(marker + 'Markdown Content:'.length);
+  md = md.trim();
+
+  // 正文开头的 H1 若与条目标题重复，则去掉（卡片已展示标题）
+  if (itemTitle) {
+    const m = md.match(/^#{1,2}\s+(.+)\n?/);
+    if (m) {
+      const norm = s => s.toLowerCase().replace(/[\s\p{P}]+/gu, '');
+      const a = norm(m[1]), b = norm(itemTitle);
+      if (a && b && (a.includes(b) || b.includes(a))) md = md.slice(m[0].length).trim();
+    }
+  }
+
+  const lines = md.split('\n');
+  const out = [];
+  let para = [], inCode = false, codeBuf = [], listType = null;
+
+  const flushPara = () => {
+    if (para.length) { out.push('<p>' + inline(para.join(' ')) + '</p>'); para = []; }
+  };
+  const flushList = () => {
+    if (listType) { out.push(`</${listType}>`); listType = null; }
+  };
+
+  const inline = s => {
+    s = esc(s);
+    // 图片 ![alt](url)
+    s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g,
+      (_, alt, src) => `<img src="${src}" alt="${alt}" loading="lazy" onerror="this.remove()">`);
+    // 链接 [text](url)
+    s = s.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g,
+      (_, t, href) => /^https?:/.test(href)
+        ? `<a href="${href}" target="_blank" rel="noopener">${t}</a>` : t);
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+    s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+    s = s.replace(/(^|[\s(（>])_([^_\n]+)_(?=[\s)）.,;:!?，。；：！？]|$)/g, '$1<em>$2</em>');
+    s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+    return s;
+  };
+
+  for (const raw of lines) {
+    const line = raw.replace(/\s+$/, '');
+    if (/^```/.test(line)) {
+      if (inCode) { out.push('<pre><code>' + esc(codeBuf.join('\n')) + '</code></pre>'); codeBuf = []; }
+      else { flushPara(); flushList(); }
+      inCode = !inCode; continue;
+    }
+    if (inCode) { codeBuf.push(raw); continue; }
+
+    if (!line.trim()) { flushPara(); flushList(); continue; }
+
+    const h = line.match(/^(#{1,6})\s+(.*)/);
+    if (h) { flushPara(); flushList();
+      const lv = Math.min(h[1].length + 1, 4);
+      out.push(`<h${lv}>` + inline(h[2]) + `</h${lv}>`); continue; }
+
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) { flushPara(); flushList(); out.push('<hr>'); continue; }
+
+    const q = line.match(/^>\s?(.*)/);
+    if (q) { flushPara(); flushList(); out.push('<blockquote><p>' + inline(q[1]) + '</p></blockquote>'); continue; }
+
+    const ul = line.match(/^\s*[-*+]\s+(.*)/);
+    const ol = line.match(/^\s*\d+[.)]\s+(.*)/);
+    if (ul || ol) {
+      flushPara();
+      const want = ul ? 'ul' : 'ol';
+      if (listType !== want) { flushList(); out.push(`<${want}>`); listType = want; }
+      out.push('<li>' + inline((ul || ol)[1]) + '</li>'); continue;
+    }
+
+    // 纯图片行
+    const soloImg = line.match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)\s*$/);
+    if (soloImg) { flushPara(); flushList();
+      out.push(`<p><img src="${esc(soloImg[2])}" alt="${esc(soloImg[1])}" loading="lazy" onerror="this.parentElement.remove()"></p>`);
+      continue; }
+
+    para.push(line.trim());
+  }
+  flushPara(); flushList();
+  if (inCode && codeBuf.length) out.push('<pre><code>' + esc(codeBuf.join('\n')) + '</code></pre>');
+  return out.join('\n');
+}
+
+/* ================= 渲染 ================= */
+const ICONS = {
+  heart: '<svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>',
+  share: '<svg viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>',
+  open: '<svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>',
+};
+
+function renderFeed() {
+  feedEl.innerHTML = '';
+  state.items.forEach((item, i) => {
+    const sec = document.createElement('section');
+    sec.className = 'reel';
+    sec.dataset.index = i;
+    const initial = (item.domain || '?')[0].toUpperCase();
+    sec.innerHTML = `
+      <div class="reel-scroll">
+        <h1>${esc(item.title)}</h1>
+        <div class="byline">
+          <span class="avatar">${esc(initial)}</span>
+          <span>${esc(item.domain || '未知来源')}</span>
+          ${item.date ? `<span class="dot">·</span><span>${esc(fmtDate(item.date))}</span>` : ''}
+        </div>
+        <div class="body-text">${item.snippet ? '<p>' + esc(item.snippet) + '</p>' : ''}</div>
+        <div class="fulltext-status"><div class="spinner"></div><span>正在加载全文…</span></div>
+      </div>
+      <div class="fade-top"></div>
+      <div class="fade-bottom"></div>
+      <div class="rail">
+        <button class="act-like ${state.likes[item.link] ? 'liked' : ''}">${ICONS.heart}<span>${state.likes[item.link] ? '已赞' : '喜欢'}</span></button>
+        <button class="act-share">${ICONS.share}<span>分享</span></button>
+        <button class="act-open">${ICONS.open}<span>原文</span></button>
+        <button class="act-font"><span class="aa">Aa</span><span>字号</span></button>
+      </div>
+      <div class="caption">
+        <div class="site"><span class="avatar">${esc(initial)}</span><span>${esc(item.domain || 'instapaper')}</span></div>
+        <div class="snippet">${esc(item.title)}</div>
+      </div>`;
+    bindReel(sec, item, i);
+    feedEl.appendChild(sec);
+  });
+  applyFontScale();
+  updateCounter();
+  observeReels();
+}
+
+function bindReel(sec, item, i) {
+  $('.act-like', sec).addEventListener('click', () => toggleLike(item, sec));
+  $('.act-open', sec).addEventListener('click', () => window.open(item.link, '_blank', 'noopener'));
+  $('.act-share', sec).addEventListener('click', async () => {
+    const data = { title: item.title, url: item.link };
+    if (navigator.share) { try { await navigator.share(data); } catch {} }
+    else {
+      try { await navigator.clipboard.writeText(item.link); toast('链接已复制'); }
+      catch { toast(item.link); }
+    }
+  });
+  $('.act-font', sec).addEventListener('click', cycleFont);
+
+  // 双击点赞（Reels 手势）
+  const scroll = $('.reel-scroll', sec);
+  let lastTap = 0;
+  scroll.addEventListener('pointerup', e => {
+    const now = Date.now();
+    if (now - lastTap < 320) {
+      if (!state.likes[item.link]) toggleLike(item, sec);
+      heartBurst(sec, e);
+      lastTap = 0;
+    } else lastTap = now;
+  });
+  scroll.addEventListener('scroll', () => { if (i === state.active) updateProgress(scroll); }, { passive: true });
+}
+
+function toggleLike(item, sec) {
+  const btn = $('.act-like', sec);
+  if (state.likes[item.link]) delete state.likes[item.link];
+  else state.likes[item.link] = Date.now();
+  localStorage.setItem(LS.likes, JSON.stringify(state.likes));
+  const liked = !!state.likes[item.link];
+  btn.classList.toggle('liked', liked);
+  btn.querySelector('span:last-child').textContent = liked ? '已赞' : '喜欢';
+}
+
+function heartBurst(sec, e) {
+  const rect = sec.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'heart-burst';
+  el.style.left = (e.clientX - rect.left) + 'px';
+  el.style.top = (e.clientY - rect.top) + 'px';
+  el.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>';
+  sec.appendChild(el);
+  setTimeout(() => el.remove(), 950);
+}
+
+function cycleFont() {
+  let idx = FONT_STEPS.indexOf(state.fontScale);
+  idx = (idx + 1) % FONT_STEPS.length;
+  state.fontScale = FONT_STEPS[idx];
+  localStorage.setItem(LS.font, String(state.fontScale));
+  applyFontScale();
+  toast('字号 ' + ['小', '标准', '大', '特大'][idx]);
+}
+function applyFontScale() {
+  document.documentElement.style.setProperty('--font-scale', state.fontScale);
+}
+
+function updateCounter() {
+  $('#counter').textContent = state.items.length
+    ? `${state.active + 1} / ${state.items.length}` : '';
+}
+function updateProgress(scrollEl) {
+  const max = scrollEl.scrollHeight - scrollEl.clientHeight;
+  const pct = max > 4 ? Math.min(100, scrollEl.scrollTop / max * 100) : 100;
+  $('#progress').style.width = pct + '%';
+}
+
+/* ================= 激活卡片 & 懒加载全文 ================= */
+let observer;
+function observeReels() {
+  if (observer) observer.disconnect();
+  observer = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting && en.intersectionRatio >= 0.6) {
+        state.active = +en.target.dataset.index;
+        updateCounter();
+        updateProgress($('.reel-scroll', en.target));
+        loadFulltextFor(state.active);
+        loadFulltextFor(state.active + 1); // 预加载下一篇
+      }
+    });
+  }, { root: feedEl, threshold: 0.6 });
+  feedEl.querySelectorAll('.reel').forEach(sec => observer.observe(sec));
+}
+
+async function loadFulltextFor(i) {
+  const item = state.items[i];
+  if (!item || item.loaded || item.loading || state.demo) return;
+  const sec = feedEl.querySelector(`.reel[data-index="${i}"]`);
+  if (!sec) return;
+  item.loading = true;
+  const statusEl = $('.fulltext-status', sec);
+  try {
+    const html = await fetchFulltext(item.link, item.title);
+    if (!html || html.length < 40) throw new Error('内容为空');
+    $('.body-text', sec).innerHTML = html + '<div class="end-mark">· 完 ·</div>';
+    statusEl.remove();
+    item.loaded = true;
+    if (i === state.active) updateProgress($('.reel-scroll', sec));
+  } catch (e) {
+    statusEl.innerHTML = `<span>全文加载失败</span><button>重试</button>`;
+    statusEl.querySelector('button').addEventListener('click', () => {
+      statusEl.innerHTML = '<div class="spinner"></div><span>正在加载全文…</span>';
+      item.loading = false;
+      loadFulltextFor(i);
+    }, { once: true });
+    item.loading = false;
+    return;
+  }
+  item.loading = false;
+}
+
+/* ================= 载入订阅源 ================= */
+async function loadFeed(url) {
+  showStatus('正在读取 Instapaper 列表…');
+  try {
+    const xml = await fetchViaProxies(url);
+    const items = parseFeed(xml);
+    if (!items.length) throw new Error('订阅源里没有文章');
+    state.items = items;
+    state.demo = false;
+    hideStatus();
+    renderFeed();
+    feedEl.scrollTo({ top: 0 });
+    loadFulltextFor(0); loadFulltextFor(1);
+  } catch (e) {
+    showStatus('读取失败：' + (e && e.message ? e.message : e) +
+      '\n请检查 RSS 地址是否正确，或稍后重试。', true);
+  }
+}
+
+function showStatus(text, withBtn) {
+  $('#status').classList.add('show');
+  $('#status-text').textContent = text;
+  $('#status-btn').style.display = withBtn ? '' : 'none';
+}
+function hideStatus() { $('#status').classList.remove('show'); }
+
+/* ================= 演示内容 ================= */
+const DEMO = [
+  {
+    title: '欢迎来到「纸上快刷」👋',
+    domain: 'instapaper.com', date: new Date().toUTCString(), demoBody: `
+<p>这是一个<strong>文字版 TikTok</strong>：把你存进 Instapaper 的稍后读文章，变成可以一条条往上刷的全屏卡片。</p>
+<h3>怎么玩</h3>
+<ul>
+<li><strong>上下滑动</strong>（或按 ↑↓ / J K 键）切换文章；</li>
+<li>文章太长时，先在卡片内滚动阅读，<strong>滚到底再滑</strong>就进入下一篇；</li>
+<li><strong>双击</strong>正文点赞，右侧还有分享、打开原文、调字号；</li>
+<li>顶部红色细线是当前这篇的<strong>阅读进度</strong>。</li>
+</ul>
+<h3>连接你自己的 Instapaper</h3>
+<p>点右上角 ⚙️ 设置，粘贴你的 Instapaper RSS 地址即可。获取方式写在设置面板里。</p>
+<p>现在，往上滑试试 👆</p>` ,
+  },
+  {
+    title: '为什么「稍后读」总是变成「永远不读」',
+    domain: 'example.blog', date: new Date(Date.now() - 864e5).toUTCString(), demoBody: `
+<p>每个人的 Instapaper 里都躺着几百篇「改天再看」的文章。问题不在意志力，而在<strong>打开成本</strong>：一篇长文意味着一次郑重其事的阅读仪式，而我们的碎片时间只够刷短视频。</p>
+<p>把长文变成信息流卡片，是在降低这个成本——不需要决定「现在要不要认真读完它」，只需要像刷视频一样往上滑。读得进去就多停一会儿，读不进去就滑走，文章还在列表里，没有任何负担。</p>
+<blockquote><p>阅读的敌人不是短视频，是「必须一次读完」的心理预设。</p></blockquote>
+<p>试试看：把这个页面加到手机主屏幕，通勤时打开，替代一次无意识的刷手机。</p>`,
+  },
+  {
+    title: '这个页面是怎么工作的',
+    domain: 'github.io', date: new Date(Date.now() - 2 * 864e5).toUTCString(), demoBody: `
+<p>整个应用只有一个静态 HTML 文件，托管在 GitHub Pages 上，没有任何后端：</p>
+<ol>
+<li><strong>列表</strong>：读取 Instapaper 官方的只读 RSS 接口（设置页最底部的 RSS 链接），经公共 CORS 代理转一道；</li>
+<li><strong>正文</strong>：用 <code>r.jina.ai</code> 阅读器接口把原文抓成 Markdown，再在本地渲染成排版好的正文；</li>
+<li><strong>交互</strong>：CSS <code>scroll-snap</code> 实现整屏吸附滑动，卡片内部是独立滚动区，滚到底自动「让位」给下一张卡片；</li>
+<li>点赞、字号、RSS 地址都存在浏览器 <code>localStorage</code> 里，不上传任何数据。</li>
+</ol>
+<p>当前处于<strong>演示模式</strong>，以上三篇都是内置内容。点右上角 ⚙️ 填入你的 RSS 地址，就能刷自己的稍后读了。</p>`,
+  },
+];
+
+function loadDemo() {
+  state.demo = true;
+  state.items = DEMO.map(d => ({
+    title: d.title, link: '#demo-' + Math.random().toString(36).slice(2),
+    snippet: '', date: d.date, domain: d.domain, loaded: true,
+  }));
+  hideStatus();
+  renderFeed();
+  // 演示模式直接填入正文
+  feedEl.querySelectorAll('.reel').forEach((sec, i) => {
+    $('.body-text', sec).innerHTML = DEMO[i].demoBody + '<div class="end-mark">· 完 ·</div>';
+    const st = $('.fulltext-status', sec); if (st) st.remove();
+  });
+  feedEl.scrollTo({ top: 0 });
+}
+
+/* ================= 设置面板 ================= */
+const settingsEl = $('#settings');
+function openSettings() {
+  $('#feed-url').value = localStorage.getItem(LS.feed) || '';
+  settingsEl.classList.add('open');
+}
+function closeSettings() { settingsEl.classList.remove('open'); }
+
+$('#btn-settings').addEventListener('click', openSettings);
+$('#status-btn').addEventListener('click', openSettings);
+settingsEl.addEventListener('click', e => { if (e.target === settingsEl) closeSettings(); });
+$('#btn-save').addEventListener('click', () => {
+  const url = $('#feed-url').value.trim();
+  if (!/^https?:\/\//.test(url)) { toast('请输入有效的 RSS 地址'); return; }
+  localStorage.setItem(LS.feed, url);
+  closeSettings();
+  loadFeed(url);
+});
+$('#btn-demo').addEventListener('click', () => { closeSettings(); loadDemo(); });
+$('#btn-refresh').addEventListener('click', () => {
+  const url = localStorage.getItem(LS.feed);
+  if (url) loadFeed(url); else openSettings();
+});
+
+/* ================= 键盘导航 ================= */
+document.addEventListener('keydown', e => {
+  if (settingsEl.classList.contains('open')) {
+    if (e.key === 'Escape') closeSettings();
+    return;
+  }
+  const go = dir => {
+    const next = Math.max(0, Math.min(state.items.length - 1, state.active + dir));
+    const sec = feedEl.querySelector(`.reel[data-index="${next}"]`);
+    if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+  };
+  if (e.key === 'ArrowDown' || e.key === 'j' || e.key === 'J') { e.preventDefault(); go(1); }
+  if (e.key === 'ArrowUp' || e.key === 'k' || e.key === 'K') { e.preventDefault(); go(-1); }
+});
+
+/* ================= 启动 ================= */
+(function init() {
+  applyFontScale();
+  const saved = localStorage.getItem(LS.feed);
+  if (saved) loadFeed(saved);
+  else loadDemo();
+})();
+</script>
+</body>
+</html>
