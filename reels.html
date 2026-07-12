@@ -246,9 +246,12 @@
           <button class="btn primary" id="btn-save">保存并加载</button>
         </div>
         <p class="hint">
-          获取方式：登录 <code>instapaper.com</code> 网页版 → 打开任意文件夹页面，
-          拉到页面最底部，右下角有 <b>“RSS”</b> 链接（This folder's RSS feed），
-          复制该链接粘贴到上面即可。<br><br>
+          获取方式（Instapaper 改版后 RSS 入口被隐藏了）：<br>
+          ① 登录 <code>instapaper.com</code> 网页版 → 点右上角你的<b>邮箱/账号名</b>
+          → <b>Download</b>，在下载格式里对 <b>RSS</b> 一项<b>右键 → 复制链接</b>；<br>
+          ② 或在文章列表页按 <code>Ctrl+U</code>（Mac：<code>⌥⌘U</code>）查看网页源代码，
+          搜索 <code>rss</code>，找到形如 <code>/rss/数字/字母</code> 的地址，
+          前面加上 <code>https://www.instapaper.com</code>。<br><br>
           也可以粘贴任何标准 RSS/Atom 地址（博客、新闻源均可）。
           正文全文通过 <code>r.jina.ai</code> 阅读器接口抓取；列表通过公共 CORS
           代理读取，均为只读操作。
