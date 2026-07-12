@@ -11,10 +11,19 @@
     --text: #fff;
     --text-dim: rgba(255,255,255,.72);
     --accent: #ff2d55;
-    --rail-w: 60px;
-    --topbar-h: 52px;
+    --rail-w: 64px;
+    --topbar-h: 56px;
     --font-scale: 1;
+    /* 液态玻璃 */
+    --glass-bg: rgba(255,255,255,.13);
+    --glass-brd: rgba(255,255,255,.26);
+    --glass-hi: inset 0 1px 0 rgba(255,255,255,.32), inset 0 -1px 0 rgba(255,255,255,.06),
+      0 6px 20px rgba(0,0,0,.18);
   }
+  .glass { background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(18px) saturate(1.7);
+    backdrop-filter: blur(18px) saturate(1.7);
+    border: 1px solid var(--glass-brd); box-shadow: var(--glass-hi); }
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; background: var(--bg); color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
@@ -41,10 +50,11 @@
   .reel-scroll::-webkit-scrollbar { display: none; }
 
   .reel h1 { font-size: calc(1.6rem * var(--font-scale)); line-height: 1.35;
-    font-weight: 800; margin-bottom: 8px; text-wrap: balance;
+    font-weight: 800; margin-bottom: 12px; text-wrap: balance;
     text-shadow: 0 1px 3px rgba(0,0,0,.25); }
-  .reel .byline { color: var(--text-dim); font-size: .78rem; margin-bottom: 22px;
-    letter-spacing: .02em; }
+  .reel .byline { display: inline-block; color: rgba(255,255,255,.85); font-size: .74rem;
+    margin-bottom: 24px; letter-spacing: .02em;
+    padding: 5px 12px; border-radius: 999px; }
 
   .body-text { font-size: calc(1.12rem * var(--font-scale)); line-height: 1.9;
     word-break: break-word; text-shadow: 0 1px 2px rgba(0,0,0,.18);
@@ -64,11 +74,12 @@
   .body-text code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
   .body-text hr { border: none; border-top: 1px solid rgba(255,255,255,.3); margin: 1.4em 0; }
 
-  .fulltext-status { display: flex; align-items: center; gap: 8px; color: var(--text-dim);
-    font-size: .82rem; margin: 14px 0 8px; }
-  .fulltext-status button { background: rgba(0,0,0,.28); color: #fff;
-    border: 1px solid rgba(255,255,255,.4);
-    border-radius: 999px; padding: 6px 14px; font-size: .82rem; cursor: pointer; }
+  .fulltext-status { display: inline-flex; align-items: center; gap: 8px;
+    color: rgba(255,255,255,.85); font-size: .8rem; margin: 14px 0 8px;
+    padding: 8px 16px; border-radius: 999px; }
+  .fulltext-status button { background: rgba(255,255,255,.2); color: #fff;
+    border: 1px solid rgba(255,255,255,.35);
+    border-radius: 999px; padding: 5px 14px; font-size: .8rem; cursor: pointer; }
   .end-mark { text-align: center; color: var(--text-dim); font-size: .78rem;
     padding: 26px 0 8px; letter-spacing: .3em; }
 
@@ -81,30 +92,33 @@
     background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.32));
     pointer-events: none; z-index: 3; }
 
-  /* ===== 右侧操作栏：只保留 3 个 ===== */
-  .rail { position: absolute; right: 8px; bottom: 26px; width: var(--rail-w);
-    display: flex; flex-direction: column; align-items: center; gap: 20px; z-index: 5; }
+  /* ===== 右侧操作栏：液态玻璃圆钮 ===== */
+  .rail { position: absolute; right: 10px; bottom: 26px; width: var(--rail-w);
+    display: flex; flex-direction: column; align-items: center; gap: 16px; z-index: 5; }
   .rail button { background: none; border: none; color: #fff; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; gap: 3px;
-    font-size: .66rem; font-family: inherit;
-    filter: drop-shadow(0 1px 4px rgba(0,0,0,.45)); }
-  .rail svg { width: 27px; height: 27px; fill: none; stroke: #fff; stroke-width: 1.9;
-    stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
-  .rail button:active svg { transform: scale(1.2); }
-  .rail button.liked svg { fill: #fff; }
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    font-size: .66rem; font-family: inherit; padding: 0;
+    text-shadow: 0 1px 3px rgba(0,0,0,.4); }
+  .rail .orb { width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .15s; }
+  .rail svg { width: 23px; height: 23px; fill: none; stroke: #fff; stroke-width: 1.9;
+    stroke-linecap: round; stroke-linejoin: round; }
+  .rail button:active .orb { transform: scale(1.14); }
+  .rail button.liked svg { fill: #ff375f; stroke: #ff375f; }
 
-  /* ===== 顶栏 ===== */
+  /* ===== 顶栏：玻璃胶囊 ===== */
   #topbar { position: absolute; top: 0; left: 0; right: 0; height: var(--topbar-h);
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 14px; z-index: 8; }
-  #topbar .brand { font-weight: 800; font-size: .95rem; letter-spacing: .02em;
-    text-shadow: 0 1px 3px rgba(0,0,0,.4); }
-  #topbar .tools { display: flex; align-items: center; gap: 2px; }
-  #topbar .counter { font-size: .74rem; color: var(--text-dim); margin-right: 6px;
-    font-variant-numeric: tabular-nums; text-shadow: 0 1px 3px rgba(0,0,0,.4); }
-  #topbar button { background: none; border: none; color: #fff; cursor: pointer; padding: 8px;
-    filter: drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
-  #topbar svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 1.9;
+    padding: 10px 12px 0; z-index: 8; }
+  #topbar .brand { font-weight: 800; font-size: .88rem; letter-spacing: .02em;
+    padding: 8px 15px; border-radius: 999px; }
+  #topbar .tools { display: flex; align-items: center; gap: 0;
+    border-radius: 999px; padding: 2px 4px; }
+  #topbar .counter { font-size: .74rem; color: rgba(255,255,255,.9); margin: 0 4px 0 10px;
+    font-variant-numeric: tabular-nums; }
+  #topbar button { background: none; border: none; color: #fff; cursor: pointer; padding: 8px; }
+  #topbar svg { width: 19px; height: 19px; fill: none; stroke: #fff; stroke-width: 1.9;
     stroke-linecap: round; stroke-linejoin: round; }
 
   /* 阅读进度条 */
@@ -130,30 +144,41 @@
 
   /* ===== 设置弹层 ===== */
   #settings { position: absolute; inset: 0; z-index: 20; display: none;
-    background: rgba(0,0,0,.72); backdrop-filter: blur(6px);
+    background: rgba(0,0,0,.45); backdrop-filter: blur(8px);
     align-items: flex-end; }
   #settings.open { display: flex; }
-  #settings .sheet { width: 100%; background: #141414; border-radius: 18px 18px 0 0;
+  #settings .sheet { width: 100%; background: rgba(28,26,38,.62);
+    -webkit-backdrop-filter: blur(28px) saturate(1.8);
+    backdrop-filter: blur(28px) saturate(1.8);
+    border-top: 1px solid rgba(255,255,255,.22);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+    border-radius: 22px 22px 0 0;
     padding: 22px 20px calc(24px + env(safe-area-inset-bottom)); max-height: 82%; overflow-y: auto; }
   #settings h2 { font-size: 1.05rem; margin-bottom: 4px; }
   #settings .sub { color: rgba(255,255,255,.62); font-size: .8rem; line-height: 1.6; margin-bottom: 16px; }
   #settings .sub b { color: #fff; }
   #settings label { display: block; font-size: .78rem; color: rgba(255,255,255,.62); margin-bottom: 6px; }
-  #settings input { width: 100%; background: #0d0d0d; border: 1px solid #333; color: #fff;
-    border-radius: 10px; padding: 12px; font-size: .88rem; margin-bottom: 14px; }
-  #settings input:focus { outline: none; border-color: var(--accent); }
+  #settings input { width: 100%; background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.22); color: #fff;
+    border-radius: 12px; padding: 12px; font-size: .88rem; margin-bottom: 14px; }
+  #settings input::placeholder { color: rgba(255,255,255,.35); }
+  #settings input:focus { outline: none; border-color: rgba(255,255,255,.55); }
   #settings .row { display: flex; gap: 10px; }
-  #settings .btn { flex: 1; border: none; border-radius: 10px; padding: 13px;
+  #settings .btn { flex: 1; border: none; border-radius: 12px; padding: 13px;
     font-size: .9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
-  #settings .btn.primary { background: var(--accent); color: #fff; }
-  #settings .btn.ghost { background: #222; color: #fff; }
+  #settings .btn.primary { background: rgba(255,255,255,.92); color: #1c1a26; font-weight: 700; }
+  #settings .btn.ghost { background: rgba(255,255,255,.12); color: #fff;
+    border: 1px solid rgba(255,255,255,.22); }
   #settings .font-row { display: flex; gap: 8px; margin-bottom: 16px; }
-  #settings .font-row button { flex: 1; background: #0d0d0d; border: 1px solid #333;
-    color: rgba(255,255,255,.72); border-radius: 10px; padding: 10px 0; font-size: .82rem;
+  #settings .font-row button { flex: 1; background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.18);
+    color: rgba(255,255,255,.72); border-radius: 12px; padding: 10px 0; font-size: .82rem;
     cursor: pointer; font-family: inherit; }
-  #settings .font-row button.on { border-color: var(--accent); color: #fff; font-weight: 700; }
+  #settings .font-row button.on { background: rgba(255,255,255,.22);
+    border-color: rgba(255,255,255,.5); color: #fff; font-weight: 700; }
   #settings .hint { margin-top: 16px; font-size: .74rem; color: rgba(255,255,255,.62); line-height: 1.7; }
-  #settings .hint code { background: #222; padding: 1px 5px; border-radius: 4px; font-size: .95em; }
+  #settings .hint code { background: rgba(255,255,255,.12); padding: 1px 5px;
+    border-radius: 4px; font-size: .95em; }
 
   /* ===== 全局加载/空状态 ===== */
   #status { position: absolute; inset: 0; z-index: 15; display: none;
@@ -162,11 +187,16 @@
   #status.show { display: flex; }
   #status .big { font-size: 2.2rem; }
   #status p { color: rgba(255,255,255,.85); font-size: .86rem; line-height: 1.7; white-space: pre-line; }
-  #status button { background: #fff; color: #111; border: none; border-radius: 999px;
-    padding: 11px 26px; font-size: .9rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+  #status button { background: rgba(255,255,255,.92); color: #1c1a26; border: none;
+    border-radius: 999px; padding: 11px 26px; font-size: .9rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; }
 
   .toast { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%);
-    background: rgba(20,20,20,.95); color: #fff; font-size: .8rem; padding: 9px 18px;
+    background: rgba(40,38,52,.6); color: #fff; font-size: .8rem; padding: 10px 20px;
+    -webkit-backdrop-filter: blur(20px) saturate(1.7);
+    backdrop-filter: blur(20px) saturate(1.7);
+    border: 1px solid rgba(255,255,255,.24);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 6px 20px rgba(0,0,0,.25);
     border-radius: 999px; z-index: 30; animation: toastIn 2.2s ease forwards; white-space: nowrap; }
   @keyframes toastIn { 0% { opacity: 0; translate: 0 8px; } 10%, 80% { opacity: 1; translate: 0 0; }
     100% { opacity: 0; } }
@@ -177,8 +207,8 @@
   <div id="phone">
     <div id="progress"></div>
     <div id="topbar">
-      <div class="brand">纸上快刷</div>
-      <div class="tools">
+      <div class="brand glass">纸上快刷</div>
+      <div class="tools glass">
         <span class="counter" id="counter"></span>
         <button id="btn-refresh" title="刷新列表" aria-label="刷新">
           <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
@@ -246,14 +276,32 @@ const state = {
 };
 const fulltextCache = new Map();
 
-/* 全色模式：卡片渐变底色，按序循环 */
+/* 全色模式：多层柔和渐变（弥散光斑 + 深色基底），按序循环 */
 const GRADS = [
-  'linear-gradient(165deg, #FF512F, #DD2476)',
-  'linear-gradient(165deg, #4A00E0, #8E2DE2)',
-  'linear-gradient(165deg, #1488CC, #2B32B2)',
-  'linear-gradient(165deg, #11998E, #16624A)',
-  'linear-gradient(165deg, #F2994A, #C0392B)',
-  'linear-gradient(165deg, #EC008C, #A6156B)',
+  // 暮色玫瑰
+  `radial-gradient(120% 85% at 18% 0%, rgba(255,171,123,.5), transparent 60%),
+   radial-gradient(110% 85% at 95% 100%, rgba(214,93,177,.42), transparent 62%),
+   linear-gradient(170deg, #83365f, #3f2358)`,
+  // 极光深海
+  `radial-gradient(115% 80% at 82% 0%, rgba(94,231,183,.32), transparent 60%),
+   radial-gradient(125% 95% at 8% 100%, rgba(59,130,246,.38), transparent 62%),
+   linear-gradient(170deg, #1d3b4e, #101f36)`,
+  // 薰衣草暮霭
+  `radial-gradient(120% 85% at 15% 8%, rgba(167,139,250,.45), transparent 60%),
+   radial-gradient(115% 85% at 92% 92%, rgba(236,72,153,.3), transparent 58%),
+   linear-gradient(170deg, #46367f, #241948)`,
+  // 青瓷雾松
+  `radial-gradient(120% 80% at 85% 4%, rgba(45,212,191,.35), transparent 60%),
+   radial-gradient(125% 95% at 8% 96%, rgba(16,110,150,.45), transparent 62%),
+   linear-gradient(170deg, #14555e, #0a2b3e)`,
+  // 蜜柑余晖
+  `radial-gradient(120% 80% at 20% 4%, rgba(251,191,36,.38), transparent 56%),
+   radial-gradient(115% 85% at 92% 96%, rgba(225,82,82,.36), transparent 60%),
+   linear-gradient(170deg, #a14e33, #5d2440)`,
+  // 星夜蓝紫
+  `radial-gradient(130% 90% at 80% 8%, rgba(129,140,248,.36), transparent 60%),
+   radial-gradient(120% 90% at 12% 92%, rgba(56,189,248,.26), transparent 60%),
+   linear-gradient(170deg, #2a3866, #131a30)`,
 ];
 
 const $ = (s, el) => (el || document).querySelector(s);
@@ -471,15 +519,15 @@ function renderFeed() {
     sec.innerHTML = `
       <div class="reel-scroll">
         <h1>${esc(item.title)}</h1>
-        <div class="byline">${esc(metaBits.join(' · '))}</div>
+        <div class="byline glass">${esc(metaBits.join(' · '))}</div>
         <div class="body-text">${item.snippet ? '<p>' + esc(item.snippet) + '</p>' : ''}</div>
-        <div class="fulltext-status"><div class="spinner"></div><span>正在加载全文…</span></div>
+        <div class="fulltext-status glass"><div class="spinner"></div><span>正在加载全文…</span></div>
       </div>
       <div class="fade-bottom"></div>
       <div class="rail">
-        <button class="act-like ${state.likes[item.link] ? 'liked' : ''}">${ICONS.heart}<span>${state.likes[item.link] ? '已赞' : '喜欢'}</span></button>
-        <button class="act-share">${ICONS.share}<span>分享</span></button>
-        <button class="act-open">${ICONS.open}<span>原文</span></button>
+        <button class="act-like ${state.likes[item.link] ? 'liked' : ''}"><span class="orb glass">${ICONS.heart}</span><span>${state.likes[item.link] ? '已赞' : '喜欢'}</span></button>
+        <button class="act-share"><span class="orb glass">${ICONS.share}</span><span>分享</span></button>
+        <button class="act-open"><span class="orb glass">${ICONS.open}</span><span>原文</span></button>
       </div>`;
     bindReel(sec, item, i);
     feedEl.appendChild(sec);
