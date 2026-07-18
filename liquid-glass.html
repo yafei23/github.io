@@ -53,6 +53,7 @@ function blurF(defs, id, d) {
 // on a softer spring, lighting the route from the left terminus.
 let lensX, lensY, lensVX = 0, lensVY = 0, tX, tY;
 let fillX, fillY, fillVX = 0, fillVY = 0, fillOnV = false;
+let fdx = 0, fdy = 0, fdvx = 0, fdvy = 0, flip = -1, flipT = -1;   // the fish
 let dragging = false, sx = 0, sy = 0, spX = 0, spY = 0;
 
 let W, H, cx, cy, cx0, th, LW, LH, lx0, ly, LR, MXH, MTH, thM;
@@ -107,6 +108,7 @@ function build() {
     [0, '#ffb27a', 0.9], [0.35, '#ffe27f', 0.9], [0.7, '#8fe6a8', 0.9], [1, '#7db5ff', 0.9]
   ]);
   grad(defs, 'gSheen', 0, ly, 0, ly + LH * 0.4, [[0, '#fff', 0.5], [1, '#fff', 0]]);
+  grad(defs, 'gFish', 0, -17, 0, 17, [[0, '#ffa347'], [0.55, '#f57616'], [1, '#e05f07']]);
 
   blurF(defs, 'bFlare', LH * 0.045);
   blurF(defs, 'bFlareS', LH * 0.022);
@@ -168,6 +170,29 @@ function build() {
   U.flBlueT2 = flare(cx0, ly + LH * 0.045, LH * 0.17, LH * 0.09, '#5aa8ff', 'bFlareS');
   U.flBlueB = flare(cx0, ly + LH - LH * 0.07, LH * 0.24, LH * 0.09, '#1266de', 'bFlare');
   U.flBlueB2 = flare(cx0, ly + LH - LH * 0.045, LH * 0.17, LH * 0.09, '#5aa8ff', 'bFlareS');
+
+  // ---- the resident clownfish, at home in the right half of the bubble ----
+  // (drawn under the glass shading so it reads as swimming inside)
+  const fu = LW / 235;
+  const cpF = E('clipPath', { id: 'fbc' }, defs);
+  E('ellipse', { cx: 0, cy: 0, rx: 31, ry: 17 }, cpF);
+  U.gFish = E('g', {}, U.gMag);
+  const gF = E('g', { transform: `scale(${fu})` }, U.gFish);
+  U.fishTail = E('g', {}, gF);
+  E('path', { d: 'M -24 0 C -31 -12 -44 -15 -48 -10 C -44 -5 -44 5 -48 10 C -44 15 -31 12 -24 0 Z',
+    fill: '#f97c1d', stroke: 'rgba(160,70,0,0.35)', 'stroke-width': 1 }, U.fishTail);
+  E('path', { d: 'M -14 -14 C -9 -24 6 -25 12 -17 C 2 -18 -8 -16 -14 -14 Z', fill: '#ef6c0f' }, gF);
+  E('path', { d: 'M -6 14 C -2 20 6 21 10 17 C 5 15 0 14 -6 14 Z', fill: '#ef6c0f' }, gF);
+  E('ellipse', { cx: 0, cy: 0, rx: 31, ry: 17, fill: 'url(#gFish)',
+    stroke: 'rgba(150,60,0,0.35)', 'stroke-width': 1 }, gF);
+  const gS = E('g', { 'clip-path': 'url(#fbc)' }, gF);
+  E('rect', { x: 10, y: -18, width: 9, height: 36, fill: '#fbfbf8', stroke: 'rgba(40,40,40,0.4)', 'stroke-width': 1.1 }, gS);
+  E('rect', { x: -9, y: -18, width: 10, height: 36, fill: '#fbfbf8', stroke: 'rgba(40,40,40,0.4)', 'stroke-width': 1.1 }, gS);
+  E('rect', { x: -27, y: -18, width: 7, height: 36, fill: '#fbfbf8', stroke: 'rgba(40,40,40,0.4)', 'stroke-width': 1.1 }, gS);
+  U.fishFin = E('path', { d: 'M 2 1 C 9 4 12 9 8 13 C 4 10 2 6 2 1 Z', fill: '#ff9a3d', opacity: 0.95 }, gF);
+  E('circle', { cx: 20, cy: -5, r: 3.6, fill: '#fff' }, gF);
+  E('circle', { cx: 20.8, cy: -5, r: 2, fill: '#1d1d1f' }, gF);
+  E('circle', { cx: 21.4, cy: -5.8, r: 0.7, fill: '#fff' }, gF);
 
   // dark refraction ring hugging the inside of the glass
   E('rect', { x: lx0, y: ly, width: LW, height: LH, rx: LR, fill: 'none',
@@ -261,6 +286,24 @@ function frame(now) {
   U.flBlueB2.setAttribute('opacity', oB * 0.55 * fV);
   U.flGrayT.setAttribute('opacity', (1 - oT) * 0.4 * fV);
   U.flGrayB.setAttribute('opacity', (1 - oB) * 0.4 * fV);
+
+  // clownfish: water drag pulls it against the motion, it turns to face
+  // where it's headed, and wags harder the faster the bubble moves
+  const tfx = clamp(-lensVX * 0.05, -LW * 0.09, LW * 0.09);
+  const tfy = clamp(-lensVY * 0.05, -LH * 0.10, LH * 0.10);
+  fdvx += (80 * (tfx - fdx) - 10 * fdvx) * dt; fdx += fdvx * dt;
+  fdvy += (80 * (tfy - fdy) - 10 * fdvy) * dt; fdy += fdvy * dt;
+  if (lensVX > 60) flipT = 1; else if (lensVX < -60) flipT = -1;
+  flip += (flipT - flip) * Math.min(1, dt * 7);
+  const tilt = clamp(lensVY * 0.04, -22, 22) * flip;
+  const bobX = Math.sin(now * 0.0009) * 3;
+  const bobY = Math.sin(now * 0.0016) * 2.5;
+  U.gFish.setAttribute('transform',
+    `translate(${(cx0 + LW * 0.27 + fdx + bobX).toFixed(2)} ${(cy + fdy + bobY).toFixed(2)}) ` +
+    `rotate(${tilt.toFixed(1)}) scale(${flip.toFixed(3)} 1)`);
+  const wag = Math.sin(now * 0.009) * (9 + clamp(Math.hypot(lensVX, lensVY) * 0.04, 0, 14));
+  U.fishTail.setAttribute('transform', `rotate(${wag.toFixed(1)} -24 0)`);
+  U.fishFin.setAttribute('transform', `rotate(${(-wag * 0.7).toFixed(1)} 3 3)`);
 
   // soft squash along the direction of motion, about the lens center
   const qh = clamp(Math.abs(lensVX) * 0.00022, 0, 0.05);
