@@ -47,33 +47,39 @@ function blurF(defs, id, d) {
   E('feGaussianBlur', { stdDeviation: d }, f);
 }
 
-// state: target follows the finger, pd is the displayed (spring) value
-let target = 0.55, pd = 0.55, vel = 0;
-let loff = 0, lvel = 0;              // lens lean offset
-let dragging = false, sx = 0, sp = 0;
+// The lens is the thing you drag. The bar stays put; the liquid level
+// chases the lens with a softer spring, so fast swipes make it slosh.
+let lensX, lensV = 0, targetX;        // lens center
+let fillE, fillV = 0;                 // liquid level (screen x of the fill's end)
+let dragging = false, sx = 0, spX = 0;
 
-let W, H, cx, cy, th, LW, LH, lx, ly, LR, Mx, My, thM, fillX0, edgeL, edgeR;
-const U = {};                        // nodes updated every frame
+let W, H, cx0, cy, th, LW, LH, lx0, ly, LR, Mx, My, thM, capOff;
+let XMIN, XMAX, fillX0, edgeL, edgeR;
+const U = {};                         // nodes updated every frame
 
 function build() {
   svg.innerHTML = '';
   W = innerWidth; H = innerHeight;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
 
-  cx = W / 2; cy = H / 2;
-  th = Math.max(10, Math.round(Math.min(W, H) * 0.031));   // bar thickness
-  LW = Math.min(W * 0.78, 340);                            // lens size
+  cx0 = W / 2; cy = H / 2;                                 // lens geometry is built centered,
+  th = Math.max(10, Math.round(Math.min(W, H) * 0.031));   // then moved by a group transform
+  LW = Math.min(W * 0.54, 250);
   LH = LW * 0.68;
-  lx = cx - LW / 2; ly = cy - LH / 2; LR = LH * 0.42;
-  Mx = 1.16; My = 3.0; thM = th * My;                      // magnification
-  fillX0 = cx * (1 - Mx) - 60;
-  edgeL = lx + LH * 0.12; edgeR = lx + LW - LH * 0.12;
+  lx0 = cx0 - LW / 2; ly = cy - LH / 2; LR = LH * 0.42;
+  Mx = 1.16; My = 3.0; thM = th * My;
+  capOff = LW * 0.05;                                      // liquid rests just right of center
+  XMIN = LW / 2 + 8; XMAX = W - LW / 2 - 8;
+  fillX0 = lx0 - thM * 2;
+  edgeL = lx0 + LH * 0.12; edgeR = lx0 + LW - LH * 0.12;
+
+  lensX = targetX = clamp(lensX ?? cx0, XMIN, XMAX);
+  fillE = fillE ?? lensX + capOff;
 
   const defs = E('defs', {}, svg);
 
-  // lens clip
   const cp = E('clipPath', { id: 'lc' }, defs);
-  E('rect', { x: lx, y: ly, width: LW, height: LH, rx: LR }, cp);
+  E('rect', { x: lx0, y: ly, width: LW, height: LH, rx: LR }, cp);
 
   grad(defs, 'gBlue', 0, cy - thM / 2, 0, cy + thM / 2, [[0, '#3f8cee'], [0.45, '#1266de'], [1, '#0d55c4']]);
   grad(defs, 'gBlueS', 0, cy - th / 2, 0, cy + th / 2, [[0, '#2f7fe8'], [1, '#0f5ccd']]);
@@ -81,7 +87,7 @@ function build() {
   grad(defs, 'gRim', 0, ly, 0, ly + LH, [
     [0, '#fff', 0.95], [0.3, '#fff', 0.3], [0.7, '#fff', 0.22], [1, '#fff', 0.8]
   ]);
-  grad(defs, 'gGlint', lx + LW * 0.42, 0, lx + LW * 0.85, 0, [
+  grad(defs, 'gGlint', lx0 + LW * 0.42, 0, lx0 + LW * 0.85, 0, [
     [0, '#ffb27a', 0.9], [0.35, '#ffe27f', 0.9], [0.7, '#8fe6a8', 0.9], [1, '#7db5ff', 0.9]
   ]);
   grad(defs, 'gSheen', 0, ly, 0, ly + LH * 0.4, [[0, '#fff', 0.5], [1, '#fff', 0]]);
@@ -107,56 +113,57 @@ function build() {
   E('feMergeNode', { in: 's2' }, mg);
 
   // mask: keep the shadow outside the glass so the interior stays clear
-  const mk = E('mask', { id: 'mOut', maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: W, height: H }, defs);
-  E('rect', { x: 0, y: 0, width: W, height: H, fill: '#fff' }, mk);
-  E('rect', { x: lx, y: ly, width: LW, height: LH, rx: LR, fill: '#000' }, mk);
+  // (oversized so it still covers the viewport wherever the lens slides)
+  const mk = E('mask', { id: 'mOut', maskUnits: 'userSpaceOnUse', x: -W, y: 0, width: 3 * W, height: H }, defs);
+  E('rect', { x: -W, y: 0, width: 3 * W, height: H, fill: '#fff' }, mk);
+  E('rect', { x: lx0, y: ly, width: LW, height: LH, rx: LR, fill: '#000' }, mk);
 
-  // ---- base scene: the bar ----
+  // ---- base scene: the bar (fixed to the screen) ----
   const gScene = E('g', {}, svg);
   E('rect', { x: -4, y: cy - th / 2, width: W + 8, height: th, fill: '#c8c9cd' }, gScene);
   U.fill = E('rect', { x: -th, y: cy - th / 2, width: th, height: th, rx: th / 2, fill: 'url(#gBlueS)' }, gScene);
 
   // ---- glass shadow ----
   U.gShadow = E('g', { mask: 'url(#mOut)' }, svg);
-  E('rect', { x: lx, y: ly, width: LW, height: LH, rx: LR, fill: '#000', filter: 'url(#fSh)' }, U.gShadow);
+  E('rect', { x: lx0, y: ly, width: LW, height: LH, rx: LR, fill: '#000', filter: 'url(#fSh)' }, U.gShadow);
 
   // ---- magnified content inside the lens ----
   U.gMag = E('g', { 'clip-path': 'url(#lc)' }, svg);
-  E('rect', { x: lx, y: ly, width: LW, height: LH, rx: LR, fill: '#fff', opacity: 0.02 }, U.gMag);
-  E('rect', { x: fillX0, y: cy - thM / 2, width: W * Mx + 120, height: thM, fill: 'url(#gTrackM)' }, U.gMag);
+  E('rect', { x: lx0, y: ly, width: LW, height: LH, rx: LR, fill: '#fff', opacity: 0.02 }, U.gMag);
+  E('rect', { x: lx0 - 120, y: cy - thM / 2, width: LW + 240, height: thM, fill: 'url(#gTrackM)' }, U.gMag);
   U.fillM = E('rect', { x: fillX0, y: cy - thM / 2, width: 0, height: thM, rx: thM / 2, fill: 'url(#gBlue)' }, U.gMag);
 
-  // refraction flares at the lens edges (gray when track crosses, blue when fill covers)
+  // refraction flares at the lens edges (gray when track crosses, blue when liquid covers)
   const flare = (x, color, f) =>
     E('ellipse', { cx: x, cy, rx: LH * 0.09, ry: LH * 0.33, fill: color, filter: `url(#${f})`, opacity: 0 }, U.gMag);
-  U.flGrayL = flare(lx + LH * 0.07, '#bdbec3', 'bFlare');
-  U.flGrayR = flare(lx + LW - LH * 0.07, '#bdbec3', 'bFlare');
-  U.flBlueL = flare(lx + LH * 0.07, '#1266de', 'bFlare');
-  U.flBlueL2 = flare(lx + LH * 0.045, '#5aa8ff', 'bFlareS');
-  U.flBlueR = flare(lx + LW - LH * 0.07, '#1266de', 'bFlare');
-  U.flBlueR2 = flare(lx + LW - LH * 0.045, '#5aa8ff', 'bFlareS');
+  U.flGrayL = flare(lx0 + LH * 0.07, '#bdbec3', 'bFlare');
+  U.flGrayR = flare(lx0 + LW - LH * 0.07, '#bdbec3', 'bFlare');
+  U.flBlueL = flare(lx0 + LH * 0.07, '#1266de', 'bFlare');
+  U.flBlueL2 = flare(lx0 + LH * 0.045, '#5aa8ff', 'bFlareS');
+  U.flBlueR = flare(lx0 + LW - LH * 0.07, '#1266de', 'bFlare');
+  U.flBlueR2 = flare(lx0 + LW - LH * 0.045, '#5aa8ff', 'bFlareS');
   U.flBlueL2.setAttribute('ry', LH * 0.24);
   U.flBlueR2.setAttribute('ry', LH * 0.24);
 
   // dark refraction ring hugging the inside of the glass
-  E('rect', { x: lx, y: ly, width: LW, height: LH, rx: LR, fill: 'none',
+  E('rect', { x: lx0, y: ly, width: LW, height: LH, rx: LR, fill: 'none',
     stroke: 'rgba(50,62,88,0.18)', 'stroke-width': LH * 0.09, filter: 'url(#bRing)' }, U.gMag);
   // bright inner line (glass thickness)
   const i1 = LH * 0.05;
-  E('rect', { x: lx + i1, y: ly + i1, width: LW - 2 * i1, height: LH - 2 * i1, rx: LR - i1, fill: 'none',
+  E('rect', { x: lx0 + i1, y: ly + i1, width: LW - 2 * i1, height: LH - 2 * i1, rx: LR - i1, fill: 'none',
     stroke: 'rgba(255,255,255,0.75)', 'stroke-width': 2, filter: 'url(#bSoft)', opacity: 0.4 }, U.gMag);
 
   // ---- glass surface overlays ----
   U.gGlass = E('g', {}, svg);
   const gi = E('g', { 'clip-path': 'url(#lc)' }, U.gGlass);
-  E('ellipse', { cx, cy: ly + LH * 0.12, rx: LW * 0.3, ry: LH * 0.07, fill: 'url(#gSheen)',
+  E('ellipse', { cx: cx0, cy: ly + LH * 0.12, rx: LW * 0.3, ry: LH * 0.07, fill: 'url(#gSheen)',
     filter: 'url(#bSoft)', opacity: 0.3 }, gi);
-  E('ellipse', { cx, cy: ly + LH * 0.94, rx: LW * 0.3, ry: LH * 0.06, fill: '#fff',
+  E('ellipse', { cx: cx0, cy: ly + LH * 0.94, rx: LW * 0.3, ry: LH * 0.06, fill: '#fff',
     filter: 'url(#bSoft)', opacity: 0.16 }, gi);
-  E('path', { d: `M ${cx - LW * 0.04} ${ly + LH - 1.2} Q ${cx + LW * 0.22} ${ly + LH + 1} ${cx + LW * 0.34} ${ly + LH * 0.86}`,
+  E('path', { d: `M ${cx0 - LW * 0.04} ${ly + LH - 1.2} Q ${cx0 + LW * 0.22} ${ly + LH + 1} ${cx0 + LW * 0.34} ${ly + LH * 0.86}`,
     fill: 'none', stroke: 'url(#gGlint)', 'stroke-width': 2.6, 'stroke-linecap': 'round',
     filter: 'url(#bGlint)', opacity: 0.75 }, gi);
-  E('rect', { x: lx, y: ly, width: LW, height: LH, rx: LR, fill: 'none',
+  E('rect', { x: lx0, y: ly, width: LW, height: LH, rx: LR, fill: 'none',
     stroke: 'url(#gRim)', 'stroke-width': 1.6 }, U.gGlass);
 }
 
@@ -164,25 +171,25 @@ function frame(now) {
   const dt = Math.min(0.032, (now - (frame.t || now)) / 1000 || 0.016);
   frame.t = now;
 
-  // spring toward target — snappy while dragging, jelly bounce on release
-  const k = dragging ? 320 : 130;
-  const c = dragging ? 30 : 9.5;
-  vel += (k * (target - pd) - c * vel) * dt;
-  pd += vel * dt;
+  // lens spring — tight under the finger, bouncy on release
+  const k1 = dragging ? 420 : 170;
+  const c1 = dragging ? 36 : 12;
+  lensV += (k1 * (targetX - lensX) - c1 * lensV) * dt;
+  lensX += lensV * dt;
 
-  // lens leans slightly toward the motion
-  const lt = clamp((target - pd) * LW * 0.3, -10, 10);
-  lvel += (240 * (lt - loff) - 22 * lvel) * dt;
-  loff += lvel * dt;
+  // liquid spring — softer, so it lags and sloshes after the lens
+  fillV += (150 * (lensX + capOff - fillE) - 10 * fillV) * dt;
+  fillE += fillV * dt;
 
-  const end = pd * W;
-  U.fill.setAttribute('width', Math.max(th, end + th));
+  const dx = lensX - cx0;
+  U.fill.setAttribute('width', Math.max(th, fillE + th));
 
-  const endM = cx + (end - cx) * Mx;
-  U.fillM.setAttribute('width', Math.max(0, endM - fillX0));
+  // refraction: magnify the (static) scene about the moving lens center
+  const endLocal = cx0 + (fillE - lensX) * Mx;
+  U.fillM.setAttribute('width', Math.max(0, endLocal - fillX0));
 
-  const oL = clamp((endM - edgeL) / (LH * 0.25), 0, 1);
-  const oR = clamp((endM - edgeR) / (LH * 0.25), 0, 1);
+  const oL = clamp((endLocal - edgeL) / (LH * 0.25), 0, 1);
+  const oR = clamp((endLocal - edgeR) / (LH * 0.25), 0, 1);
   U.flBlueL.setAttribute('opacity', oL * 0.85);
   U.flBlueL2.setAttribute('opacity', oL * 0.55);
   U.flBlueR.setAttribute('opacity', oR * 0.85);
@@ -190,7 +197,9 @@ function frame(now) {
   U.flGrayL.setAttribute('opacity', (1 - oL) * 0.4);
   U.flGrayR.setAttribute('opacity', (1 - oR) * 0.4);
 
-  const tf = `translate(${loff.toFixed(2)} 0)`;
+  // soft squash while moving fast, about the lens center
+  const q = clamp(Math.abs(lensV) * 0.00022, 0, 0.05);
+  const tf = `translate(${dx.toFixed(2)} 0) translate(${cx0} ${cy}) scale(${(1 - q).toFixed(4)} ${(1 + q * 0.7).toFixed(4)}) translate(${-cx0} ${-cy})`;
   U.gShadow.setAttribute('transform', tf);
   U.gMag.setAttribute('transform', tf);
   U.gGlass.setAttribute('transform', tf);
@@ -199,15 +208,16 @@ function frame(now) {
 }
 
 svg.addEventListener('pointerdown', e => {
-  dragging = true; sx = e.clientX; sp = target;
+  dragging = true; sx = e.clientX; spX = targetX;
   svg.setPointerCapture(e.pointerId);
 });
 svg.addEventListener('pointermove', e => {
   if (!dragging) return;
-  const raw = sp + (e.clientX - sx) / W * 1.15;
-  target = raw < 0 ? raw * 0.3 : raw > 1 ? 1 + (raw - 1) * 0.3 : raw;   // rubber band past the ends
+  const raw = spX + (e.clientX - sx);
+  targetX = raw < XMIN ? XMIN + (raw - XMIN) * 0.35        // rubber band past the ends
+          : raw > XMAX ? XMAX + (raw - XMAX) * 0.35 : raw;
 });
-const release = () => { dragging = false; target = clamp(target, 0, 1); };
+const release = () => { dragging = false; targetX = clamp(targetX, XMIN, XMAX); };
 svg.addEventListener('pointerup', release);
 svg.addEventListener('pointercancel', release);
 addEventListener('resize', build);
