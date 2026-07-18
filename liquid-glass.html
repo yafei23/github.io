@@ -31,6 +31,7 @@
 const NS = 'http://www.w3.org/2000/svg';
 const svg = document.getElementById('s');
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
 
 function E(tag, attrs, parent) {
   const e = document.createElementNS(NS, tag);
@@ -47,34 +48,46 @@ function blurF(defs, id, d) {
   E('feGaussianBlur', { stdDeviation: d }, f);
 }
 
-// The lens is the thing you drag. The bar stays put; the liquid level
-// chases the lens with a softer spring, so fast swipes make it slosh.
-let lensX, lensV = 0, targetX;        // lens center
-let fillE, fillV = 0;                 // liquid level (screen x of the fill's end)
-let dragging = false, sx = 0, spX = 0;
+// Two tracks cross at the screen center like a subway junction. The lens
+// is the draggable thumb, constrained to the cross; the liquid chases it
+// on a softer spring, lighting the route from the left terminus.
+let lensX, lensY, lensVX = 0, lensVY = 0, tX, tY;
+let fillX, fillY, fillVX = 0, fillVY = 0, fillOnV = false;
+let dragging = false, sx = 0, sy = 0, spX = 0, spY = 0;
 
-let W, H, cx0, cy, th, LW, LH, lx0, ly, LR, Mx, My, thM, capOff;
-let XMIN, XMAX, fillX0, edgeL, edgeR;
+let W, H, cx, cy, cx0, th, LW, LH, lx0, ly, LR, MXH, MTH, thM;
+let XMIN, XMAX, YMIN, YMAX, edgeL, edgeR, edgeT, edgeB;
 const U = {};                         // nodes updated every frame
+
+function projCross(x, y, m) {
+  // nearest point on the cross (m = extra overshoot margin for spring bounce)
+  const onV = Math.abs(x - cx) < Math.abs(y - cy);
+  return onV
+    ? { x: cx, y: clamp(y, YMIN - m, YMAX + m), onV: true }
+    : { x: clamp(x, XMIN - m, XMAX + m), y: cy, onV: false };
+}
 
 function build() {
   svg.innerHTML = '';
   W = innerWidth; H = innerHeight;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
 
-  cx0 = W / 2; cy = H / 2;                                 // lens geometry is built centered,
+  cx = W / 2; cy = H / 2; cx0 = cx;                        // lens geometry is built centered,
   th = Math.max(10, Math.round(Math.min(W, H) * 0.031));   // then moved by a group transform
   LW = Math.min(W * 0.54, 250);
   LH = LW * 0.68;
   lx0 = cx0 - LW / 2; ly = cy - LH / 2; LR = LH * 0.42;
-  Mx = 1.16; My = 3.0; thM = th * My;
-  capOff = LW * 0.05;                                      // liquid rests just right of center
+  MXH = 1.16; MTH = 3.0; thM = th * MTH;                   // along-axis / cross-axis magnification
   XMIN = LW / 2 + 8; XMAX = W - LW / 2 - 8;
-  fillX0 = lx0 - thM * 2;
+  YMIN = LH / 2 + 64; YMAX = H - LH / 2 - 40;
   edgeL = lx0 + LH * 0.12; edgeR = lx0 + LW - LH * 0.12;
+  edgeT = ly + LH * 0.12; edgeB = ly + LH - LH * 0.12;
 
-  lensX = targetX = clamp(lensX ?? cx0, XMIN, XMAX);
-  fillE = fillE ?? lensX + capOff;
+  lensX = tX = clamp(lensX ?? cx, XMIN, XMAX);
+  lensY = tY = clamp(lensY ?? cy, YMIN, YMAX);
+  const p0 = projCross(lensX, lensY, 0);
+  lensX = p0.x; lensY = p0.y;
+  fillX = fillX ?? lensX; fillY = fillY ?? lensY;
 
   const defs = E('defs', {}, svg);
 
@@ -82,8 +95,11 @@ function build() {
   E('rect', { x: lx0, y: ly, width: LW, height: LH, rx: LR }, cp);
 
   grad(defs, 'gBlue', 0, cy - thM / 2, 0, cy + thM / 2, [[0, '#3f8cee'], [0.45, '#1266de'], [1, '#0d55c4']]);
+  grad(defs, 'gBlueV', cx0 - thM / 2, 0, cx0 + thM / 2, 0, [[0, '#3f8cee'], [0.45, '#1266de'], [1, '#0d55c4']]);
   grad(defs, 'gBlueS', 0, cy - th / 2, 0, cy + th / 2, [[0, '#2f7fe8'], [1, '#0f5ccd']]);
+  grad(defs, 'gBlueSV', cx - th / 2, 0, cx + th / 2, 0, [[0, '#2f7fe8'], [1, '#0f5ccd']]);
   grad(defs, 'gTrackM', 0, cy - thM / 2, 0, cy + thM / 2, [[0, '#d2d3d7'], [1, '#c3c4c9']]);
+  grad(defs, 'gTrackMV', cx0 - thM / 2, 0, cx0 + thM / 2, 0, [[0, '#d2d3d7'], [1, '#c3c4c9']]);
   grad(defs, 'gRim', 0, ly, 0, ly + LH, [
     [0, '#fff', 0.95], [0.3, '#fff', 0.3], [0.7, '#fff', 0.22], [1, '#fff', 0.8]
   ]);
@@ -114,14 +130,16 @@ function build() {
 
   // mask: keep the shadow outside the glass so the interior stays clear
   // (oversized so it still covers the viewport wherever the lens slides)
-  const mk = E('mask', { id: 'mOut', maskUnits: 'userSpaceOnUse', x: -W, y: 0, width: 3 * W, height: H }, defs);
-  E('rect', { x: -W, y: 0, width: 3 * W, height: H, fill: '#fff' }, mk);
+  const mk = E('mask', { id: 'mOut', maskUnits: 'userSpaceOnUse', x: -W, y: -H, width: 3 * W, height: 3 * H }, defs);
+  E('rect', { x: -W, y: -H, width: 3 * W, height: 3 * H, fill: '#fff' }, mk);
   E('rect', { x: lx0, y: ly, width: LW, height: LH, rx: LR, fill: '#000' }, mk);
 
-  // ---- base scene: the bar (fixed to the screen) ----
+  // ---- base scene: the crossing tracks (fixed to the screen) ----
   const gScene = E('g', {}, svg);
   E('rect', { x: -4, y: cy - th / 2, width: W + 8, height: th, fill: '#c8c9cd' }, gScene);
-  U.fill = E('rect', { x: -th, y: cy - th / 2, width: th, height: th, rx: th / 2, fill: 'url(#gBlueS)' }, gScene);
+  E('rect', { x: cx - th / 2, y: -4, width: th, height: H + 8, fill: '#c8c9cd' }, gScene);
+  U.routeH = E('path', { fill: 'none', stroke: 'url(#gBlueS)', 'stroke-width': th, 'stroke-linecap': 'round' }, gScene);
+  U.routeV = E('path', { fill: 'none', stroke: 'url(#gBlueSV)', 'stroke-width': th, 'stroke-linecap': 'round' }, gScene);
 
   // ---- glass shadow ----
   U.gShadow = E('g', { mask: 'url(#mOut)' }, svg);
@@ -130,20 +148,26 @@ function build() {
   // ---- magnified content inside the lens ----
   U.gMag = E('g', { 'clip-path': 'url(#lc)' }, svg);
   E('rect', { x: lx0, y: ly, width: LW, height: LH, rx: LR, fill: '#fff', opacity: 0.02 }, U.gMag);
-  E('rect', { x: lx0 - 120, y: cy - thM / 2, width: LW + 240, height: thM, fill: 'url(#gTrackM)' }, U.gMag);
-  U.fillM = E('rect', { x: fillX0, y: cy - thM / 2, width: 0, height: thM, rx: thM / 2, fill: 'url(#gBlue)' }, U.gMag);
+  U.mTrackH = E('path', { fill: 'none', stroke: 'url(#gTrackM)' }, U.gMag);
+  U.mTrackV = E('path', { fill: 'none', stroke: 'url(#gTrackMV)' }, U.gMag);
+  U.mFillH = E('path', { fill: 'none', stroke: 'url(#gBlue)', 'stroke-linecap': 'round' }, U.gMag);
+  U.mFillV = E('path', { fill: 'none', stroke: 'url(#gBlueV)', 'stroke-linecap': 'round' }, U.gMag);
 
-  // refraction flares at the lens edges (gray when track crosses, blue when liquid covers)
-  const flare = (x, color, f) =>
-    E('ellipse', { cx: x, cy, rx: LH * 0.09, ry: LH * 0.33, fill: color, filter: `url(#${f})`, opacity: 0 }, U.gMag);
-  U.flGrayL = flare(lx0 + LH * 0.07, '#bdbec3', 'bFlare');
-  U.flGrayR = flare(lx0 + LW - LH * 0.07, '#bdbec3', 'bFlare');
-  U.flBlueL = flare(lx0 + LH * 0.07, '#1266de', 'bFlare');
-  U.flBlueL2 = flare(lx0 + LH * 0.045, '#5aa8ff', 'bFlareS');
-  U.flBlueR = flare(lx0 + LW - LH * 0.07, '#1266de', 'bFlare');
-  U.flBlueR2 = flare(lx0 + LW - LH * 0.045, '#5aa8ff', 'bFlareS');
-  U.flBlueL2.setAttribute('ry', LH * 0.24);
-  U.flBlueR2.setAttribute('ry', LH * 0.24);
+  // refraction flares at the four lens edges
+  const flare = (x, y, rx, ry, color, f) =>
+    E('ellipse', { cx: x, cy: y, rx, ry, fill: color, filter: `url(#${f})`, opacity: 0 }, U.gMag);
+  U.flGrayL = flare(lx0 + LH * 0.07, cy, LH * 0.09, LH * 0.33, '#bdbec3', 'bFlare');
+  U.flGrayR = flare(lx0 + LW - LH * 0.07, cy, LH * 0.09, LH * 0.33, '#bdbec3', 'bFlare');
+  U.flBlueL = flare(lx0 + LH * 0.07, cy, LH * 0.09, LH * 0.33, '#1266de', 'bFlare');
+  U.flBlueL2 = flare(lx0 + LH * 0.045, cy, LH * 0.09, LH * 0.24, '#5aa8ff', 'bFlareS');
+  U.flBlueR = flare(lx0 + LW - LH * 0.07, cy, LH * 0.09, LH * 0.33, '#1266de', 'bFlare');
+  U.flBlueR2 = flare(lx0 + LW - LH * 0.045, cy, LH * 0.09, LH * 0.24, '#5aa8ff', 'bFlareS');
+  U.flGrayT = flare(cx0, ly + LH * 0.07, LH * 0.24, LH * 0.09, '#bdbec3', 'bFlare');
+  U.flGrayB = flare(cx0, ly + LH - LH * 0.07, LH * 0.24, LH * 0.09, '#bdbec3', 'bFlare');
+  U.flBlueT = flare(cx0, ly + LH * 0.07, LH * 0.24, LH * 0.09, '#1266de', 'bFlare');
+  U.flBlueT2 = flare(cx0, ly + LH * 0.045, LH * 0.17, LH * 0.09, '#5aa8ff', 'bFlareS');
+  U.flBlueB = flare(cx0, ly + LH - LH * 0.07, LH * 0.24, LH * 0.09, '#1266de', 'bFlare');
+  U.flBlueB2 = flare(cx0, ly + LH - LH * 0.045, LH * 0.17, LH * 0.09, '#5aa8ff', 'bFlareS');
 
   // dark refraction ring hugging the inside of the glass
   E('rect', { x: lx0, y: ly, width: LW, height: LH, rx: LR, fill: 'none',
@@ -174,32 +198,77 @@ function frame(now) {
   // lens spring — tight under the finger, bouncy on release
   const k1 = dragging ? 420 : 170;
   const c1 = dragging ? 36 : 12;
-  lensV += (k1 * (targetX - lensX) - c1 * lensV) * dt;
-  lensX += lensV * dt;
+  lensVX += (k1 * (tX - lensX) - c1 * lensVX) * dt;
+  lensVY += (k1 * (tY - lensY) - c1 * lensVY) * dt;
+  const lp = projCross(lensX + lensVX * dt, lensY + lensVY * dt, 30);
+  lensX = lp.x; lensY = lp.y;
 
   // liquid spring — softer, so it lags and sloshes after the lens
-  fillV += (150 * (lensX + capOff - fillE) - 10 * fillV) * dt;
-  fillE += fillV * dt;
+  fillVX += (150 * (lensX - fillX) - 10 * fillVX) * dt;
+  fillVY += (150 * (lensY - fillY) - 10 * fillVY) * dt;
+  const fp = projCross(fillX + fillVX * dt, fillY + fillVY * dt, 30);
+  fillX = fp.x; fillY = fp.y;
+  fillOnV = fp.onV;
 
-  const dx = lensX - cx0;
-  U.fill.setAttribute('width', Math.max(th, fillE + th));
+  // blend of magnification axes: 0 = on the horizontal track, 1 = vertical
+  const b = clamp(0.5 + (Math.abs(lensY - cy) - Math.abs(lensX - cx)) / 40, 0, 1);
+  const MX = lerp(MXH, MTH, b);       // horizontal magnification
+  const MY = lerp(MTH, MXH, b);       // vertical magnification
+  const mapX = x => cx0 + (x - lensX) * MX;
+  const mapY = y => cy + (y - lensY) * MY;
 
-  // refraction: magnify the (static) scene about the moving lens center
-  const endLocal = cx0 + (fillE - lensX) * Mx;
-  U.fillM.setAttribute('width', Math.max(0, endLocal - fillX0));
+  // route: left terminus -> junction -> chosen branch (screen space)
+  const hx = fillOnV ? cx : fillX;
+  U.routeH.setAttribute('d', `M ${-th} ${cy} L ${hx} ${cy}`);
+  U.routeV.setAttribute('d', fillOnV ? `M ${cx} ${cy} L ${cx} ${fillY}` : 'M -10 -10');
 
-  const oL = clamp((endLocal - edgeL) / (LH * 0.25), 0, 1);
-  const oR = clamp((endLocal - edgeR) / (LH * 0.25), 0, 1);
-  U.flBlueL.setAttribute('opacity', oL * 0.85);
-  U.flBlueL2.setAttribute('opacity', oL * 0.55);
-  U.flBlueR.setAttribute('opacity', oR * 0.85);
-  U.flBlueR2.setAttribute('opacity', oR * 0.55);
-  U.flGrayL.setAttribute('opacity', (1 - oL) * 0.4);
-  U.flGrayR.setAttribute('opacity', (1 - oR) * 0.4);
+  // magnified cross inside the lens
+  const yH = mapY(cy), xV = mapX(cx);
+  const wH = th * MY, wV = th * MX;
+  U.mTrackH.setAttribute('d', `M ${lx0 - 140} ${yH} L ${lx0 + LW + 140} ${yH}`);
+  U.mTrackH.setAttribute('stroke-width', wH);
+  U.mTrackV.setAttribute('d', `M ${xV} ${ly - 140} L ${xV} ${ly + LH + 140}`);
+  U.mTrackV.setAttribute('stroke-width', wV);
+  const hEnd = mapX(hx);
+  U.mFillH.setAttribute('d', `M ${lx0 - 200} ${yH} L ${hEnd} ${yH}`);
+  U.mFillH.setAttribute('stroke-width', wH);
+  U.mFillV.setAttribute('d', fillOnV ? `M ${xV} ${mapY(cy)} L ${xV} ${mapY(fillY)}` : 'M -10 -10');
+  U.mFillV.setAttribute('stroke-width', wV);
 
-  // soft squash while moving fast, about the lens center
-  const q = clamp(Math.abs(lensV) * 0.00022, 0, 0.05);
-  const tf = `translate(${dx.toFixed(2)} 0) translate(${cx0} ${cy}) scale(${(1 - q).toFixed(4)} ${(1 + q * 0.7).toFixed(4)}) translate(${-cx0} ${-cy})`;
+  // edge flares: visible only where the bar actually crosses the glass edge
+  const fH = clamp((LH * 0.55 - Math.abs(yH - cy)) / (LH * 0.2), 0, 1);
+  const fV = clamp((LW * 0.55 - Math.abs(xV - cx0)) / (LW * 0.2), 0, 1);
+  const oL = clamp((hEnd - edgeL) / (LH * 0.25), 0, 1);
+  const oR = clamp((hEnd - edgeR) / (LH * 0.25), 0, 1);
+  // vertical blue runs between the junction and the liquid end; an edge
+  // glows blue only if that segment actually crosses it
+  let oT = 0, oB = 0;
+  if (fillOnV) {
+    const yJ = mapY(cy), vEnd = mapY(fillY);
+    const yA = Math.min(yJ, vEnd), yB = Math.max(yJ, vEnd);
+    oT = clamp((edgeT - yA) / (LH * 0.25), 0, 1) * clamp((yB - edgeT) / (LH * 0.25), 0, 1);
+    oB = clamp((edgeB - yA) / (LH * 0.25), 0, 1) * clamp((yB - edgeB) / (LH * 0.25), 0, 1);
+  }
+  U.flBlueL.setAttribute('opacity', oL * 0.85 * fH);
+  U.flBlueL2.setAttribute('opacity', oL * 0.55 * fH);
+  U.flBlueR.setAttribute('opacity', oR * 0.85 * fH);
+  U.flBlueR2.setAttribute('opacity', oR * 0.55 * fH);
+  U.flGrayL.setAttribute('opacity', (1 - oL) * 0.4 * fH);
+  U.flGrayR.setAttribute('opacity', (1 - oR) * 0.4 * fH);
+  U.flBlueT.setAttribute('opacity', oT * 0.85 * fV);
+  U.flBlueT2.setAttribute('opacity', oT * 0.55 * fV);
+  U.flBlueB.setAttribute('opacity', oB * 0.85 * fV);
+  U.flBlueB2.setAttribute('opacity', oB * 0.55 * fV);
+  U.flGrayT.setAttribute('opacity', (1 - oT) * 0.4 * fV);
+  U.flGrayB.setAttribute('opacity', (1 - oB) * 0.4 * fV);
+
+  // soft squash along the direction of motion, about the lens center
+  const qh = clamp(Math.abs(lensVX) * 0.00022, 0, 0.05);
+  const qv = clamp(Math.abs(lensVY) * 0.00022, 0, 0.05);
+  const sX = ((1 - qh) * (1 + qv * 0.7)).toFixed(4);
+  const sY = ((1 + qh * 0.7) * (1 - qv)).toFixed(4);
+  const dx = (lensX - cx0).toFixed(2), dy = (lensY - cy).toFixed(2);
+  const tf = `translate(${dx} ${dy}) translate(${cx0} ${cy}) scale(${sX} ${sY}) translate(${-cx0} ${-cy})`;
   U.gShadow.setAttribute('transform', tf);
   U.gMag.setAttribute('transform', tf);
   U.gGlass.setAttribute('transform', tf);
@@ -208,16 +277,23 @@ function frame(now) {
 }
 
 svg.addEventListener('pointerdown', e => {
-  dragging = true; sx = e.clientX; spX = targetX;
+  dragging = true; sx = e.clientX; sy = e.clientY; spX = tX; spY = tY;
   svg.setPointerCapture(e.pointerId);
 });
 svg.addEventListener('pointermove', e => {
   if (!dragging) return;
-  const raw = spX + (e.clientX - sx);
-  targetX = raw < XMIN ? XMIN + (raw - XMIN) * 0.35        // rubber band past the ends
-          : raw > XMAX ? XMAX + (raw - XMAX) * 0.35 : raw;
+  let vx = spX + (e.clientX - sx);
+  let vy = spY + (e.clientY - sy);
+  vx = vx < XMIN ? XMIN + (vx - XMIN) * 0.35 : vx > XMAX ? XMAX + (vx - XMAX) * 0.35 : vx;
+  vy = vy < YMIN ? YMIN + (vy - YMIN) * 0.35 : vy > YMAX ? YMAX + (vy - YMAX) * 0.35 : vy;
+  const t = projCross(vx, vy, 0);
+  tX = t.x; tY = t.y;
 });
-const release = () => { dragging = false; targetX = clamp(targetX, XMIN, XMAX); };
+const release = () => {
+  dragging = false;
+  const t = projCross(tX, tY, 0);
+  tX = t.x; tY = t.y;
+};
 svg.addEventListener('pointerup', release);
 svg.addEventListener('pointercancel', release);
 addEventListener('resize', build);
