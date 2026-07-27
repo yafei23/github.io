@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>PHANTOM GCS · 无人机地面站</title>
+<style>
+  :root{
+    --hud:#8df0a0;
+    --hud-dim:rgba(141,240,160,.55);
+    --amber:#ffc24b;
+    --red:#ff5252;
+    --panel:rgba(10,14,12,.72);
+    --panel-border:rgba(141,240,160,.22);
+    --mono:ui-monospace,'SF Mono','Cascadia Mono',Consolas,'Courier New',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:var(--mono);
+    -webkit-user-select:none;user-select:none;color:var(--hud)}
+  #world{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+  /* 镜头暗角 + 扫描噪点 */
+  #vignette{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45) 100%)}
+  #grain{position:absolute;inset:0;pointer-events:none;opacity:.03;mix-blend-mode:overlay;
+    background-image:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 3px)}
+
+  .panel{position:absolute;background:var(--panel);border:1px solid var(--panel-border);
+    border-radius:8px;backdrop-filter:blur(6px);padding:8px 10px;font-size:12px;line-height:1.55}
+
+  /* ── 顶栏 ─────────────────────────── */
+  #topbar{position:absolute;top:0;left:0;right:0;height:44px;display:flex;align-items:center;
+    gap:14px;padding:0 14px;background:linear-gradient(180deg,rgba(0,0,0,.78),rgba(0,0,0,.25));
+    border-bottom:1px solid rgba(141,240,160,.14);font-size:12px;z-index:5}
+  #topbar .sep{width:1px;height:22px;background:rgba(141,240,160,.18)}
+  .tb-item{display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .tb-label{color:rgba(141,240,160,.5);font-size:10px}
+  #fmode{font-weight:700;letter-spacing:1px;color:#fff;background:rgba(141,240,160,.16);
+    border:1px solid var(--panel-border);border-radius:4px;padding:2px 10px;cursor:pointer}
+  .bars{display:flex;align-items:flex-end;gap:2px;height:14px}
+  .bars i{width:3px;background:var(--hud);border-radius:1px;opacity:.25}
+  .bars i.on{opacity:1}
+  .bars i:nth-child(1){height:4px}.bars i:nth-child(2){height:7px}
+  .bars i:nth-child(3){height:10px}.bars i:nth-child(4){height:13px}.bars i:nth-child(5){height:14px}
+  #batt-pill{display:flex;align-items:center;gap:8px}
+  #batt-shell{width:56px;height:16px;border:1px solid var(--hud);border-radius:3px;position:relative;padding:2px}
+  #batt-shell::after{content:'';position:absolute;right:-4px;top:4px;width:3px;height:8px;
+    background:var(--hud);border-radius:0 2px 2px 0}
+  #batt-fill{height:100%;background:var(--hud);border-radius:1px;transition:width .5s}
+  #batt-pct{font-size:14px;font-weight:700;color:#fff}
+  .warn-amber{color:var(--amber)!important}.warn-red{color:var(--red)!important}
+  #batt-fill.warn-amber{background:var(--amber)}#batt-fill.warn-red{background:var(--red)}
+  #clock{margin-left:auto;color:rgba(141,240,160,.6)}
+
+  /* ── 中央警告 ─────────────────────── */
+  #alert{position:absolute;top:14%;left:50%;transform:translateX(-50%);z-index:6;
+    font-size:17px;font-weight:700;letter-spacing:2px;color:var(--red);
+    background:rgba(40,0,0,.55);border:1px solid rgba(255,82,82,.5);border-radius:6px;
+    padding:6px 22px;display:none;animation:blink 1s step-end infinite}
+  @keyframes blink{50%{opacity:.25}}
+
+  /* ── 左侧遥测 ─────────────────────── */
+  #telemetry{left:14px;top:58px;width:196px;z-index:4}
+  #telemetry h4,#campanel h4{font-size:10px;letter-spacing:2px;color:rgba(141,240,160,.5);
+    border-bottom:1px solid rgba(141,240,160,.15);padding-bottom:4px;margin-bottom:6px}
+  .tele-row{display:flex;justify-content:space-between}
+  .tele-row b{color:#fff;font-weight:600}
+
+  /* ── 右侧相机 ─────────────────────── */
+  #campanel{right:14px;top:58px;width:150px;z-index:4;text-align:center}
+  #rec-btn{width:52px;height:52px;border-radius:50%;border:3px solid #fff;background:transparent;
+    margin:6px auto;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  #rec-btn i{width:26px;height:26px;border-radius:50%;background:var(--red);transition:all .2s}
+  #rec-btn.rec i{border-radius:5px;width:20px;height:20px}
+  #shutter-btn{width:44px;height:44px;border-radius:50%;border:3px solid #fff;background:#fff3;
+    margin:2px auto 8px;cursor:pointer}
+  #rec-time{color:var(--red);font-weight:700;visibility:hidden}
+  #rec-time.rec{visibility:visible}
+  .cam-meta{display:flex;justify-content:space-around;font-size:10px;color:rgba(255,255,255,.75);margin-top:6px}
+  .cam-meta b{display:block;color:#fff;font-size:11px}
+  #gimbal-wrap{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:10px;font-size:10px}
+  #gimbal{writing-mode:vertical-lr;direction:rtl;height:110px;accent-color:var(--hud)}
+
+  /* ── 底部操作区 ───────────────────── */
+  #actionbar{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;
+    gap:10px;z-index:6}
+  .act-btn{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:1px;color:var(--hud);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;
+    padding:10px 16px;cursor:pointer;backdrop-filter:blur(6px);transition:all .15s}
+  .act-btn:hover{background:rgba(141,240,160,.18)}
+  .act-btn:disabled{opacity:.35;cursor:not-allowed}
+  .act-btn.danger{color:var(--red);border-color:rgba(255,82,82,.4)}
+  .act-btn.active{background:rgba(141,240,160,.25);box-shadow:0 0 12px rgba(141,240,160,.35)}
+
+  /* ── 摇杆 ─────────────────────────── */
+  .stick-zone{position:absolute;bottom:26px;width:128px;height:128px;border-radius:50%;
+    border:1px solid rgba(141,240,160,.3);background:radial-gradient(circle,rgba(141,240,160,.06),rgba(0,0,0,.35));
+    z-index:6;touch-action:none}
+  #stickL{left:200px}#stickR{right:200px}
+  .stick-nub{position:absolute;left:50%;top:50%;width:48px;height:48px;border-radius:50%;
+    transform:translate(-50%,-50%);background:radial-gradient(circle at 35% 30%,#c9ffd4,#3f7a4c 70%,#1d3a25);
+    border:2px solid rgba(255,255,255,.35);box-shadow:0 4px 10px rgba(0,0,0,.6)}
+  .stick-tag{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:9px;
+    color:rgba(141,240,160,.55);letter-spacing:1px;white-space:nowrap}
+  .stick-zone .cross{position:absolute;background:rgba(141,240,160,.15)}
+  .stick-zone .cross.h{left:8px;right:8px;top:50%;height:1px}
+  .stick-zone .cross.v{top:8px;bottom:8px;left:50%;width:1px}
+
+  /* ── 小地图 ───────────────────────── */
+  #mapbox{left:14px;bottom:26px;width:172px;z-index:4;padding:6px}
+  #minimap{width:100%;display:block;border-radius:4px;background:#08130c}
+  #map-meta{display:flex;justify-content:space-between;font-size:10px;margin-top:4px;color:rgba(141,240,160,.6)}
+
+  /* ── 消息日志 ─────────────────────── */
+  #msglog{right:14px;bottom:170px;width:250px;height:118px;z-index:4;overflow:hidden;
+    display:flex;flex-direction:column;justify-content:flex-end;font-size:11px}
+  #msglog p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85}
+  #msglog p.warn{color:var(--amber)}#msglog p.err{color:var(--red)}
+  #msglog p time{color:rgba(141,240,160,.45);margin-right:6px}
+
+  /* ── 开机自检遮罩 ─────────────────── */
+  #boot{position:absolute;inset:0;background:#04070a;z-index:20;display:flex;
+    flex-direction:column;align-items:center;justify-content:center;gap:20px}
+  #boot h1{font-size:26px;letter-spacing:8px;color:#fff;font-weight:300}
+  #boot h1 b{color:var(--hud);font-weight:700}
+  #boot-log{width:min(420px,80vw);height:150px;font-size:12px;color:var(--hud-dim);
+    overflow:hidden;line-height:1.7}
+  #boot-log .ok{color:var(--hud)}
+  #connect-btn{font-family:var(--mono);font-size:15px;letter-spacing:3px;color:#04140a;
+    background:var(--hud);border:none;border-radius:6px;padding:12px 40px;cursor:pointer;font-weight:700}
+  #connect-btn:disabled{opacity:.35}
+  #photo-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:15}
+
+  #sndbtn{font-family:var(--mono);font-size:11px;color:var(--hud);background:transparent;
+    border:1px solid var(--panel-border);border-radius:4px;padding:2px 8px;cursor:pointer}
+  @media(max-width:900px){
+    #telemetry,#msglog{display:none}
+    #stickL{left:24px}#stickR{right:24px}
+    #mapbox{display:none}
+  }
+</style>
+</head>
+<body>
+<canvas id="world"></canvas>
+<div id="vignette"></div><div id="grain"></div><div id="photo-flash"></div>
+
+<div id="topbar">
+  <div class="tb-item" id="fmode">未连接</div>
+  <div class="sep"></div>
+  <div class="tb-item"><span class="tb-label">GPS</span><span id="sats" style="color:#fff">--</span>
+    <div class="bars" id="gps-bars"><i></i><i></i><i></i><i></i><i></i></div></div>
+  <div class="sep"></div>
+  <div class="tb-item"><span class="tb-label">遥控</span>
+    <div class="bars" id="rc-bars"><i></i><i></i><i></i><i></i><i></i></div></div>
+  <div class="tb-item"><span class="tb-label">图传</span>
+    <div class="bars" id="vid-bars"><i></i><i></i><i></i><i></i><i></i></div></div>
+  <div class="sep"></div>
+  <div class="tb-item" id="batt-pill">
+    <div id="batt-shell"><div id="batt-fill" style="width:98%"></div></div>
+    <span id="batt-pct">--%</span><span id="batt-v" class="tb-label">--.-V</span></div>
+  <div class="sep"></div>
+  <div class="tb-item"><span class="tb-label">飞行时间</span><span id="ftime" style="color:#fff">00:00</span></div>
+  <span id="clock"></span>
+  <button id="sndbtn" title="电机音效">🔊 音效</button>
+</div>
+
+<div id="alert"></div>
+
+<div class="panel" id="telemetry">
+  <h4>TELEMETRY · 遥测</h4>
+  <div class="tele-row"><span>水平速度</span><b><span id="t-hs">0.0</span> m/s</b></div>
+  <div class="tele-row"><span>垂直速度</span><b><span id="t-vs">0.0</span> m/s</b></div>
+  <div class="tele-row"><span>相对高度</span><b><span id="t-alt">0.0</span> m</b></div>
+  <div class="tele-row"><span>返航点距离</span><b><span id="t-dist">0</span> m</b></div>
+  <div class="tele-row"><span>机头朝向</span><b><span id="t-hdg">0</span>°</b></div>
+  <div class="tele-row"><span>俯仰 / 横滚</span><b><span id="t-att">0 / 0</span>°</b></div>
+  <div class="tele-row"><span>风速·风向</span><b><span id="t-wind">--</span></b></div>
+  <div class="tele-row"><span>电机转速</span><b><span id="t-rpm">0</span> rpm</b></div>
+</div>
+
+<div class="panel" id="campanel">
+  <h4>CAMERA · 相机</h4>
+  <div id="rec-time">● 00:00</div>
+  <div id="rec-btn" title="录像"><i></i></div>
+  <div id="shutter-btn" title="拍照"></div>
+  <div class="cam-meta">
+    <span>ISO<b id="cm-iso">100</b></span>
+    <span>快门<b id="cm-shutter">1/1000</b></span>
+    <span>EV<b id="cm-ev">+0.0</b></span>
+  </div>
+  <div id="gimbal-wrap">
+    <span>云台<br><b id="gimbal-val" style="color:#fff">0°</b></span>
+    <input type="range" id="gimbal" min="-90" max="30" value="0" step="1">
+  </div>
+</div>
+
+<div class="panel" id="mapbox">
+  <canvas id="minimap" width="160" height="160"></canvas>
+  <div id="map-meta"><span>N ↑</span><span id="map-scale">50 m</span></div>
+</div>
+
+<div class="panel" id="msglog"></div>
+
+<div id="actionbar">
+  <button class="act-btn" id="btn-arm" disabled>解 锁</button>
+  <button class="act-btn" id="btn-takeoff" disabled>一键起飞</button>
+  <button class="act-btn" id="btn-land" disabled>降 落</button>
+  <button class="act-btn" id="btn-rth" disabled>智能返航</button>
+</div>
+
+<div class="stick-zone" id="stickL">
+  <span class="stick-tag">油门 / 偏航 (W S A D)</span>
+  <div class="cross h"></div><div class="cross v"></div>
+  <div class="stick-nub"></div>
+</div>
+<div class="stick-zone" id="stickR">
+  <span class="stick-tag">俯仰 / 横滚 (↑ ↓ ← →)</span>
+  <div class="cross h"></div><div class="cross v"></div>
+  <div class="stick-nub"></div>
+</div>
+
+<div id="boot">
+  <h1>PHANTOM <b>GCS</b></h1>
+  <div id="boot-log"></div>
+  <button id="connect-btn">连接飞行器</button>
+</div>
+
+<script>
+'use strict';
+/* ═══════════════════ 工具 ═══════════════════ */
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const D2R=Math.PI/180, G=9.81;
+const wrap360=a=>((a%360)+360)%360;
+const angDiff=(a,b)=>{let d=wrap360(b-a);return d>180?d-360:d};
+
+/* ═══════════════════ 状态 ═══════════════════ */
+const MODES={
+  GPS:  {name:'定位 GPS',  tilt:25, yaw:75,  climb:5,  spd:14},
+  SPORT:{name:'运动 SPORT',tilt:35, yaw:150, climb:6,  spd:21},
+  CINE: {name:'平稳 CINE', tilt:12, yaw:35,  climb:2,  spd:6},
+};
+let modeKey='GPS';
+
+const S={
+  phase:'BOOT',            // BOOT DISARM IDLE TAKEOFF FLY LAND RTH
+  x:0,y:0,alt:0,           // 位置(m) x=东 y=北 alt=对地高度
+  vx:0,vy:0,vz:0,
+  pitch:0,roll:0,heading:0,yawRate:0,
+  batt:98.4, sats:0, gpsFix:false,
+  rc:100, vid:100,
+  flightT:0, recT:0, rec:false,
+  homeSet:false, homeX:0, homeY:0,
+  windDir:210, windSpd:2.4, windT:0,
+  gimbal:0,
+  rthStage:0, lowBattRTH:false, critical:false,
+  path:[], pathT:0,
+  throttleOut:0,           // 0..1 电机输出(音效/转速用)
+};
+const stick={lx:0,ly:0,rx:0,ry:0};          // 合成后的摇杆量 -1..1
+const keyIn={lx:0,ly:0,rx:0,ry:0};
+const touchIn={L:null,R:null};
+
+/* ═══════════════════ 消息 ═══════════════════ */
+function say(text,cls){
+  const log=$('msglog'),p=document.createElement('p');
+  if(cls)p.className=cls;
+  const t=new Date();
+  p.innerHTML=`<time>${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')}</time>${text}`;
+  log.appendChild(p);
+  while(log.children.length>7)log.removeChild(log.firstChild);
+}
+let alertTimer=0;
+function alertMsg(text,sticky){
+  const el=$('alert');el.textContent=text;el.style.display='block';
+  alertTimer=sticky?Infinity:3;
+}
+
+/* ═══════════════════ 音频 ═══════════════════ */
+let AC=null,motorGain=null,motorOscs=[],sndOn=true;
+function initAudio(){
+  try{
+    AC=new (window.AudioContext||window.webkitAudioContext)();
+    const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;
+    motorGain=AC.createGain();motorGain.gain.value=0;
+    motorGain.connect(lp);lp.connect(AC.destination);
+    [1,1.012,0.5].forEach((m,i)=>{
+      const o=AC.createOscillator();o.type=i<2?'sawtooth':'triangle';
+      o.frequency.value=110*m;o.connect(motorGain);o.start();motorOscs.push({o,m});
+    });
+  }catch(e){}
+}
+function beep(freq,dur,vol){
+  if(!AC||!sndOn)return;
+  const o=AC.createOscillator(),g=AC.createGain();
+  o.type='square';o.frequency.value=freq;
+  g.gain.setValueAtTime(vol||.08,AC.currentTime);
+  g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+(dur||.1));
+  o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+(dur||.1)+.02);
+}
+$('sndbtn').onclick=()=>{sndOn=!sndOn;$('sndbtn').textContent=sndOn?'🔊 音效':'🔇 静音'};
+
+/* ═══════════════════ 开机自检 ═══════════════════ */
+const BOOT_LINES=[
+  ['载入飞控固件 v07.01.2104 ...',400],
+  ['IMU 惯性单元自检 ............ <span class="ok">通过</span>',500],
+  ['气压计 / 磁罗盘校准 ......... <span class="ok">通过</span>',450],
+  ['电调 ESC ×4 握手 ............ <span class="ok">通过</span>',400],
+  ['图传链路 5.8GHz 建立 ........ <span class="ok">CH-7 · -52dBm</span>',550],
+  ['电池 4S Li-Po 认证 .......... <span class="ok">98% · 16.7V</span>',450],
+  ['搜索 GNSS 卫星 (GPS+北斗) ...',300],
+];
+$('connect-btn').onclick=async function(){
+  this.disabled=true;initAudio();beep(1200,.08);
+  const log=$('boot-log');
+  for(const [txt,ms] of BOOT_LINES){
+    const p=document.createElement('div');p.innerHTML='> '+txt;log.appendChild(p);
+    beep(880,.04,.04);
+    await new Promise(r=>setTimeout(r,ms));
+  }
+  await new Promise(r=>setTimeout(r,400));
+  $('boot').style.transition='opacity .6s';$('boot').style.opacity='0';
+  setTimeout(()=>$('boot').remove(),650);
+  S.phase='DISARM';
+  say('地面站已连接飞行器');
+  say('正在搜星,请等待 GPS 定位…');
+};
+
+/* ═══════════════════ 输入:键盘 ═══════════════════ */
+const keys={};
+addEventListener('keydown',e=>{
+  if(e.repeat)return;keys[e.code]=true;
+  if(e.code==='Space'){e.preventDefault();takePhoto();}
+  if(e.code==='KeyR')toggleRec();
+});
+addEventListener('keyup',e=>keys[e.code]=false);
+
+/* ═══════════════════ 输入:虚拟摇杆 ═══════════════════ */
+function bindStick(zoneId,side){
+  const zone=$(zoneId),nub=zone.querySelector('.stick-nub');
+  const R=52;
+  function setFromEvent(e){
+    const rect=zone.getBoundingClientRect();
+    let dx=e.clientX-rect.left-rect.width/2, dy=e.clientY-rect.top-rect.height/2;
+    const len=Math.hypot(dx,dy);
+    if(len>R){dx*=R/len;dy*=R/len;}
+    touchIn[side]={x:dx/R,y:-dy/R};
+    nub.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
+  }
+  zone.addEventListener('pointerdown',e=>{zone.setPointerCapture(e.pointerId);setFromEvent(e)});
+  zone.addEventListener('pointermove',e=>{if(touchIn[side])setFromEvent(e)});
+  const release=()=>{touchIn[side]=null;nub.style.transform='translate(-50%,-50%)'};
+  zone.addEventListener('pointerup',release);
+  zone.addEventListener('pointercancel',release);
+  zone._nub=nub;
+}
+bindStick('stickL','L');bindStick('stickR','R');
+
+function updateInputs(dt){
+  const ramp=dt*5, decay=dt*8;
+  const tgt=(plus,minus)=>keys[plus]?1:keys[minus]?-1:0;
+  keyIn.ly=approach(keyIn.ly,tgt('KeyW','KeyS'),ramp,decay);
+  keyIn.lx=approach(keyIn.lx,tgt('KeyD','KeyA'),ramp,decay);
+  keyIn.ry=approach(keyIn.ry,tgt('ArrowUp','ArrowDown'),ramp,decay);
+  keyIn.rx=approach(keyIn.rx,tgt('ArrowRight','ArrowLeft'),ramp,decay);
+  stick.lx=touchIn.L?touchIn.L.x:keyIn.lx;
+  stick.ly=touchIn.L?touchIn.L.y:keyIn.ly;
+  stick.rx=touchIn.R?touchIn.R.x:keyIn.rx;
+  stick.ry=touchIn.R?touchIn.R.y:keyIn.ry;
+  // 键盘操作时让虚拟摇杆头跟随显示
+  if(!touchIn.L)$('stickL')._nub.style.transform=`translate(calc(-50% + ${keyIn.lx*40}px),calc(-50% + ${-keyIn.ly*40}px))`;
+  if(!touchIn.R)$('stickR')._nub.style.transform=`translate(calc(-50% + ${keyIn.rx*40}px),calc(-50% + ${-keyIn.ry*40}px))`;
+}
+function approach(v,t,up,down){
+  if(t!==0)return clamp(v+Math.sign(t-v)*up*2,-1,1)*1;
+  const d=Math.sign(v)*Math.max(Math.abs(v)-down,0);return d;
+}
+
+/* ═══════════════════ 飞行阶段控制 ═══════════════════ */
+const btnArm=$('btn-arm'),btnTO=$('btn-takeoff'),btnLand=$('btn-land'),btnRTH=$('btn-rth');
+btnArm.onclick=()=>{
+  if(S.phase==='DISARM'){
+    if(!S.gpsFix){say('GPS 未定位,拒绝解锁','warn');alertMsg('GPS 未就绪');return;}
+    S.phase='IDLE';S.homeSet=true;S.homeX=S.x;S.homeY=S.y;S.path=[[S.x,S.y]];
+    beep(1500,.12);say('电机已解锁,怠速运转');say('返航点已刷新,请留意返航位置','warn');
+  }else if(S.phase==='IDLE'){
+    S.phase='DISARM';beep(500,.15);say('电机已上锁');
+  }
+};
+btnTO.onclick=()=>{
+  if(S.phase!=='IDLE'&&S.phase!=='DISARM')return;
+  if(!S.gpsFix){alertMsg('GPS 未就绪');return;}
+  if(S.phase==='DISARM'){btnArm.onclick();if(S.phase!=='IDLE')return;}
+  S.phase='TAKEOFF';beep(1200,.1);say('自动起飞,上升至 1.5 m 悬停');
+};
+btnLand.onclick=()=>{
+  if(!isAirborne())return;
+  S.phase='LAND';beep(900,.1);say('开始降落,请确认下方无障碍','warn');
+};
+btnRTH.onclick=()=>{
+  if(!isAirborne())return;
+  if(S.phase==='RTH'){S.phase='FLY';S.lowBattRTH=false;say('已取消返航,恢复手动控制');return;}
+  startRTH(false);
+};
+function startRTH(auto){
+  S.phase='RTH';S.rthStage=0;beep(1100,.1);setTimeout(()=>beep(1100,.1),150);
+  say(auto?'低电量,自动触发智能返航!':'智能返航启动,返航高度 30 m','warn');
+}
+function isAirborne(){return S.phase==='TAKEOFF'||S.phase==='FLY'||S.phase==='RTH'||S.phase==='LAND'}
+
+/* ═══════════════════ 模式切换 ═══════════════════ */
+$('fmode').onclick=()=>{
+  if(S.phase==='BOOT')return;
+  const ks=Object.keys(MODES);
+  modeKey=ks[(ks.indexOf(modeKey)+1)%ks.length];
+  beep(1000,.06);say('飞行模式切换 → '+MODES[modeKey].name);
+};
+
+/* ═══════════════════ 相机 ═══════════════════ */
+function takePhoto(){
+  if(S.phase==='BOOT')return;
+  const f=$('photo-flash');f.style.transition='none';f.style.opacity='.85';
+  requestAnimationFrame(()=>{f.style.transition='opacity .25s';f.style.opacity='0'});
+  beep(2500,.03,.1);setTimeout(()=>beep(1800,.03,.08),40);
+  say('已拍摄照片 DJI_'+String(Math.floor(Math.random()*9000)+1000)+'.JPG');
+}
+function toggleRec(){
+  if(S.phase==='BOOT')return;
+  S.rec=!S.rec;S.recT=0;
+  $('rec-btn').classList.toggle('rec',S.rec);
+  $('rec-time').classList.toggle('rec',S.rec);
+  beep(S.rec?1600:800,.08);
+  say(S.rec?'开始录像 3840×2160 · 60fps':'录像已停止,文件已保存');
+}
+$('shutter-btn').onclick=takePhoto;
+$('rec-btn').onclick=toggleRec;
+$('gimbal').oninput=e=>{S.gimbal=+e.target.value;$('gimbal-val').textContent=S.gimbal+'°'};
+
+/* ═══════════════════ 物理仿真 ═══════════════════ */
+function physics(dt){
+  const M=MODES[modeKey];
+  // 风:缓慢游走
+  S.windT+=dt;
+  S.windSpd=clamp(S.windSpd+Math.sin(S.windT*.13)*.02+(Math.random()-.5)*.01,0.5,7);
+  S.windDir=wrap360(S.windDir+Math.sin(S.windT*.07)*.05);
+  const wx=Math.sin(S.windDir*D2R)*S.windSpd*.25, wy=Math.cos(S.windDir*D2R)*S.windSpd*.25;
+
+  // GPS 搜星
+  if(S.phase!=='BOOT'&&S.sats<14&&Math.random()<dt*1.4){
+    S.sats++;
+    if(S.sats>=8&&!S.gpsFix){
+      S.gpsFix=true;btnArm.disabled=false;btnTO.disabled=false;
+      say('GPS 已定位 · 搜索到 '+S.sats+' 颗卫星');beep(1300,.1);
+    }
+  }
+
+  let ctrlPitch=0,ctrlRoll=0,ctrlYaw=0,ctrlClimb=0;
+  const flying=isAirborne();
+
+  if(S.phase==='FLY'){
+    ctrlPitch=stick.ry;ctrlRoll=stick.rx;ctrlYaw=stick.lx;ctrlClimb=stick.ly;
+  }else if(S.phase==='TAKEOFF'){
+    ctrlClimb=.55;
+    if(S.alt>=1.5){S.phase='FLY';say('起飞完成,悬停中,等待操控');}
+  }else if(S.phase==='LAND'){
+    ctrlClimb=-(S.alt>3? .55 : .22);
+    ctrlPitch=stick.ry*.4;ctrlRoll=stick.rx*.4;  // 降落中允许微调
+    if(S.alt<=0.02&&Math.abs(S.vz)<1){
+      touchdown();
+    }
+  }else if(S.phase==='RTH'){
+    const dx=S.homeX-S.x,dy=S.homeY-S.y,dist=Math.hypot(dx,dy);
+    const brgHome=wrap360(Math.atan2(dx,dy)/D2R);
+    if(S.rthStage===0){                       // 爬升到返航高度
+      if(S.alt<29.5&&dist>20)ctrlClimb=.8;else S.rthStage=1;
+    }else if(S.rthStage===1){                 // 对准机头
+      const d=angDiff(S.heading,brgHome);
+      ctrlYaw=clamp(d/25,-1,1);
+      if(Math.abs(d)<6||dist<15)S.rthStage=2;
+    }else if(S.rthStage===2){                 // 巡航回家
+      const d=angDiff(S.heading,brgHome);
+      ctrlYaw=clamp(d/40,-1,1);
+      ctrlPitch=clamp(dist/25,.15,.85);
+      if(dist<2.5){S.rthStage=3;say('到达返航点上空,开始降落');}
+    }else{                                    // 降落
+      ctrlPitch=clamp((S.homeY-S.y)*.2,-.2,.2);
+      ctrlRoll=clamp((S.homeX-S.x)*.2,-.2,.2);
+      ctrlClimb=-(S.alt>3?.5:.22);
+      if(S.alt<=0.02){touchdown();}
+    }
+  }
+
+  // 姿态一阶响应
+  const tgtP=ctrlPitch*M.tilt, tgtR=ctrlRoll*M.tilt;
+  const k=clamp(dt*(modeKey==='SPORT'?9:6),0,1);
+  S.pitch=lerp(S.pitch,tgtP,k);
+  S.roll =lerp(S.roll ,tgtR,k);
+  // 风扰动抖动
+  if(flying){
+    S.pitch+=Math.sin(S.windT*7.3)*S.windSpd*.028;
+    S.roll +=Math.sin(S.windT*9.1+2)*S.windSpd*.033;
+  }
+  S.yawRate=lerp(S.yawRate,ctrlYaw*M.yaw,clamp(dt*7,0,1));
+  if(flying)S.heading=wrap360(S.heading+S.yawRate*dt);
+
+  if(flying){
+    // 水平动力学:倾角产生加速度,带阻力
+    const hr=S.heading*D2R;
+    const fwdX=Math.sin(hr),fwdY=Math.cos(hr),rgtX=Math.cos(hr),rgtY=-Math.sin(hr);
+    const aF=Math.tan(S.pitch*D2R)*G, aR=Math.tan(S.roll*D2R)*G;
+    const drag=G*Math.tan(M.tilt*D2R)/M.spd;   // 使极速≈M.spd
+    S.vx+=(aF*fwdX+aR*rgtX)*dt - S.vx*drag*dt + wx*dt*.4;
+    S.vy+=((aF*fwdY+aR*rgtY))*dt - S.vy*drag*dt + wy*dt*.4;
+    S.x+=S.vx*dt;S.y+=S.vy*dt;
+    // 垂直
+    const tvz=ctrlClimb*(ctrlClimb>0?M.climb:3);
+    S.vz=lerp(S.vz,tvz,clamp(dt*4,0,1));
+    S.alt=Math.max(0,S.alt+S.vz*dt);
+    // 航迹
+    S.pathT+=dt;
+    if(S.pathT>.5){S.pathT=0;S.path.push([S.x,S.y]);if(S.path.length>600)S.path.shift();}
+    S.flightT+=dt;
+  }else{
+    S.vx=S.vy=S.vz=0;
+    S.pitch=lerp(S.pitch,0,dt*3);S.roll=lerp(S.roll,0,dt*3);
+  }
+
+  // 电机输出估算(音效/转速)
+  const hover=flying?.52:0, idle=S.phase==='IDLE'?.12:0;
+  S.throttleOut=lerp(S.throttleOut,
+    clamp(hover+idle+ctrlClimb*.3+Math.hypot(S.vx,S.vy)/M.spd*.18,0,1),dt*5);
+
+  // 电量
+  if(S.phase!=='BOOT'&&S.phase!=='DISARM'){
+    S.batt-=dt*(0.012+S.throttleOut*0.055);   // 悬停≈25min
+    S.batt=Math.max(0,S.batt);
+  }
+  if(S.rec)S.recT+=dt;
+
+  // 信号随距离衰减
+  const dist=Math.hypot(S.x-S.homeX,S.y-S.homeY);
+  S.rc =clamp(104-dist/55-Math.random()*6,5,100);
+  S.vid=clamp(102-dist/45-Math.random()*8,5,100);
+
+  // 低电量逻辑
+  if(S.batt<25&&!S.lowBattRTH&&isAirborne()&&S.phase!=='RTH'&&S.phase!=='LAND'){
+    S.lowBattRTH=true;alertMsg('低电量警告 · 自动返航',false);
+    beep(600,.3,.12);startRTH(true);
+  }
+  if(S.batt<12&&!S.critical){
+    S.critical=true;alertMsg('电量严重不足 · 强制降落',true);
+    say('电量严重不足,执行强制降落!','err');
+    if(isAirborne())S.phase='LAND';
+  }
+  if(alertTimer!==Infinity){alertTimer-=dt;if(alertTimer<=0)$('alert').style.display='none';}
+}
+function touchdown(){
+  S.alt=0;S.vz=0;S.phase='DISARM';S.lowBattRTH=false;
+  beep(700,.1);setTimeout(()=>beep(500,.2),150);
+  say('已着陆,电机自动上锁');
+  $('alert').style.display='none';alertTimer=0;
+}
+
+/* ═══════════════════ FPV 场景渲染 ═══════════════════ */
+const cv=$('world'),ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1;
+function resize(){
+  DPR=Math.min(devicePixelRatio||1,2);
+  W=innerWidth;H=innerHeight;
+  cv.width=W*DPR;cv.height=H*DPR;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+addEventListener('resize',resize);resize();
+
+// 场景静态物:随机"树/建筑"网格哈希
+function hash(ix,iy){let n=ix*374761393+iy*668265263;n=(n^(n>>13))*1274126177;return ((n^(n>>16))>>>0)/4294967295;}
+
+function renderScene(){
+  // 相机俯仰(向上为正):云台角 + 机身前倾带来的部分低头;渲染近似只在有限角度内有效
+  const camPitch=clamp(S.gimbal - S.pitch*.35, -55, 35);
+  const camRoll =S.roll*.30;
+  const f=H*1.15;                       // 焦距(px)
+  const eyeH=Math.max(S.alt,0)+1.35;    // 相机对地高度
+  const hy=H/2 + Math.tan(camPitch*D2R)*f;   // 地平线屏幕位置
+
+  ctx.save();
+  ctx.translate(W/2,H/2);ctx.rotate(-camRoll*D2R);ctx.translate(-W/2,-H/2);
+
+  // 天空
+  const sky=ctx.createLinearGradient(0,hy-H,0,hy);
+  sky.addColorStop(0,'#1c4f8a');sky.addColorStop(.6,'#5f9bd0');sky.addColorStop(1,'#c6d8e2');
+  ctx.fillStyle=sky;ctx.fillRect(-W,-H,W*3,hy+H);
+  // 太阳光晕
+  const sunX=W*.5-wrap360(S.heading-140+180)%360/360*W*2.2+W*1.1;
+  ctx.save();ctx.globalAlpha=.5;
+  const sun=ctx.createRadialGradient(sunX,hy-H*.32,0,sunX,hy-H*.32,H*.3);
+  sun.addColorStop(0,'rgba(255,250,220,.9)');sun.addColorStop(1,'rgba(255,250,220,0)');
+  ctx.fillStyle=sun;ctx.fillRect(sunX-H*.3,hy-H*.62,H*.6,H*.6);ctx.restore();
+
+  // 地面
+  const gnd=ctx.createLinearGradient(0,hy,0,H*1.6);
+  gnd.addColorStop(0,'#93a077');gnd.addColorStop(.1,'#4f7038');gnd.addColorStop(1,'#1e3a1a');
+  ctx.fillStyle=gnd;ctx.fillRect(-W,hy,W*3,H*2.2);
+
+  // 透视地面网格 + 地物
+  const hr=S.heading*D2R;
+  const cosH=Math.cos(hr),sinH=Math.sin(hr);
+  const gridN=42, spacing=24;
+  ctx.lineWidth=1;
+  // 把世界点投影到屏幕
+  const proj=(wx,wy)=>{
+    const relX=wx-S.x, relY=wy-S.y;
+    const camFwd= relX*sinH+relY*cosH;          // 前方距离
+    const camRgt= relX*cosH-relY*sinH;          // 右侧偏移
+    if(camFwd<1.2)return null;
+    return {x:W/2+camRgt/camFwd*f, y:hy+eyeH/camFwd*f, d:camFwd};
+  };
+  // 网格线(东西向 + 南北向)
+  ctx.strokeStyle='rgba(255,255,255,.10)';
+  const bx=Math.round(S.x/spacing)*spacing, by=Math.round(S.y/spacing)*spacing;
+  for(let i=-gridN;i<=gridN;i++){
+    // 南北向线:x = bx+i*spacing
+    let prev=null;ctx.beginPath();
+    for(let j=-gridN;j<=gridN;j+=4){
+      const p=proj(bx+i*spacing,by+j*spacing);
+      if(p){if(prev)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y);prev=p;}else prev=null;
+    }
+    ctx.stroke();
+    prev=null;ctx.beginPath();
+    for(let j=-gridN;j<=gridN;j+=4){
+      const p=proj(bx+j*spacing,by+i*spacing);
+      if(p){if(prev)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y);prev=p;}else prev=null;
+    }
+    ctx.stroke();
+  }
+  // 地物(树/建筑方块)
+  for(let i=-14;i<=14;i++)for(let j=-14;j<=14;j++){
+    const gx=bx+i*spacing, gy=by+j*spacing;
+    const r=hash(Math.round(gx/spacing),Math.round(gy/spacing));
+    if(r<.82)continue;
+    const p=proj(gx+(r*97%1-.5)*spacing*.8, gy+(r*57%1-.5)*spacing*.8);
+    if(!p||p.d>620)continue;
+    const objH=(r>.94? 9+r*14 : 4+r*5);         // 建筑更高
+    const hpx=objH/p.d*f, wpx=(r>.94?6:2.6)/p.d*f;
+    const fade=clamp(1-p.d/620,0,1);
+    if(r>.94){ // 建筑
+      ctx.fillStyle=`rgba(120,124,132,${.75*fade})`;
+      ctx.fillRect(p.x-wpx/2,p.y-hpx,wpx,hpx);
+      ctx.fillStyle=`rgba(70,74,82,${.75*fade})`;
+      ctx.fillRect(p.x+wpx/2,p.y-hpx,wpx*.35,hpx);
+    }else{     // 树
+      ctx.fillStyle=`rgba(46,72,38,${.85*fade})`;
+      ctx.beginPath();ctx.arc(p.x,p.y-hpx*.7,hpx*.42,0,7);ctx.fill();
+      ctx.fillStyle=`rgba(74,56,38,${.8*fade})`;
+      ctx.fillRect(p.x-wpx*.16,p.y-hpx*.5,wpx*.32,hpx*.5);
+    }
+  }
+  // Home 点标记(起飞点 H)
+  if(S.homeSet){
+    const p=proj(S.homeX,S.homeY);
+    if(p&&p.d<800){
+      const s=clamp(60/p.d*f*.06,8,42);
+      ctx.strokeStyle='rgba(255,200,60,.9)';ctx.lineWidth=2;
+      ctx.strokeRect(p.x-s/2,p.y-s/2,s,s);
+      ctx.fillStyle='rgba(255,200,60,.9)';ctx.font=`bold ${Math.max(9,s*.55)}px monospace`;
+      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('H',p.x,p.y);
+    }
+  }
+  // 近地雾
+  const haze=ctx.createLinearGradient(0,hy-14,0,hy+42);
+  haze.addColorStop(0,'rgba(207,216,211,0)');haze.addColorStop(.5,'rgba(207,216,211,.55)');
+  haze.addColorStop(1,'rgba(207,216,211,0)');
+  ctx.fillStyle=haze;ctx.fillRect(-W,hy-14,W*3,60);
+  ctx.restore();
+}
+
+/* ═══════════════════ HUD 渲染 ═══════════════════ */
+function hudStyle(a){ctx.strokeStyle=`rgba(141,240,160,${a})`;ctx.fillStyle=`rgba(141,240,160,${a})`;}
+function renderHUD(){
+  if(S.phase==='BOOT')return;
+  ctx.save();
+  ctx.shadowColor='rgba(0,40,10,.9)';ctx.shadowBlur=2;
+  ctx.lineWidth=1.5;ctx.font='11px monospace';
+
+  const cx=W/2,cy=H/2;
+  /* 中心准星 */
+  hudStyle(.95);
+  ctx.beginPath();
+  ctx.moveTo(cx-34,cy);ctx.lineTo(cx-12,cy);ctx.lineTo(cx-6,cy+7);
+  ctx.moveTo(cx+34,cy);ctx.lineTo(cx+12,cy);ctx.lineTo(cx+6,cy+7);
+  ctx.moveTo(cx,cy-3);ctx.lineTo(cx,cy+3);ctx.stroke();
+
+  /* 俯仰梯 + 横滚 */
+  ctx.save();
+  ctx.translate(cx,cy);ctx.rotate(-S.roll*D2R);
+  const ppd=H/55; // 每度像素
+  ctx.beginPath();ctx.rect(-170,-H*.30,340,H*.60);ctx.clip();
+  for(let a=-40;a<=40;a+=5){
+    if(a===0)continue;
+    const yy=(-S.pitch-a)*ppd;   // 姿态俯仰(抬头为正)= -S.pitch
+    const wid=a%10===0?70:34;
+    hudStyle(.8);
+    ctx.beginPath();
+    if(a>0){ctx.moveTo(-wid,yy);ctx.lineTo(-wid,yy+6);ctx.moveTo(-wid,yy);ctx.lineTo(-14,yy);
+      ctx.moveTo(14,yy);ctx.lineTo(wid,yy);ctx.moveTo(wid,yy);ctx.lineTo(wid,yy+6);}
+    else{ctx.setLineDash([7,5]);ctx.moveTo(-wid,yy);ctx.lineTo(-14,yy);
+      ctx.moveTo(14,yy);ctx.lineTo(wid,yy);ctx.setLineDash([]);
+      ctx.moveTo(-wid,yy);ctx.lineTo(-wid,yy-6);ctx.moveTo(wid,yy);ctx.lineTo(wid,yy-6);}
+    ctx.stroke();
+    if(a%10===0){
+      ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(a,-wid-6,yy);
+      ctx.textAlign='left';ctx.fillText(a,wid+6,yy);
+    }
+  }
+  // 地平线延长线
+  const hy2=-S.pitch*ppd;
+  hudStyle(.95);ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(-170,hy2);ctx.lineTo(-46,hy2);ctx.moveTo(46,hy2);ctx.lineTo(170,hy2);ctx.stroke();
+  ctx.restore();
+
+  /* 横滚刻度弧 */
+  ctx.save();ctx.translate(cx,cy);
+  hudStyle(.75);ctx.lineWidth=1.5;
+  const rArc=H*.26;
+  ctx.beginPath();ctx.arc(0,0,rArc,-120*D2R,-60*D2R);ctx.stroke();
+  [-45,-30,-20,-10,0,10,20,30,45].forEach(a=>{
+    const t=(-90+a)*D2R,len=a===0?12:a%30===0?9:6;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(t)*rArc,Math.sin(t)*rArc);
+    ctx.lineTo(Math.cos(t)*(rArc+len),Math.sin(t)*(rArc+len));
+    ctx.stroke();
+  });
+  ctx.rotate(-S.roll*D2R);
+  ctx.beginPath();ctx.moveTo(0,-rArc+2);ctx.lineTo(-6,-rArc+13);ctx.lineTo(6,-rArc+13);ctx.closePath();
+  hudStyle(.95);ctx.fill();
+  ctx.restore();
+
+  /* 速度带(左)/ 高度带(右)— 靠近中心,DJI OSD 风格 */
+  const tapeOff=Math.min(330,W*.26);
+  drawTape(cx-tapeOff,cy,Math.hypot(S.vx,S.vy),'m/s',false);
+  drawTape(cx+tapeOff,cy,S.alt,'ALT',true);
+
+  /* 罗盘带(顶部) */
+  const compY=58;
+  hudStyle(.85);
+  ctx.save();
+  ctx.beginPath();ctx.rect(cx-180,compY-16,360,34);ctx.clip();
+  ctx.textAlign='center';ctx.textBaseline='top';
+  const h0=Math.round(S.heading/5)*5;
+  for(let k=-12;k<=12;k++){
+    const deg=wrap360(h0+k*5);
+    const x=cx+angDiff(S.heading,deg)*3;
+    if(deg%30===0){
+      ctx.beginPath();ctx.moveTo(x,compY);ctx.lineTo(x,compY+8);ctx.stroke();
+      const names={0:'N',90:'E',180:'S',270:'W'};
+      ctx.fillText(names[deg]!==undefined?names[deg]:String(deg/10|0).padStart(2,'0'),x,compY+10);
+    }else{
+      ctx.beginPath();ctx.moveTo(x,compY);ctx.lineTo(x,compY+4);ctx.stroke();
+    }
+  }
+  ctx.restore();
+  // 当前航向框
+  hudStyle(.95);
+  ctx.strokeRect(cx-24,compY-18,48,17);
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 12px monospace';
+  ctx.fillText(String(Math.round(wrap360(S.heading))).padStart(3,'0')+'°',cx,compY-9);
+  ctx.beginPath();ctx.moveTo(cx,compY+22);ctx.lineTo(cx-5,compY+30);ctx.lineTo(cx+5,compY+30);ctx.closePath();ctx.fill();
+
+  /* 返航方向小箭头(指向 Home) */
+  if(S.homeSet&&isAirborne()){
+    const brg=wrap360(Math.atan2(S.homeX-S.x,S.homeY-S.y)/D2R);
+    const rel=angDiff(S.heading,brg);
+    if(Math.abs(rel)<=60){
+      const x=cx+rel*3;
+      ctx.fillStyle='rgba(255,200,60,.95)';
+      ctx.beginPath();ctx.moveTo(x,compY+34);ctx.lineTo(x-5,compY+42);ctx.lineTo(x+5,compY+42);ctx.closePath();ctx.fill();
+      ctx.font='9px monospace';ctx.fillText('H',x,compY+50);
+    }
+  }
+
+  /* 底部数据行 */
+  ctx.font='12px monospace';hudStyle(.9);ctx.textBaseline='middle';
+  const by=H-176;
+  ctx.textAlign='center';
+  const dist=S.homeSet?Math.hypot(S.x-S.homeX,S.y-S.homeY):0;
+  ctx.fillText(`D ${dist.toFixed(0)} m    H ${S.alt.toFixed(1)} m    VS ${(S.vz>=0?'+':'')}${S.vz.toFixed(1)} m/s    GS ${Math.hypot(S.vx,S.vy).toFixed(1)} m/s`,cx,by);
+
+  /* 状态角标 */
+  ctx.textAlign='left';ctx.font='bold 12px monospace';
+  const phaseNames={DISARM:'待命 · 已上锁',IDLE:'怠速 · 待起飞',TAKEOFF:'自动起飞',FLY:'飞行中',LAND:'降落中',RTH:'智能返航中'};
+  hudStyle(.95);
+  ctx.fillText('▶ '+ (phaseNames[S.phase]||''),18,H-160);
+  if(S.rec){
+    ctx.fillStyle=(performance.now()/500|0)%2?'rgba(255,82,82,.95)':'rgba(255,82,82,.4)';
+    ctx.beginPath();ctx.arc(24,86,5,0,7);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.9)';ctx.fillText('REC',34,86);
+  }
+  ctx.restore();
+}
+function drawTape(x,cy,val,label,right){
+  ctx.save();
+  hudStyle(.8);ctx.lineWidth=1.5;ctx.font='11px monospace';
+  const hT=H*.42;
+  ctx.beginPath();ctx.rect(x-46,cy-hT/2,92,hT);ctx.clip();
+  const pxPer=hT/30;         // 显示范围30单位
+  for(let v=Math.floor(val-16);v<=Math.ceil(val+16);v++){
+    if(v<0)continue;
+    const y=cy+(val-v)*pxPer;
+    const major=v%5===0;
+    ctx.beginPath();
+    if(right){ctx.moveTo(x-14,y);ctx.lineTo(x-14+(major?-10:-5),y);}
+    else{ctx.moveTo(x+14,y);ctx.lineTo(x+14+(major?10:5),y);}
+    ctx.stroke();
+    if(major){
+      ctx.textAlign=right?'right':'left';ctx.textBaseline='middle';
+      ctx.fillText(v,right?x-28:x+28,y);
+    }
+  }
+  ctx.restore();
+  // 当前值框
+  hudStyle(.95);
+  ctx.fillStyle='rgba(6,16,10,.85)';
+  ctx.fillRect(x-34,cy-12,68,24);
+  ctx.strokeRect(x-34,cy-12,68,24);
+  hudStyle(.95);
+  ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(val.toFixed(1),x,cy);
+  ctx.font='9px monospace';
+  ctx.fillText(label,x,cy+20);
+}
+
+/* ═══════════════════ 小地图 ═══════════════════ */
+const mm=$('minimap'),mc=mm.getContext('2d');
+function renderMap(){
+  const w=mm.width,h=mm.height;
+  mc.clearRect(0,0,w,h);
+  // 自适应比例:让航迹+当前位置都装下
+  let ext=40;
+  for(const [px,py] of S.path)ext=Math.max(ext,Math.abs(px-S.homeX),Math.abs(py-S.homeY));
+  ext=Math.max(ext,Math.abs(S.x-S.homeX),Math.abs(S.y-S.homeY))*1.25+10;
+  const sc=(w/2-10)/ext;
+  $('map-scale').textContent=Math.round(ext)+' m';
+  const X=v=>w/2+(v-S.homeX)*sc, Y=v=>h/2-(v-S.homeY)*sc;
+  // 网格
+  mc.strokeStyle='rgba(141,240,160,.12)';mc.lineWidth=1;
+  for(let i=1;i<4;i++){
+    mc.beginPath();mc.moveTo(w/4*i,0);mc.lineTo(w/4*i,h);mc.stroke();
+    mc.beginPath();mc.moveTo(0,h/4*i);mc.lineTo(w,h/4*i);mc.stroke();
+  }
+  // 航迹
+  if(S.path.length>1){
+    mc.strokeStyle='rgba(141,240,160,.7)';mc.lineWidth=1.5;
+    mc.beginPath();
+    S.path.forEach(([px,py],i)=>i?mc.lineTo(X(px),Y(py)):mc.moveTo(X(px),Y(py)));
+    mc.stroke();
+  }
+  // Home
+  if(S.homeSet){
+    mc.strokeStyle='#ffc83c';mc.lineWidth=1.5;
+    mc.strokeRect(X(S.homeX)-5,Y(S.homeY)-5,10,10);
+    mc.fillStyle='#ffc83c';mc.font='8px monospace';mc.textAlign='center';
+    mc.fillText('H',X(S.homeX),Y(S.homeY)+3);
+  }
+  // 飞机
+  mc.save();
+  mc.translate(X(S.x),Y(S.y));mc.rotate(S.heading*D2R);
+  mc.fillStyle='#8df0a0';
+  mc.beginPath();mc.moveTo(0,-7);mc.lineTo(5,6);mc.lineTo(0,3);mc.lineTo(-5,6);mc.closePath();mc.fill();
+  mc.restore();
+}
+
+/* ═══════════════════ DOM 面板更新(10Hz) ═══════════════════ */
+function setBars(id,pct){
+  const n=Math.round(pct/20);
+  [...$(id).children].forEach((b,i)=>b.classList.toggle('on',i<n));
+}
+let camJitterT=0;
+function updateDOM(){
+  if(S.phase==='BOOT')return;
+  const M=MODES[modeKey];
+  $('fmode').textContent=M.name;
+  $('sats').textContent=S.sats;
+  setBars('gps-bars',S.sats/14*100);
+  setBars('rc-bars',S.rc);setBars('vid-bars',S.vid);
+  // 电池
+  const pct=S.batt;
+  const volt=(13.9+2.85*pct/100 - S.throttleOut*.45).toFixed(1);
+  $('batt-pct').textContent=pct.toFixed(0)+'%';
+  $('batt-v').textContent=volt+'V';
+  $('batt-fill').style.width=pct+'%';
+  const cls=pct<12?'warn-red':pct<25?'warn-amber':'';
+  $('batt-pct').className=cls;$('batt-fill').className=cls;
+  const ft=Math.floor(S.flightT);
+  $('ftime').textContent=String(ft/60|0).padStart(2,'0')+':'+String(ft%60).padStart(2,'0');
+  const now=new Date();
+  $('clock').textContent=now.toTimeString().slice(0,8);
+  // 遥测面板
+  $('t-hs').textContent=Math.hypot(S.vx,S.vy).toFixed(1);
+  $('t-vs').textContent=(S.vz>=0?'+':'')+S.vz.toFixed(1);
+  $('t-alt').textContent=S.alt.toFixed(1);
+  $('t-dist').textContent=S.homeSet?Math.hypot(S.x-S.homeX,S.y-S.homeY).toFixed(0):'0';
+  $('t-hdg').textContent=Math.round(wrap360(S.heading));
+  $('t-att').textContent=(Math.round(-S.pitch)||0)+' / '+(Math.round(S.roll)||0);
+  $('t-wind').textContent=S.windSpd.toFixed(1)+'m/s '+Math.round(S.windDir)+'°';
+  $('t-rpm').textContent=Math.round(S.throttleOut*9200+(S.throttleOut>0?1400:0));
+  // 录像计时
+  if(S.rec){
+    const rt=Math.floor(S.recT);
+    $('rec-time').textContent='● '+String(rt/60|0).padStart(2,'0')+':'+String(rt%60).padStart(2,'0');
+  }
+  // 相机参数缓慢抖动(模拟自动曝光)
+  camJitterT++;
+  if(camJitterT%12===0){
+    const isoOpts=[100,100,100,200,200,400];
+    $('cm-iso').textContent=isoOpts[Math.floor(Math.random()*isoOpts.length)];
+    const sh=[500,640,800,1000,1250,1600];
+    $('cm-shutter').textContent='1/'+sh[Math.floor(Math.random()*sh.length)];
+    $('cm-ev').textContent=(Math.random()<.5?'+':'-')+(Math.random()*.7).toFixed(1);
+  }
+  // 按钮状态
+  const air=isAirborne();
+  btnArm.textContent=S.phase==='IDLE'?'上 锁':'解 锁';
+  btnArm.disabled=!S.gpsFix||air;
+  btnTO.disabled=!S.gpsFix||air;
+  btnLand.disabled=!air||S.phase==='LAND';
+  btnRTH.disabled=!air;
+  btnRTH.textContent=S.phase==='RTH'?'取消返航':'智能返航';
+  btnRTH.classList.toggle('active',S.phase==='RTH');
+  btnLand.classList.toggle('active',S.phase==='LAND');
+  // 电机音效
+  if(motorGain){
+    const g=sndOn?S.throttleOut*.045:0;
+    motorGain.gain.setTargetAtTime(g,AC.currentTime,.1);
+    motorOscs.forEach(({o,m})=>{
+      o.frequency.setTargetAtTime((70+S.throttleOut*160)*m,AC.currentTime,.08);
+    });
+  }
+}
+
+/* ═══════════════════ 主循环 ═══════════════════ */
+let lastT=performance.now(),domT=0;
+function loop(now){
+  const dt=clamp((now-lastT)/1000,0,.05);lastT=now;
+  updateInputs(dt);
+  physics(dt);
+  ctx.clearRect(0,0,W,H);
+  renderScene();
+  renderHUD();
+  domT+=dt;
+  if(domT>.1){domT=0;updateDOM();renderMap();}
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
