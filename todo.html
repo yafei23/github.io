@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>案卷 · 极乐迪斯科式待办</title>
+<meta name="description" content="一个把技能检定当作待办事项的清单。24 个技能会对你的每一次成败说话。">
+<style>
+:root{
+  --int:#6fb3c9; --psy:#b07fc4; --fys:#c9554d; --mot:#d4a03c;
+  --gold:#c9a961; --gold-dim:#8d7640; --blood:#8f2d24;
+  --paper:#cfc7b8; --dim:#8e8779; --faint:#6a655b;
+  --line:rgba(201,169,97,.16);
+  --line-2:rgba(201,169,97,.30);
+  --serif:"Songti SC","STSong","Source Han Serif SC","Noto Serif SC",Georgia,"Times New Roman",serif;
+  --sans:"PingFang SC","Microsoft YaHei","Noto Sans SC",-apple-system,"Segoe UI",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:#0b0f10;
+  color:var(--paper);
+  font-family:var(--serif);
+  font-size:15px;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:none;cursor:pointer}
+::selection{background:rgba(201,169,97,.28)}
+
+/* ─── 油画底层 ─────────────────────────────── */
+#bg{
+  position:fixed; inset:0; z-index:-3;
+  background:
+    radial-gradient(820px 640px at 10% 4%,  rgba(198,152,58,.17), transparent 62%),
+    radial-gradient(980px 780px at 92% 10%, rgba(58,116,126,.22), transparent 64%),
+    radial-gradient(1100px 900px at 74% 98%,rgba(143,45,36,.17), transparent 62%),
+    radial-gradient(760px 620px at 18% 88%, rgba(38,78,68,.26), transparent 66%),
+    linear-gradient(168deg,#0f1618 0%,#0a0e0f 46%,#131009 100%);
+}
+#bg::after{
+  content:""; position:absolute; inset:0;
+  background:
+    radial-gradient(60% 40% at 30% 20%, rgba(212,160,60,.06), transparent 70%),
+    radial-gradient(50% 50% at 80% 70%, rgba(120,40,32,.08), transparent 70%);
+  filter:blur(60px);
+}
+#grain{
+  position:fixed; inset:0; z-index:-2; pointer-events:none;
+  opacity:.15; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+#vig{position:fixed;inset:0;z-index:-1;pointer-events:none;box-shadow:inset 0 0 260px 40px rgba(0,0,0,.72)}
+
+/* ─── 通用零件 ──────────────────────────────── */
+.panel{
+  background:linear-gradient(178deg,rgba(23,29,30,.86),rgba(13,17,18,.92));
+  border:1px solid var(--line);
+  box-shadow:0 14px 44px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.035);
+  padding:14px 15px;
+}
+.cap{
+  font-family:var(--sans); font-size:10px; font-weight:600;
+  letter-spacing:.26em; text-transform:uppercase;
+  color:var(--gold-dim);
+  display:flex; align-items:center; gap:9px;
+  margin-bottom:11px;
+}
+.cap::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line-2),transparent)}
+.cap b{color:var(--gold);font-weight:600}
+.mono{font-family:var(--sans);font-variant-numeric:tabular-nums}
+.hr{height:1px;background:linear-gradient(90deg,transparent,var(--line-2),transparent);margin:13px 0}
+.empty{color:var(--faint);font-size:13px;font-style:italic;padding:16px 4px;text-align:center;line-height:1.9}
+
+.btn{
+  font-family:var(--sans); font-size:11px; font-weight:600;
+  letter-spacing:.14em; text-transform:uppercase;
+  padding:8px 14px; color:var(--gold);
+  border:1px solid var(--line-2); background:rgba(201,169,97,.05);
+  transition:.16s; white-space:nowrap;
+}
+.btn:hover{background:rgba(201,169,97,.14);border-color:var(--gold-dim);color:#e6d5a8}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.32;cursor:not-allowed;transform:none}
+.btn.red{color:#d97a6c;border-color:rgba(143,45,36,.55);background:rgba(143,45,36,.14)}
+.btn.red:hover{background:rgba(143,45,36,.3);border-color:#8f2d24;color:#f0a294}
+.btn.ghost{color:var(--faint);border-color:rgba(255,255,255,.07);background:none}
+.btn.ghost:hover{color:var(--paper);border-color:var(--line-2);background:rgba(255,255,255,.03)}
+
+/* ─── 页首 ─────────────────────────────────── */
+header{
+  position:relative; padding:16px 20px 13px;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(9,12,13,.9),rgba(9,12,13,.35));
+  backdrop-filter:blur(3px);
+  display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+}
+.brand{display:flex;flex-direction:column;gap:2px;margin-right:auto}
+.brand h1{
+  font-size:19px; font-weight:400; letter-spacing:.34em;
+  color:#e3d7b6; text-shadow:0 0 26px rgba(201,169,97,.3);
+}
+.brand h1 em{font-style:normal;color:var(--blood);text-shadow:0 0 22px rgba(143,45,36,.6)}
+.brand small{
+  font-family:var(--sans); font-size:9.5px; letter-spacing:.3em;
+  text-transform:uppercase; color:var(--faint);
+}
+.hstat{display:flex;flex-direction:column;line-height:1.35}
+.hstat span{font-family:var(--sans);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+.hstat b{font-weight:400;font-size:14px;color:var(--paper);letter-spacing:.06em}
+.hstat b.gold{color:var(--gold)}
+.hvit{display:none}
+.hvit b{display:flex;gap:9px;font-family:var(--sans);font-size:13px}
+.hvit .vh{color:#c9554d}
+.hvit .vm{color:#5f9ac9}
+
+/* ─── 三栏 ─────────────────────────────────── */
+.wrap{
+  display:grid; grid-template-columns:290px minmax(0,1fr) 356px;
+  gap:13px; padding:13px; max-width:1620px; margin:0 auto; align-items:start;
+}
+.col{min-width:0}
+@media(min-width:1101px){
+  .col{position:sticky;top:13px;max-height:calc(100vh - 26px);overflow-y:auto;overscroll-behavior:contain}
+  .col::-webkit-scrollbar{width:5px}
+  .col::-webkit-scrollbar-thumb{background:rgba(201,169,97,.2)}
+  .col::-webkit-scrollbar-track{background:transparent}
+}
+
+/* ─── 左栏：角色 ───────────────────────────── */
+.vital{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.vital>span:first-child{
+  font-family:var(--sans);font-size:9.5px;letter-spacing:.2em;
+  color:var(--faint);width:32px;flex:none;text-transform:uppercase;
+}
+.pips{display:flex;gap:3px;flex:1;flex-wrap:wrap}
+.pip{width:10px;height:16px;border:1px solid rgba(255,255,255,.13);background:rgba(0,0,0,.35);flex:none}
+.pip.on{border-color:transparent;background:var(--c);box-shadow:0 0 9px -1px var(--c)}
+.vital .num{font-family:var(--sans);font-size:11px;color:var(--dim);width:36px;text-align:right;flex:none}
+.vital[data-k=hp]{--c:#b8433a}
+.vital[data-k=mo]{--c:#4b86b4}
+
+.attrs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:12px 0 4px}
+.attr{
+  text-align:center;padding:8px 2px 7px;border:1px solid var(--line);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c) 12%,transparent),transparent);
+}
+.attr .ab{font-family:var(--sans);font-size:8.5px;letter-spacing:.14em;color:var(--c);opacity:.85}
+.attr .av{font-size:23px;line-height:1.15;color:var(--c);text-shadow:0 0 16px color-mix(in srgb,var(--c) 45%,transparent)}
+.attr .az{font-size:10.5px;color:var(--dim);letter-spacing:.1em}
+
+.sgroup{margin-top:11px}
+.sgroup>.gh{
+  font-family:var(--sans);font-size:9px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--c);opacity:.75;margin-bottom:5px;display:flex;gap:7px;align-items:center;
+}
+.sgroup>.gh::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 30%,transparent),transparent)}
+.skill{
+  display:flex;align-items:center;gap:8px;padding:3px 4px;
+  border-left:2px solid transparent;transition:.14s;position:relative;
+}
+.skill:hover{background:color-mix(in srgb,var(--c) 8%,transparent);border-left-color:var(--c)}
+.skill .gl{
+  width:17px;height:17px;flex:none;display:grid;place-items:center;
+  font-size:11px;color:var(--c);opacity:.8;
+  background:color-mix(in srgb,var(--c) 13%,transparent);
+  clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+}
+.skill .sn{font-size:13px;letter-spacing:.04em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skill .sv{font-family:var(--sans);font-size:12px;color:var(--c);min-width:16px;text-align:right}
+.skill .sv.buffed{text-shadow:0 0 10px currentColor}
+.skill .sv.nerfed{opacity:.55;text-decoration:line-through 1px}
+.skill .up{
+  width:18px;height:18px;flex:none;display:none;place-items:center;
+  font-family:var(--sans);font-size:13px;line-height:1;color:var(--gold);
+  border:1px solid var(--line-2);background:rgba(201,169,97,.08);
+}
+.skill .up:hover{background:rgba(201,169,97,.25)}
+body.has-pt .skill.canup .up{display:grid}
+.skill.maxed .sv{color:var(--gold);opacity:.9}
+
+.xpbar{height:3px;background:rgba(255,255,255,.06);margin-top:5px;overflow:hidden}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));box-shadow:0 0 10px var(--gold);transition:width .5s}
+.ptnote{
+  font-family:var(--sans);font-size:10.5px;letter-spacing:.1em;color:var(--gold);
+  text-align:center;padding:7px;margin-top:10px;
+  border:1px dashed rgba(201,169,97,.4);background:rgba(201,169,97,.07);
+  animation:pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+
+/* ─── 中栏：案卷 ───────────────────────────── */
+.addbox textarea{
+  width:100%;background:rgba(0,0,0,.35);border:1px solid var(--line);
+  padding:11px 12px;font-size:15px;line-height:1.6;resize:vertical;min-height:62px;
+  color:var(--paper);outline:none;transition:.16s;
+}
+.addbox textarea:focus{border-color:var(--gold-dim);background:rgba(0,0,0,.5);box-shadow:0 0 0 1px rgba(201,169,97,.12)}
+.addbox textarea::placeholder{color:var(--faint);font-style:italic}
+.addrow{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap;align-items:center}
+.pick{
+  font-family:var(--sans);font-size:11px;letter-spacing:.1em;padding:8px 12px;
+  border:1px solid var(--line);background:rgba(0,0,0,.3);color:var(--c,var(--paper));
+  display:flex;align-items:center;gap:7px;transition:.16s;
+}
+.pick:hover{border-color:var(--line-2);background:rgba(0,0,0,.5)}
+.pick .k{color:var(--faint);letter-spacing:.18em;font-size:9px;text-transform:uppercase}
+.addrow .btn{margin-left:auto}
+
+.picker{
+  position:absolute;z-index:60;left:0;top:100%;margin-top:5px;
+  width:min(640px,calc(100vw - 24px));max-width:calc(100vw - 24px);
+  padding:14px;display:none;
+  background:linear-gradient(180deg,rgba(20,26,27,.98),rgba(11,15,16,.99));
+  border:1px solid var(--line-2);box-shadow:0 26px 70px rgba(0,0,0,.8);
+}
+.picker.on{display:block;animation:pop .16s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(-6px)}}
+.pgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.pcol .ph{font-family:var(--sans);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--c);margin-bottom:5px;opacity:.8}
+.popt{
+  display:flex;align-items:center;gap:6px;width:100%;padding:4px 5px;
+  font-size:12.5px;text-align:left;transition:.12s;border-left:2px solid transparent;
+}
+.popt:hover{background:color-mix(in srgb,var(--c) 12%,transparent);border-left-color:var(--c)}
+.popt i{font-style:normal;color:var(--c);font-size:10px;width:12px;flex:none}
+.popt b{font-weight:400;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.popt em{font-style:normal;font-family:var(--sans);font-size:11px;color:var(--c);opacity:.75}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}
+.dopt{
+  padding:7px 9px;border:1px solid var(--line);background:rgba(0,0,0,.25);
+  text-align:left;transition:.14s;
+}
+.dopt:hover,.dopt.on{border-color:var(--gold-dim);background:rgba(201,169,97,.12)}
+.dopt b{display:block;font-weight:400;font-size:13px}
+.dopt span{font-family:var(--sans);font-size:10px;color:var(--faint);letter-spacing:.1em}
+
+.tasks{list-style:none;display:flex;flex-direction:column;gap:9px}
+.task{
+  position:relative;padding:11px 13px 11px 15px;
+  background:linear-gradient(100deg,color-mix(in srgb,var(--c) 7%,rgba(16,21,22,.8)),rgba(13,17,18,.86));
+  border:1px solid var(--line);border-left:3px solid var(--c);
+  transition:.18s;animation:slidein .3s ease-out;
+}
+@keyframes slidein{from{opacity:0;transform:translateX(-10px)}}
+.task:hover{border-color:var(--line-2);border-left-color:var(--c);transform:translateX(2px)}
+.ttop{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:5px}
+.ttop .ts{font-family:var(--sans);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--c);display:flex;gap:5px;align-items:center}
+.ttop .td{font-family:var(--sans);font-size:9.5px;letter-spacing:.14em;color:var(--dim)}
+.ttop .tp{font-family:var(--sans);font-size:9.5px;letter-spacing:.1em;color:var(--gold);border:1px solid rgba(201,169,97,.3);padding:0 5px}
+.ttop .tr{font-family:var(--sans);font-size:9.5px;letter-spacing:.14em;color:#d97a6c}
+.ttext{font-size:15.5px;line-height:1.55;word-break:break-word;white-space:pre-wrap}
+.tacts{display:flex;gap:7px;margin-top:9px;align-items:center;flex-wrap:wrap}
+.tacts .btn{padding:6px 12px;font-size:10px}
+.tacts .del{margin-left:auto;color:var(--faint);font-family:var(--sans);font-size:15px;padding:2px 7px;line-height:1;transition:.14s}
+.tacts .del:hover{color:var(--blood);background:rgba(143,45,36,.15)}
+.odds{font-family:var(--sans);font-size:10px;color:var(--faint);letter-spacing:.08em}
+
+.arch{list-style:none;display:flex;flex-direction:column;gap:2px}
+.arch li{
+  display:flex;gap:9px;align-items:baseline;padding:5px 6px;font-size:13.5px;
+  border-left:2px solid var(--c);background:rgba(255,255,255,.014);
+}
+.arch li .mk{font-family:var(--sans);font-size:11px;color:var(--c);flex:none;width:14px}
+.arch li .tx{flex:1;color:var(--dim);word-break:break-word}
+.arch li.done .tx{text-decoration:line-through;text-decoration-color:rgba(201,169,97,.4)}
+.arch li.failed{--c:var(--blood)}
+.arch li.failed .tx{color:#8b6a63;font-style:italic}
+.arch li .mt{font-family:var(--sans);font-size:9.5px;color:var(--faint);letter-spacing:.1em;flex:none}
+details.archwrap>summary{
+  font-family:var(--sans);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--gold-dim);cursor:pointer;list-style:none;padding:5px 0;user-select:none;
+}
+details.archwrap>summary::-webkit-details-marker{display:none}
+details.archwrap>summary::before{content:"▸ ";transition:.2s;display:inline-block}
+details.archwrap[open]>summary::before{transform:rotate(90deg)}
+details.archwrap>summary:hover{color:var(--gold)}
+
+/* ─── 右栏：思维流 + 内阁 ──────────────────── */
+.dlgwrap{display:flex;flex-direction:column;gap:13px;max-height:min(56vh,600px);overflow-y:auto;padding-right:5px}
+.dlgwrap::-webkit-scrollbar{width:4px}
+.dlgwrap::-webkit-scrollbar-thumb{background:rgba(201,169,97,.22)}
+.dlg{animation:fade .5s ease-out;border-left:2px solid color-mix(in srgb,var(--c) 55%,transparent);padding-left:11px}
+@keyframes fade{from{opacity:0;transform:translateY(7px)}}
+.dh{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:2px}
+.dh i{font-style:normal;color:var(--c);font-size:10px}
+.dh b{
+  font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--c);
+}
+.dh .m{font-family:var(--sans);font-size:9px;letter-spacing:.14em;color:var(--faint);text-transform:uppercase}
+.dh .m.ok{color:#7fae76}.dh .m.no{color:#c0705f}
+.db{font-size:14.5px;line-height:1.72;color:#c3bcae}
+.dlg.narr{--c:var(--gold-dim)}
+.dlg.narr .db{font-style:italic;color:#a49d8e}
+.dlg.brain{--c:#9a74a8}
+.dlg.brain .db{color:#b9a3c0;font-style:italic}
+.dlg.sys{--c:var(--gold)}
+.dlg.sys .db{font-family:var(--sans);font-size:12.5px;color:var(--gold-dim);letter-spacing:.06em}
+
+.thgrid{display:flex;flex-direction:column;gap:9px}
+.th{
+  position:relative;padding:10px 12px;overflow:hidden;
+  border:1px solid var(--line);background:rgba(13,17,18,.7);transition:.2s;
+}
+.th::before{
+  content:"";position:absolute;inset:0;opacity:.34;filter:blur(19px);
+  background:
+    radial-gradient(50% 60% at 22% 30%, hsl(var(--h) 42% 42%), transparent 70%),
+    radial-gradient(45% 55% at 78% 72%, hsl(calc(var(--h) + 48) 38% 32%), transparent 70%);
+}
+.th>*{position:relative}
+.th .tn{font-size:14.5px;letter-spacing:.05em;margin-bottom:3px}
+.th .tdsc{font-size:12.5px;line-height:1.62;color:#a8a294;font-style:italic}
+.th .tef{font-family:var(--sans);font-size:10.5px;letter-spacing:.05em;margin-top:6px;line-height:1.6}
+.th .tef .bad{color:#c0705f}
+.th .tef .good{color:#7fae76}
+.th .tprog{height:2px;background:rgba(255,255,255,.08);margin-top:8px}
+.th .tprog i{display:block;height:100%;background:var(--gold);box-shadow:0 0 8px var(--gold);transition:width .4s}
+.th .tfoot{display:flex;align-items:center;gap:8px;margin-top:7px}
+.th .tfoot .st{font-family:var(--sans);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-right:auto}
+.th .btn{padding:5px 10px;font-size:9.5px}
+.th[data-s=internalized]{border-color:rgba(201,169,97,.4)}
+.th[data-s=internalized]::before{opacity:.5}
+.th[data-s=internalized] .tn{color:var(--gold)}
+.th[data-s=locked]{opacity:.4}
+.th[data-s=locked]::before{opacity:.1;filter:blur(26px) grayscale(1)}
+.th[data-s=locked] .tn,.th[data-s=locked] .tdsc{color:var(--faint)}
+.slots{font-family:var(--sans);font-size:10px;letter-spacing:.14em;color:var(--faint);text-transform:uppercase}
+
+/* ─── 检定弹层 ─────────────────────────────── */
+.ov{
+  position:fixed;inset:0;z-index:200;display:none;place-items:center;padding:18px;
+  background:radial-gradient(ellipse at center,rgba(6,9,10,.9),rgba(3,5,5,.97));
+  backdrop-filter:blur(5px);
+}
+.ov.on{display:grid;animation:fade .22s ease-out}
+.chk{
+  width:min(460px,100%);padding:26px 26px 22px;text-align:center;position:relative;
+  background:linear-gradient(180deg,rgba(22,28,29,.97),rgba(11,15,16,.99));
+  border:1px solid color-mix(in srgb,var(--c) 42%,transparent);
+  box-shadow:0 0 90px -10px color-mix(in srgb,var(--c) 40%,transparent),0 30px 80px rgba(0,0,0,.8);
+}
+.chk .cs{
+  font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.34em;
+  text-transform:uppercase;color:var(--c);text-shadow:0 0 24px color-mix(in srgb,var(--c) 55%,transparent);
+}
+.chk .cs em{display:block;font-style:normal;font-family:var(--serif);font-size:20px;letter-spacing:.24em;margin-top:3px}
+.chk .cd{font-family:var(--sans);font-size:10.5px;letter-spacing:.2em;color:var(--dim);margin-top:9px;text-transform:uppercase}
+.chk .cd b{color:var(--gold);font-weight:600}
+.chk .cq{font-size:14px;line-height:1.6;color:#b5aea0;font-style:italic;margin-top:12px;padding:0 6px;word-break:break-word}
+.dice{display:flex;gap:14px;justify-content:center;margin:20px 0 12px}
+.die{
+  width:52px;height:52px;flex:none;padding:7px;
+  display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);gap:2px;
+  background:linear-gradient(150deg,#e2dac9,#b3ab99);
+  border:1px solid #7d7666;box-shadow:0 8px 22px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.5);
+}
+.die u{width:9px;height:9px;border-radius:50%;background:#15181a;place-self:center;visibility:hidden}
+.die[data-v="1"] .p5,
+.die[data-v="2"] .p1,.die[data-v="2"] .p9,
+.die[data-v="3"] .p1,.die[data-v="3"] .p5,.die[data-v="3"] .p9,
+.die[data-v="4"] .p1,.die[data-v="4"] .p3,.die[data-v="4"] .p7,.die[data-v="4"] .p9,
+.die[data-v="5"] .p1,.die[data-v="5"] .p3,.die[data-v="5"] .p5,.die[data-v="5"] .p7,.die[data-v="5"] .p9,
+.die[data-v="6"] .p1,.die[data-v="6"] .p3,.die[data-v="6"] .p4,.die[data-v="6"] .p6,.die[data-v="6"] .p7,.die[data-v="6"] .p9{visibility:visible}
+.die.roll{animation:tumble .1s linear infinite}
+@keyframes tumble{
+  0%{transform:rotate(-9deg) translateY(-4px) scale(1.04)}
+  50%{transform:rotate(11deg) translateY(3px) scale(.97)}
+  100%{transform:rotate(-9deg) translateY(-4px) scale(1.04)}
+}
+.chk .cm{font-family:var(--sans);font-size:12px;letter-spacing:.1em;color:var(--dim);min-height:20px}
+.chk .cm b{color:var(--paper);font-weight:600}
+.chk .cv{
+  font-size:30px;letter-spacing:.3em;margin:12px 0 4px;min-height:42px;text-indent:.3em;
+  opacity:0;transition:opacity .3s;
+}
+.chk .cv.show{opacity:1;animation:stamp .38s cubic-bezier(.2,1.5,.4,1)}
+@keyframes stamp{from{transform:scale(1.7);opacity:0;letter-spacing:.7em}}
+.cv.ok{color:#8fc47f;text-shadow:0 0 34px rgba(143,196,127,.6)}
+.cv.no{color:#c96a58;text-shadow:0 0 34px rgba(201,106,88,.55)}
+.cv.crit{color:var(--gold);text-shadow:0 0 44px rgba(201,169,97,.85)}
+.cv.fumble{color:var(--blood);text-shadow:0 0 40px rgba(143,45,36,.9)}
+.chk .cl{font-size:15px;line-height:1.72;color:#c8c1b3;margin:6px 2px 18px;min-height:26px}
+.chk .cl b{color:var(--c);font-weight:400}
+
+/* ─── 捏人 ─────────────────────────────────── */
+.gate{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:18px;overflow-y:auto}
+.gate.off{display:none}
+.gcard{width:min(620px,100%);padding:30px 30px 26px}
+.gcard h2{font-size:23px;font-weight:400;letter-spacing:.3em;color:#e3d7b6;text-align:center}
+.gcard .sub{text-align:center;color:var(--faint);font-size:13.5px;font-style:italic;margin-top:8px;line-height:1.8}
+.gname{display:flex;gap:9px;margin:18px 0 6px}
+.gname input{
+  flex:1;background:rgba(0,0,0,.4);border:1px solid var(--line);padding:10px 13px;
+  font-size:16px;letter-spacing:.1em;outline:none;color:var(--paper);
+}
+.gname input:focus{border-color:var(--gold-dim)}
+.gattrs{display:grid;grid-template-columns:1fr;gap:9px;margin-top:14px}
+.ga{
+  display:flex;align-items:center;gap:12px;padding:9px 12px;
+  border:1px solid var(--line);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--c) 10%,transparent),transparent);
+}
+.ga .gi{flex:1;min-width:0}
+.ga .gi b{display:block;font-weight:400;font-size:16px;color:var(--c);letter-spacing:.14em}
+.ga .gi span{font-size:12px;color:var(--dim);font-style:italic}
+.ga .gc{display:flex;align-items:center;gap:9px;flex:none}
+.ga .gc button{
+  width:27px;height:27px;display:grid;place-items:center;font-family:var(--sans);font-size:15px;
+  border:1px solid var(--line-2);color:var(--c);transition:.14s;line-height:1;
+}
+.ga .gc button:hover:not(:disabled){background:color-mix(in srgb,var(--c) 22%,transparent)}
+.ga .gc button:disabled{opacity:.22;cursor:not-allowed}
+.ga .gc .gv{font-size:22px;width:26px;text-align:center;color:var(--c);text-shadow:0 0 16px color-mix(in srgb,var(--c) 45%,transparent)}
+.gfoot{display:flex;align-items:center;gap:13px;margin-top:18px;flex-wrap:wrap}
+.gfoot .left{font-family:var(--sans);font-size:11px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;margin-right:auto}
+.gfoot .left b{color:var(--gold);font-size:15px}
+
+/* ─── 崩溃场景 ─────────────────────────────── */
+.blackout{
+  position:fixed;inset:0;z-index:400;display:none;place-items:center;padding:26px;
+  background:#040606;
+}
+.blackout.on{display:grid;animation:fade .8s ease-out}
+.blackout .bt{
+  max-width:560px;text-align:center;font-size:17px;line-height:2.1;color:#9c86a4;font-style:italic;
+}
+.blackout .bt b{display:block;font-family:var(--sans);font-size:11px;letter-spacing:.34em;
+  text-transform:uppercase;color:#7d5a86;font-weight:600;font-style:normal;margin-bottom:16px}
+.blackout .btn{margin-top:26px}
+
+/* ─── 底部 tab（移动端）────────────────────── */
+.tabbar{
+  display:none;position:fixed;left:0;right:0;bottom:0;z-index:90;
+  background:rgba(8,11,12,.96);border-top:1px solid var(--line);
+  backdrop-filter:blur(9px);padding-bottom:env(safe-area-inset-bottom);
+}
+.tabbar button{
+  flex:1;padding:12px 4px;font-family:var(--sans);font-size:10px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--faint);border-top:2px solid transparent;transition:.16s;
+}
+.tabbar button.on{color:var(--gold);border-top-color:var(--gold);background:rgba(201,169,97,.07)}
+.tabbar button i{display:block;font-style:normal;font-size:14px;margin-bottom:2px}
+
+@media(max-width:1100px){
+  .wrap{grid-template-columns:minmax(0,1fr);padding-bottom:74px}
+  .col{display:none}
+  .wrap[data-tab=char] .col-char,
+  .wrap[data-tab=case] .col-case,
+  .wrap[data-tab=mind] .col-mind{display:block}
+  .tabbar{display:flex}
+  .dlgwrap{max-height:54vh}
+  .hvit{display:flex}
+  .pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:560px){
+  body{font-size:14.5px}
+  header{padding:12px 14px 10px;gap:13px}
+  .brand h1{font-size:16px;letter-spacing:.24em}
+  .wrap{padding:9px;gap:9px}
+  .panel{padding:12px}
+  .pgrid{grid-template-columns:1fr}
+  .chk{padding:20px 17px 18px}
+  .chk .cv{font-size:24px}
+  .die{width:44px;height:44px}
+  .die u{width:7px;height:7px}
+  .gcard{padding:22px 17px 20px}
+  .ga{gap:8px;padding:8px 10px}
+}
+footer{
+  text-align:center;padding:22px 18px 30px;color:var(--faint);
+  font-family:var(--sans);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+}
+footer button{color:var(--faint);text-decoration:underline;text-underline-offset:3px;font:inherit}
+footer button:hover{color:var(--blood)}
+@media(max-width:1100px){footer{padding-bottom:88px}}
+</style>
+</head>
+<body>
+<div id="bg"></div><div id="grain"></div><div id="vig"></div>
+
+<!-- ══ 捏人 ══════════════════════════════════ -->
+<div class="gate off" id="gate">
+  <div class="gcard panel">
+    <h2>你 是 谁</h2>
+    <p class="sub">你在一个陌生的房间里醒来，天花板上有水渍。<br>你不记得自己的名字，但你记得你欠这个世界一些事情没做完。</p>
+
+    <div class="gname">
+      <input id="gName" type="text" maxlength="16" placeholder="输入一个名字……" autocomplete="off" spellcheck="false">
+      <button class="btn ghost" id="gRandom">我不记得了</button>
+    </div>
+
+    <div class="hr"></div>
+    <div class="cap">分配你剩下的东西 · <b>ATTRIBUTES</b></div>
+    <div class="gattrs" id="gAttrs"></div>
+
+    <div class="gfoot">
+      <span class="left">剩余点数 <b id="gLeft">12</b></span>
+      <button class="btn" id="gStart">睁开眼睛</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 主界面 ════════════════════════════════ -->
+<div id="app" hidden>
+
+<header>
+  <div class="brand">
+    <h1>案<em>卷</em></h1>
+    <small>Le Cahier · Revachol Ouest</small>
+  </div>
+  <div class="hstat"><span>侦探</span><b id="hName">—</b></div>
+  <div class="hstat"><span>档案编号</span><b id="hType" class="gold">—</b></div>
+  <div class="hstat"><span>时间</span><b id="hTime">—</b></div>
+  <div class="hstat hvit"><span>状态</span><b><span class="vh" id="hHp">—</span><span class="vm" id="hMo">—</span></b></div>
+  <button class="btn ghost" id="btnMuse">我不知道该做什么</button>
+  <button class="btn" id="btnSleep">睡 觉</button>
+</header>
+
+<div class="wrap" id="wrap" data-tab="case">
+
+  <!-- ── 左：角色 ─────────────────────────── -->
+  <aside class="col col-char">
+    <div class="panel">
+      <div class="cap">状态 · <b>VITALS</b></div>
+      <div class="vital" data-k="hp"><span>生命</span><div class="pips" id="hpPips"></div><span class="num" id="hpNum"></span></div>
+      <div class="vital" data-k="mo"><span>士气</span><div class="pips" id="moPips"></div><span class="num" id="moNum"></span></div>
+
+      <div class="attrs" id="attrBox"></div>
+
+      <div class="cap" style="margin-top:14px">经验 · <b>XP</b></div>
+      <div class="mono" style="font-size:11px;color:var(--dim);display:flex;justify-content:space-between">
+        <span id="xpTxt">0 / 60</span><span id="xpTot">总计 0</span>
+      </div>
+      <div class="xpbar"><i id="xpFill" style="width:0"></i></div>
+      <div class="ptnote" id="ptNote" hidden>你有 <span id="ptNum">0</span> 点技能点未分配</div>
+    </div>
+
+    <div class="panel" style="margin-top:13px">
+      <div class="cap">技能 · <b>SKILLS</b></div>
+      <div id="skillBox"></div>
+    </div>
+  </aside>
+
+  <!-- ── 中：案卷 ─────────────────────────── -->
+  <section class="col col-case">
+    <div class="panel addbox" style="position:relative">
+      <div class="cap">立案 · <b>NEW ENTRY</b></div>
+      <textarea id="tText" rows="2" placeholder="写下一件你欠自己的事……" maxlength="240"></textarea>
+      <div class="addrow">
+        <button class="pick" id="pickSkill"><span class="k">技能</span><span id="pickSkillTxt">逻辑</span></button>
+        <button class="pick" id="pickDiff"><span class="k">难度</span><span id="pickDiffTxt">中等 10</span></button>
+        <button class="btn" id="btnAdd">归 档</button>
+      </div>
+
+      <div class="picker" id="skillPicker">
+        <div class="cap">谁来负责这件事 · <b>WHO SPEAKS</b></div>
+        <div class="pgrid" id="skillPickGrid"></div>
+        <div class="hr"></div>
+        <button class="btn ghost" id="pickAuto" style="width:100%">让它们自己决定</button>
+      </div>
+      <div class="picker" id="diffPicker">
+        <div class="cap">这有多难 · <b>DIFFICULTY</b></div>
+        <div class="dgrid" id="diffPickGrid"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:13px">
+      <div class="cap">未 结 · <b id="openCount">0</b></div>
+      <ul class="tasks" id="taskList"></ul>
+      <p class="empty" id="taskEmpty">案卷是空的。<br>这要么意味着你自由了，要么意味着你放弃了。</p>
+    </div>
+
+    <div class="panel" style="margin-top:13px" id="archPanel">
+      <details class="archwrap" id="archWrap">
+        <summary>已 结 案 <span id="archCount"></span></summary>
+        <ul class="arch" id="archList"></ul>
+      </details>
+    </div>
+  </section>
+
+  <!-- ── 右：思维流 + 内阁 ────────────────── -->
+  <aside class="col col-mind">
+    <div class="panel">
+      <div class="cap">思维流 · <b>VOICES</b></div>
+      <div class="dlgwrap" id="dlgBox"></div>
+    </div>
+
+    <div class="panel" style="margin-top:13px">
+      <div class="cap">思维内阁 · <b>THOUGHT CABINET</b></div>
+      <div class="slots" style="margin:-4px 0 10px">槽位 <span id="slotTxt">0 / 3</span></div>
+      <div class="thgrid" id="thBox"></div>
+    </div>
+  </aside>
+</div>
+
+<nav class="tabbar">
+  <button data-tab="char"><i>◈</i>角色</button>
+  <button data-tab="case" class="on"><i>❑</i>案卷</button>
+  <button data-tab="mind"><i>☾</i>思维</button>
+</nav>
+
+<footer>
+  马丁内斯 · 瑞瓦肖西 &nbsp;·&nbsp; <button id="btnWipe">抹去这一切</button>
+</footer>
+</div>
+
+<!-- ══ 检定弹层 ══════════════════════════════ -->
+<div class="ov" id="ov">
+  <div class="chk panel" id="chkCard">
+    <div class="cs"><span id="ckEn">LOGIC</span><em id="ckZh">逻辑</em></div>
+    <div class="cd" id="ckDiff"></div>
+    <div class="cq" id="ckQuote"></div>
+    <div class="dice">
+      <div class="die" id="d1" data-v="1"><u class="p1"></u><u class="p2"></u><u class="p3"></u><u class="p4"></u><u class="p5"></u><u class="p6"></u><u class="p7"></u><u class="p8"></u><u class="p9"></u></div>
+      <div class="die" id="d2" data-v="1"><u class="p1"></u><u class="p2"></u><u class="p3"></u><u class="p4"></u><u class="p5"></u><u class="p6"></u><u class="p7"></u><u class="p8"></u><u class="p9"></u></div>
+    </div>
+    <div class="cm" id="ckMath"></div>
+    <div class="cv" id="ckVerdict"></div>
+    <div class="cl" id="ckLine"></div>
+    <button class="btn" id="ckClose" style="width:100%" disabled>……</button>
+  </div>
+</div>
+
+<!-- ══ 崩溃 ══════════════════════════════════ -->
+<div class="blackout" id="blackout">
+  <div class="bt"><b id="boWho">古老爬行动物脑</b><span id="boText"></span>
+    <div><button class="btn" id="boBtn">醒 来</button></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ═══════════════════════════════════════════════════════════
+   案卷 — 一个把待办事项当作技能检定的清单
+   单文件 · 无依赖 · 数据存于 localStorage
+   ═══════════════════════════════════════════════════════════ */
+
+const ATTRS = {
+  int:{zh:"智力", en:"INT", full:"INTELLECT", desc:"你是真的聪明，还是只是话多？"},
+  psy:{zh:"心理", en:"PSY", full:"PSYCHE",    desc:"你的内心世界有多大——以及多可怕？"},
+  fys:{zh:"体格", en:"FYS", full:"PHYSIQUE",  desc:"你能扛住多少？拳头和坏消息都算。"},
+  mot:{zh:"动力", en:"MOT", full:"MOTORICS",  desc:"你和这个世界之间的接口有多顺滑？"}
+};
+
+/* add=立案 · ok=成功 · no=失败 · crit=大成功 · fum=大失败 · idle=闲话 */
+const SKILLS = {
+  /* ───────── 智力 ───────── */
+  logic:{zh:"逻辑",en:"LOGIC",a:"int",g:"∴",d:"拆解与演绎。让世界变成可解的方程。",
+    add:["把它拆开。任何庞然大物都是由可以命名的部件组成的。","先把问题定义清楚。定义不清的问题不是问题，是情绪。"],
+    ok:["推理成立。前提为真，结论必然为真——这就是全部的魔法。","你看，只要顺序正确，世界是可解的。"],
+    no:["推理链断了。不是断在结论上，是断在你没检查的那个前提上。","你把「我想要」当成了「我能够」。这是一个初级错误。"],
+    crit:["完美的三段论。你短暂地变成了一台正确运转的机器。"],
+    fum:["你刚才那不叫思考。那叫用词语给恐慌打包。"],
+    idle:["顺便一提，你的清单里有两条互相矛盾。你没发现，但我发现了。","如果一件事拖了三次都没做，那它可能根本不属于这份清单。"]},
+
+  ency:{zh:"百科全书",en:"ENCYCLOPEDIA",a:"int",g:"§",d:"无用知识的仓库。偶尔有一件是有用的。",
+    add:["这类劳动在 1902 年的苏拉菲文献中被称作「自愿性苦役」。当然，那是另一个语境。","值得一提：人类平均一生会写下约 4 万条待办事项，完成其中的三分之一。"],
+    ok:["据记载，坚持完成琐事的人平均寿命更长。样本量很小，但你现在需要它。","在旧世界，这种手艺会被授予一枚很小的铜质徽章。"],
+    no:["这让人想起瑞瓦肖东部那次失败的市政规划。也是从一份太长的清单开始的。","有意思——失败的模式往往比成功的模式更有研究价值。这话现在说不合时宜。"],
+    crit:["在瑞瓦肖，这种效率被称为「旧世界的手艺」。它已经基本失传了。"],
+    fum:["有一整卷书是关于人如何系统性高估自己的。你没读过。"],
+    idle:["无关信息：马丁内斯的年降水量约 1100 毫米。这解释不了任何事情。","「拖延」一词最早出现在公元前的农书里，用来形容不肯下雨的天空。"]},
+
+  rhet:{zh:"修辞",en:"RHETORIC",a:"int",g:"❝",d:"说服的艺术——包括说服你自己。",
+    add:["你可以把这件事说得很重要。而且你确实应该。","任何清单都是一份宣言。问题只是：写给谁看？"],
+    ok:["论证胜利。你说服了唯一需要被说服的那个人——你自己。","漂亮的收束。对手无话可说，因为对手就是你。"],
+    no:["你的论点漏洞百出，而听众比你想象的更聪明。听众也是你。","你刚才是在跟自己吵架吗？你输了。"],
+    crit:["华丽的一击。如果这里有观众席，他们会站起来鼓掌。"],
+    fum:["你用了十分钟论证为什么这件事可以不做。这是你今天最出色的表现。"],
+    idle:["「我没时间」是一个论点，不是一个事实。你分得清吗？","把清单上那句话重写一遍。换个动词，你会更想做它。"]},
+
+  drama:{zh:"戏剧性",en:"DRAMA",a:"int",g:"☙",d:"表演——以及识破表演。",
+    add:["陛下，这一幕将会很精彩。请务必给它一个体面的落幕。","请注意台词，陛下。您正在对自己许下一个诺言。"],
+    ok:["帷幕拉开——他做到了！观众席一片死寂，因为观众只有您一位。","精彩，陛下。您甚至骗过了心里那个刻薄的批评家。"],
+    no:["拙劣的表演，陛下。观众看穿了您。观众就是您自己。","这一幕演砸了。但请注意——砸得很有风格。"],
+    crit:["史诗级的独白！后世会为这一段写论文的，陛下。"],
+    fum:["陛下在撒谎。您从一开始就没打算做这件事。我们都知道。"],
+    idle:["陛下，容我直言：您把「我很忙」这句台词已经念了太多遍。","这份清单是一出悲剧还是一出闹剧？取决于第三幕，陛下。"]},
+
+  conc:{zh:"概念化",en:"CONCEPTUALIZATION",a:"int",g:"✧",d:"把生活当作素材。",
+    add:["这不是一件事。这是一个母题。","记下来。以后你会需要这个细节的——为了某件更大的作品。"],
+    ok:["你完成了它，而且完成得有形式感。这很重要，虽然别人不懂。","干净的收尾。收尾是一种被严重低估的艺术形式。"],
+    no:["太平庸了。不过失败本身倒有点意思——一幅关于当代人的小品。","这次失败的构图很好。真的。你可以把它挂起来。"],
+    crit:["这是艺术。会有人在很久以后为此写一篇很长的文章。"],
+    fum:["垃圾。但是是有勇气的垃圾。这年头连勇气都很少见了。"],
+    idle:["把清单倒过来读，它就是一首诗。一首很糟糕的诗，但确实是诗。","未完成的东西比完成的东西更接近艺术。这个想法很危险，别信它。"]},
+
+  visu:{zh:"视觉演算",en:"VISUAL CALCULUS",a:"int",g:"⌖",d:"空间、轨迹与几何直觉。",
+    add:["距离：从此刻到完成，约十四步。地形：起伏，可通行。","重建路径：起点在这里，终点在那里，中间没有障碍物。没有借口。"],
+    ok:["轨迹吻合。落点在预计范围内，偏差百分之三。","所有线条对齐。现场清理完毕。"],
+    no:["角度不对。你从一开始就站错了位置。","重建现场：你在第二步就偏离了。之后的一切都是这个偏差的放大。"],
+    crit:["所有的线条汇聚于一点。那一点就是现在。"],
+    fum:["重建现场：地面上没有脚印。你根本没有出发。"],
+    idle:["这份清单在时间轴上的投影是一个逐渐收窄的漏斗。出口很小。","注意左下角。有一件小事被别的东西挡住了。"]},
+
+  /* ───────── 心理 ───────── */
+  voli:{zh:"意志",en:"VOLITION",a:"psy",g:"✜",d:"不肯倒下的那一部分。",
+    add:["承诺一件事，然后守住它。这就是一个人剩下的全部。","别许太大的愿。许一个你真能守住的。"],
+    ok:["你守住了。今天没有一样东西从你身上掉下来。","很好。这不是奇迹，这是你选择的结果。记住这个区别。"],
+    no:["站直。失败不是崩塌——除非你决定躺下。","一次没做到而已。不要在这上面附加一整套关于你是谁的结论。"],
+    crit:["钢铁。你身体里有一部分是不肯融化的。"],
+    fum:["别这样。别再对自己做这种事了。"],
+    idle:["有些东西你不能再放弃了。你知道我说的是哪几件。","如果你现在放下手机，我们什么都不说。就当没发生过。"]},
+
+  inla:{zh:"内陆帝国",en:"INLAND EMPIRE",a:"psy",g:"☾",d:"直觉、预感，以及与无生命之物交谈。",
+    add:["这张清单在看着你。它想被完成，但不是被你完成。","那件事有它自己的意愿。你只是被选中的那只手。"],
+    ok:["有什么东西在你完成它的瞬间松开了手。你听见了——一声很轻的叹息。","它走了。房间里少了一个人，但你没法解释是谁。"],
+    no:["它还没准备好离开你。它还有话要说。","那件事在笑。不是恶意的笑，是那种更让人不安的笑。"],
+    crit:["你和它达成了某种协议。别问是什么协议。"],
+    fum:["梦里有人替你做完了。醒来时手是空的。"],
+    idle:["凌晨三点的时候，未完成的事会互相交谈。","你的清单里有一条不是你写的。检查一下。"]},
+
+  empa:{zh:"共情",en:"EMPATHY",a:"psy",g:"♡",d:"感受别人——包括未来的你。",
+    add:["未来的你会因为这件事松一口气。你现在是在替他干活。","写下它的时候你手抖了一下。这条比别的都重，是不是？"],
+    ok:["他很感激。那个明天早上醒来的人，他真的很感激你。","你替一个疲惫的人办了件事。那个人值得被这样对待。"],
+    no:["别对自己太狠。真的。你今天已经在承受一些别人看不见的东西了。","失败让你难受，这说明你还在乎。在乎不是缺点。"],
+    crit:["你照顾了自己。这比听上去要难得多。"],
+    fum:["你刚刚伤害了一个人。是你自己。"],
+    idle:["那个把清单写得这么长的人，当时一定很害怕。","问一句：这些事情里，有几件是你真的想做，几件是你怕别人失望？"]},
+
+  auth:{zh:"权威",en:"AUTHORITY",a:"psy",g:"❖",d:"让人服从——包括你自己的双手。",
+    add:["这件事由你说了算。宣布它，然后执行它。","别请求。命令。它没有拒绝的资格。"],
+    ok:["服从达成。你说的话在你自己身体里还有效力。","很好。你在自己的辖区里还是有威信的。"],
+    no:["他们不听你的。「他们」是你的手和你的时间。","你的命令被无视了。在自己的地盘上被无视，这是最难看的一种。"],
+    crit:["无人敢质疑。房间里的空气都站直了。"],
+    fum:["你在自己的王国里彻底失去了威信。有人正在偷笑。"],
+    idle:["有人在偷偷嘲笑你的清单。别让他们得逞。","立刻挑一条最短的执行。你需要一次胜利来重建威信。"]},
+
+  espr:{zh:"团队意识",en:"ESPRIT DE CORPS",a:"psy",g:"⁂",d:"你看不见的地方，同伴在做什么。",
+    add:["在城市的另一头，有人正写下几乎一模一样的一行字。","四十一分局的灯还亮着。有人也在加班。"],
+    ok:["在别处，有人合上了一份卷宗。没有人鼓掌，这很正常。","警督点了点头。他不在这里，但他点了点头。"],
+    no:["警督在别处摇了摇头。不是失望——是那种更难受的理解。","有人在另一个房间里，也刚刚搞砸了同样的事。你们隔着城市对视了一秒。"],
+    crit:["全城的无线电在同一秒安静了下来。"],
+    fum:["有人替你收拾了残局。他们从来不提这件事。"],
+    idle:["此刻有三千人在做一件他们不想做的事。你并不特殊——这应该让你好受一点。","远处，一个你永远不会认识的人把一件小事做完了。世界因此稳固了千分之一。"]},
+
+  sugg:{zh:"暗示",en:"SUGGESTION",a:"psy",g:"✱",d:"温柔地操纵。",
+    add:["先让自己想做这件事。剩下的都是技术问题。","别叫它「任务」。叫它别的什么。名字很重要。"],
+    ok:["你说服了那个抵抗的部分。它甚至以为这是它自己的主意。","漂亮。对方毫无察觉——对方是你的大脑。"],
+    no:["太急了。你得先给对方一个台阶。对方是你。","你威胁了自己。威胁从来不管用，我说过多少次了。"],
+    crit:["你在自己心里种下了一颗种子，现在它开花了。"],
+    fum:["你被自己骗了。「就看五分钟手机」——经典手法，屡试不爽。"],
+    idle:["把「必须」换成「可以」，完成率会上升百分之十二。相信我，我干这行的。","先做三十秒。只要三十秒。之后你想停就停——你不会停的。"]},
+
+  /* ───────── 体格 ───────── */
+  endu:{zh:"耐力",en:"ENDURANCE",a:"fys",g:"▣",d:"你能扛住多少。",
+    add:["深呼吸。你还能再扛一件。","这不重。看起来重是因为你已经很累了。"],
+    ok:["身体还在。心脏还在跳。这就是全部的胜利条件。","扛过去了。骨头没散，就算赢。"],
+    no:["肌肉在抗议。它们有抗议的权利。","你今天的额度用完了。这不是软弱，这是物理。"],
+    crit:["你像一堵墙一样站着。风绕开你走。"],
+    fum:["你要垮了。认真的——坐下。"],
+    idle:["你已经三个小时没喝水了。这本身也是一项任务。","把肩膀放下来。对，就是那个位置。"]},
+
+  pain:{zh:"痛阈",en:"PAIN THRESHOLD",a:"fys",g:"✚",d:"疼痛之后，你还剩下多少。",
+    add:["会疼。做就是了。","这件事你不想碰，因为它会疼。正因如此才要先做它。"],
+    ok:["疼过去了。你甚至没记住它是什么感觉。","代价已付。收据在你身上，看不见的地方。"],
+    no:["这次疼得比预想的久。记住这种感觉，它有用。","没关系。伤口是数据。"],
+    crit:["疼痛认输了。它换了个人去找。"],
+    fum:["你尖叫了。在心里，但确实尖叫了。"],
+    idle:["你身上有七处旧伤，下雨天会响。今天没下雨。","你已经习惯了一种本不该习惯的疼。这不是勋章。"]},
+
+  phys:{zh:"身体本能",en:"PHYSICAL INSTRUMENT",a:"fys",g:"✦",d:"不假思索的力量。",
+    add:["别想。动。","站起来。就现在。腿知道该怎么办。"],
+    ok:["干净利落。身体比脑子先知道该怎么做。","一下就完了。你刚才想那么久，图什么？"],
+    no:["力气用错了地方。你在推一扇往里开的门。","你在跟自己较劲。你会赢，但两个都是你。"],
+    crit:["你把它撕成了两半。比喻意义上的——但愿如此。"],
+    fum:["你摔倒了。在一件根本没有物理形态的事情上摔倒了。"],
+    idle:["做二十个俯卧撑。这不是建议。","肌肉不会说谎。你已经坐了太久了。"]},
+
+  elec:{zh:"电化学",en:"ELECTROCHEMISTRY",a:"fys",g:"↯",d:"快感、瘾与冲动。",
+    add:["完成它会有一点点快感。就那么一小口，你知道的。","做完这件事，我们就奖励自己一样东西。什么都行。答应我。"],
+    ok:["多巴胺！小小的一撮，正落在舌尖上。再来一个？再来一个吧。","爽。别停，趁热，下一条，快。"],
+    no:["没爽到。清单还在，欲望也还在。我们再试一次，宝贝。","空虚。这就是为什么人们需要别的东西。"],
+    crit:["轰！整个大脑亮了一下。这就是人们奋斗一生想要的东西。"],
+    fum:["什么都没有。一片荒原。去找点东西塞进嘴里吧。"],
+    idle:["咖啡。烟。糖。随便什么。你太久没奖励自己了。","你知道最爽的是什么吗？把最难的那条划掉。试试看，就一次。"]},
+
+  shiv:{zh:"颤栗",en:"SHIVERS",a:"fys",g:"≈",d:"这座城市通过你说话。",
+    add:["风从港口那边过来，带着柴油和盐的味道。城市知道你要做什么。","此刻，在一栋无人的楼里，暖气管道正在响。这跟你有关，只是你还不知道怎么有关。"],
+    ok:["某处一扇窗关上了。城市点了点头。","雨停了三十秒。仅仅为了这件事。"],
+    no:["雨落在马丁内斯的铁皮屋顶上。没有人在意你失败了。","电车从两条街外驶过。世界完全没有变化。"],
+    crit:["整座城市屏住呼吸，然后放你过去。"],
+    fum:["远处传来一声很长的汽笛。它不是为你响的。"],
+    idle:["在城市的西北角，有一件事正在等你。但不是今天。","八千人此刻正在这座城里入睡。你还醒着。这也是一种工作。"]},
+
+  half:{zh:"半光",en:"HALF LIGHT",a:"fys",g:"△",d:"恐惧，以及先发制人。",
+    add:["如果不做，会发生什么？想那个。快点想。","它在长大。你每拖一天，它就长大一点。"],
+    ok:["威胁解除。暂时。","干掉了。下一个在哪儿？"],
+    no:["它还在那儿。它一直都在那儿。","你退了一步。它记住了这一步。"],
+    crit:["你先动的手。这一次，你先动的手。"],
+    fum:["跑。不——别跑。站住。该死，我不知道。"],
+    idle:["有什么东西在清单底下。别往下滚。","门锁了吗？煤气关了吗？那封邮件——你确定发出去了吗？"]},
+
+  /* ───────── 动力 ───────── */
+  hand:{zh:"手眼协调",en:"HAND/EYE COORDINATION",a:"mot",g:"◎",d:"准头。",
+    add:["对准。呼气。","瞄一个具体的点。别瞄「大概那边」。"],
+    ok:["正中靶心。手很稳。","一发入魂。收枪。"],
+    no:["偏了两指。手在最后一刻抖了。","你打中了，但打中的是旁边那个。"],
+    crit:["你甚至没看就打中了。"],
+    fum:["你击中了明天。它现在也有麻烦了。"],
+    idle:["手指在桌面上敲。它想干活。","把桌上那样东西挪正。真的，会有帮助。"]},
+
+  perc:{zh:"感知",en:"PERCEPTION",a:"mot",g:"◉",d:"你究竟看见了多少。",
+    add:["注意到了吗？这件事其实比它看起来要小。","它已经在清单上待了很久了。你一直在假装没看见。"],
+    ok:["细节全部到位。连角落里那一点你都没漏。","很好。你看见了，所以你处理了。"],
+    no:["你漏了一样东西。它一直在你视野的边缘。","有个细节不对劲。回去看第一步。"],
+    crit:["你看见了别人看不见的那一层。"],
+    fum:["你什么都没看见。眼睛在，但你不在。"],
+    idle:["左边。有件小事在等你，只要两分钟。","你已经盯着这份清单四分钟了，一个字都没读进去。"]},
+
+  reac:{zh:"反应速度",en:"REACTION SPEED",a:"mot",g:"»",d:"抢在犹豫之前。",
+    add:["现在。就是现在。别等下一个「现在」。","三、二、一——动。"],
+    ok:["抢在犹豫之前动了手。这就是全部的秘诀。","快。比你自己的借口还快。"],
+    no:["慢了半拍。而半拍就是全部的距离。","窗口关上了。会有下一个，但不会更宽。"],
+    crit:["时间慢了下来，只有你还在正常速度里。"],
+    fum:["你愣住了。整整四十分钟。"],
+    idle:["机会窗口正在关闭。它一直在关闭。","别看清单了。随便挑一条，现在就做。挑错了也比不挑强。"]},
+
+  savo:{zh:"处变不惊",en:"SAVOIR FAIRE",a:"mot",g:"✼",d:"灵巧、酷，以及不出丑。",
+    add:["优雅一点。反正都要做，不如做得好看。","轻松点。这事儿配不上你紧张。"],
+    ok:["干得漂亮，而且看起来毫不费力。后半句才是最难的。","你像水一样穿过了它。"],
+    no:["你绊倒了，而且有人在看。「有人」是镜子。","不够酷。技术上没问题，但姿势难看。"],
+    crit:["神乎其技。你自己都没看清是怎么做到的。"],
+    fum:["太丢人了。我们不谈这个了，永远。"],
+    idle:["顺手把它做掉，别摆出一副受难的样子。","把这一条做得漂亮点。没人会看见，但你会知道。"]},
+
+  inte:{zh:"交涉",en:"INTERFACING",a:"mot",g:"⌗",d:"与系统和机器打交道。",
+    add:["找到操作面板。所有东西都有操作面板。","这件事有个开关。找到它，比蛮干省力得多。"],
+    ok:["咔哒。接口对上了，齿轮开始转。","系统接受了输入。运转正常。"],
+    no:["接口不匹配。你在用错误的方式握住这件事。","卡住了。别硬转，你会拧断螺纹。"],
+    crit:["系统完全打开了。你能看见里面所有的线。"],
+    fum:["你把它弄坏了。零件散了一地。"],
+    idle:["这份清单需要重新排序。当前的顺序熵值最大。","把大的那条拆成三条小的。机器就是这么处理它咽不下去的东西的。"]},
+
+  comp:{zh:"镇定",en:"COMPOSURE",a:"mot",g:"◇",d:"不让脸出卖你。",
+    add:["站直。表情管理好。然后开始。","别让它看出你怕它。"],
+    ok:["从头到尾，你的脸一次都没出卖你。","冷静完成。没人知道你刚才有多想放弃。"],
+    no:["你的手泄露了一切。而且别人看得见。","破功了。深呼吸，重新组装一下自己。"],
+    crit:["冷静得像一块石头——而且是块很贵的石头。"],
+    fum:["你崩了。彻底地、当众地崩了。"],
+    idle:["把领子整理一下。真的，这有用。","别人看不出你在硬撑。这既是好消息也是坏消息。"]}
+};
+
+const SK = Object.keys(SKILLS);
+const BY_ATTR = {int:[],psy:[],fys:[],mot:[]};
+SK.forEach(k => BY_ATTR[SKILLS[k].a].push(k));
+
+const DIFFS = [
+  {v:6, zh:"微不足道", en:"TRIVIAL"},
+  {v:8, zh:"简单",     en:"EASY"},
+  {v:10,zh:"中等",     en:"MEDIUM"},
+  {v:12,zh:"挑战",     en:"CHALLENGING"},
+  {v:14,zh:"严峻",     en:"FORMIDABLE"},
+  {v:16,zh:"传奇",     en:"LEGENDARY"},
+  {v:18,zh:"英雄",     en:"HEROIC"},
+  {v:20,zh:"神性",     en:"GODLY"}
+];
+
+/* ───────── 思维内阁 ───────── */
+const THOUGHTS = [
+  {id:"hangover", h:18, name:"昨夜的宿醉", start:true, cost:3,
+   desc:"你不记得昨晚发生了什么。你的镜子记得，但它不肯说。",
+   rTxt:"生命上限 −1", dTxt:"耐力 +1，痛阈 +1",
+   research:{maxHealth:-1}, done:{skills:{endu:1,pain:1}}},
+
+  {id:"whitecheck", h:200, name:"白色检定的信徒", cost:6,
+   cond:s=>s.failCount>=3, condTxt:"累计失败 3 次",
+   desc:"失败只是「尚未成功」的另一种拼法。你反复地把它拼错。",
+   rTxt:"所有检定 −1", dTxt:"「坚持」加值翻倍",
+   research:{allChecks:-1}, done:{flags:{doublePersist:1}}},
+
+  {id:"tomorrow", h:38, name:"明天的自己会处理", cost:5,
+   cond:s=>s.tasks.filter(t=>t.st==="open").length>=8, condTxt:"同时积压 8 条未结",
+   desc:"明天的你是个陌生人。你正在给他寄一个越来越重的包裹。",
+   rTxt:"士气上限 −1", dTxt:"放弃任务不再扣士气，戏剧性 +1",
+   research:{maxMorale:-1}, done:{skills:{drama:1}, flags:{freeQuit:1}}},
+
+  {id:"chem", h:330, name:"电化学式的效率", cost:6,
+   cond:s=>(s.use.elec||0)>=3, condTxt:"用「电化学」结案 3 次",
+   desc:"一小口就够了。一小口从来都不够。",
+   rTxt:"意志 −1", dTxt:"经验值 ×1.3，电化学 +1",
+   research:{skills:{voli:-1}}, done:{skills:{elec:1}, xpMul:1.3}},
+
+  {id:"nameless", h:268, name:"无名氏的档案", cost:4,
+   cond:s=>s.day>=3, condTxt:"活到第 3 天",
+   desc:"你在自己的清单里找不到自己的名字。你翻了三遍。",
+   rTxt:"逻辑 −1", dTxt:"内陆帝国 +1，颤栗 +1",
+   research:{skills:{logic:-1}}, done:{skills:{inla:1,shiv:1}}},
+
+  {id:"calc", h:190, name:"一切皆可计算", cost:7,
+   cond:s=>["logic","ency","rhet","drama","conc","visu"].reduce((n,k)=>n+(s.use[k]||0),0)>=5,
+   condTxt:"用智力系技能结案 5 次",
+   desc:"如果每件事都能被拆解，就没有什么是真正可怕的。这个推论有个漏洞。",
+   rTxt:"内陆帝国 −1，共情 −1", dTxt:"逻辑 +2，视觉演算 +1",
+   research:{skills:{inla:-1,empa:-1}}, done:{skills:{logic:2,visu:1}}},
+
+  {id:"superstar", h:12, name:"超级明星待办侦探", cost:8,
+   cond:s=>s.bestStreak>=4, condTxt:"连续成功 4 次",
+   desc:"你不是在做家务。你在破一桩案子，而这桩案子的名字叫「你的人生」。",
+   rTxt:"共情 −1", dTxt:"红色检定 +2，权威 +1，戏剧性 +1",
+   research:{skills:{empa:-1}}, done:{skills:{auth:1,drama:1}, redBonus:2}},
+
+  {id:"tuesday", h:280, name:"世界将在下周二结束", cost:9,
+   cond:s=>s.collapses>=1, condTxt:"经历过一次崩溃",
+   desc:"既然如此，为什么还要洗碗？——因为下周二还没到。",
+   rTxt:"士气上限 −1", dTxt:"神性难度检定 +3，半光 +1",
+   research:{maxMorale:-1}, done:{skills:{half:1}, godlyBonus:3}},
+
+  {id:"procrast", h:96, name:"拖延的艺术", cost:6,
+   cond:s=>s.quitCount>=3, condTxt:"放弃过 3 条任务",
+   desc:"有些事你永远不会做。承认这一点，本身就是一种解放。",
+   rTxt:"经验值 ×0.85", dTxt:"概念化 +1，处变不惊 +1",
+   research:{xpMul:0.85}, done:{skills:{conc:1,savo:1}}},
+
+  {id:"closer", h:88, name:"收尾者", cost:10,
+   cond:s=>s.doneCount>=12, condTxt:"结案 12 次",
+   desc:"开始一件事很容易。结束它需要一种别的器官。",
+   rTxt:"所有检定 −1", dTxt:"每次结案 +1 士气，镇定 +1",
+   research:{allChecks:-1}, done:{skills:{comp:1}, flags:{moraleOnDone:1}}},
+
+  {id:"universe", h:150, name:"清单即宇宙", cost:12,
+   cond:s=>s.doneCount>=25, condTxt:"结案 25 次",
+   desc:"宇宙没有目的，但它有条目。你是其中一条。",
+   rTxt:"生命与士气上限各 −1", dTxt:"所有检定 +1",
+   research:{maxHealth:-1,maxMorale:-1}, done:{allChecks:1}},
+
+  {id:"notyou", h:250, name:"你不再是那个人了", cost:10,
+   cond:s=>s.day>=7, condTxt:"活到第 7 天",
+   desc:"那个写下第一条清单的人已经死了。你继承了他的债务。",
+   rTxt:"所有检定 −1", dTxt:"所有技能学习上限 +1",
+   research:{allChecks:-1}, done:{capBonus:1}}
+];
+
+/* ───────── 警探类型 ───────── */
+const TYPES = [
+  {name:"超级明星警探", keys:["auth","drama","sugg","rhet"]},
+  {name:"末日警探",     keys:["inla","shiv","half","conc"]},
+  {name:"艺术警探",     keys:["conc","visu","drama","savo"]},
+  {name:"抱歉警探",     keys:["empa","voli","espr","comp"]},
+  {name:"人形开罐器",   keys:["phys","elec","pain","endu"]},
+  {name:"硬核警探",     keys:["logic","ency","visu","inte"]}
+];
+
+const NAMES = ["无名氏","哈里","雷瓦肖之子","星期二","失忆的男人","杜博阿","没有姓氏的人","昨夜的残骸","一个警察","档案 41","舞王","破碎的镜子"];
+
+const NARR = {
+  add:["这一条被写进了案卷。纸很薄，但字是真的。","归档完毕。它现在正式存在了——之前它只是一种不安。",
+       "你写下它的时候，房间里有什么东西变重了一点。","案卷又厚了一页。你听见了那个声音。"],
+  quit:["你把那一页撕了下来。纸的边缘不整齐。","它被移出了案卷。没有人会追究——除了你。",
+        "放弃也是一种结案方式。只是结得不好看。"],
+  sleep:["你躺下。天花板上的水渍还在原来的位置。","睡眠像一件湿外套一样落在你身上。",
+         "你数到三十七的时候，世界关掉了。","黑暗很体贴地接住了你。"],
+  wake:["新的一天。窗外是同一种灰。","你醒了。身体大致还是昨天那副，但心情是新的。",
+        "阳光——如果那也算阳光的话——照在地板上。","你又活了一天。这本身就该记一功。"]
+};
+
+const BRAIN = [
+  "闭上眼睛。这个世界不需要你今天完成任何事。",
+  "睡吧。清单会等你的。清单永远都在等。",
+  "你不欠任何人。连你自己都不欠。至少现在不欠。",
+  "有一片很暖的黑暗，就在这里。来吧。",
+  "别怕。最坏的情况已经发生过了，而你还在这儿。"
+];
+
+const LIMBIC = {
+  low:["士气在往下掉。你能感觉到胸口那块地方在变凉。","你正在耗尽某种看不见的东西。"],
+  hurt:["身体记住了这一下。","有什么东西裂了。不大，但确实裂了。"]
+};
+
+/* ═══════════════ 状态 ═══════════════ */
+const KEY = "disco-case-file-v1";
+const DEF = () => ({
+  v:1, made:false, name:"",
+  attrs:{int:3,psy:3,fys:3,mot:3},
+  pts:{}, spare:0, ptsEarned:0, xp:0, xpTotal:0,
+  hp:3, mo:3, day:1, hour:8,
+  tasks:[], th:{}, use:{},
+  doneCount:0, failCount:0, quitCount:0,
+  streak:0, bestStreak:0, collapses:0,
+  log:[], seq:1
+});
+let S = DEF();
+let STORE_OK = true;
+
+function save(){
+  if(!STORE_OK) return;
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ STORE_OK = false; }
+}
+function load(){
+  let raw = null;
+  try{ raw = localStorage.getItem(KEY); }catch(e){ STORE_OK = false; return; }
+  if(!raw) return;
+  try{
+    const o = JSON.parse(raw);
+    if(o && typeof o === "object") S = Object.assign(DEF(), o, {
+      attrs: Object.assign({int:3,psy:3,fys:3,mot:3}, o.attrs),
+      pts: o.pts||{}, th: o.th||{}, use: o.use||{},
+      tasks: Array.isArray(o.tasks)?o.tasks:[],
+      log: Array.isArray(o.log)?o.log:[]
+    });
+  }catch(e){ /* 损坏的存档：从头开始 */ }
+}
+
+/* ═══════════════ 派生数值 ═══════════════ */
+function mods(){
+  const m = {skills:{},allChecks:0,xpMul:1,maxHealth:0,maxMorale:0,
+             capBonus:0,redBonus:0,godlyBonus:0,flags:{}};
+  for(const t of THOUGHTS){
+    const st = S.th[t.id]; if(!st) continue;
+    const e = st.s === "internalized" ? t.done : st.s === "researching" ? t.research : null;
+    if(!e) continue;
+    if(e.skills) for(const k in e.skills) m.skills[k] = (m.skills[k]||0) + e.skills[k];
+    m.allChecks  += e.allChecks  || 0;
+    m.maxHealth  += e.maxHealth  || 0;
+    m.maxMorale  += e.maxMorale  || 0;
+    m.capBonus   += e.capBonus   || 0;
+    m.redBonus   += e.redBonus   || 0;
+    m.godlyBonus += e.godlyBonus || 0;
+    if(e.xpMul) m.xpMul *= e.xpMul;
+    if(e.flags) Object.assign(m.flags, e.flags);
+  }
+  return m;
+}
+let M = mods();
+const refreshMods = () => { M = mods(); };
+
+const baseLvl = k => S.attrs[SKILLS[k].a] + (S.pts[k]||0);
+const capBase = k => S.attrs[SKILLS[k].a] + 5 + M.capBonus;
+const lvl     = k => Math.max(1, baseLvl(k) + (M.skills[k]||0));
+const maxHP   = () => Math.max(2, lvl("endu") + M.maxHealth);
+const maxMO   = () => Math.max(2, lvl("voli") + M.maxMorale);
+const xpNeed  = () => 60 + 30 * S.ptsEarned;
+const slots   = () => 3 + (S.doneCount>=10?1:0) + (S.doneCount>=25?1:0);
+const usedSlots = () => THOUGHTS.filter(t=>{const st=S.th[t.id];return st&&(st.s==="researching"||st.s==="internalized")}).length;
+const persist = t => (t.tries||0) * (M.flags.doublePersist?2:1);
+const openTasks = () => S.tasks.filter(t=>t.st==="open");
+
+function checkBonus(t){
+  let b = lvl(t.k) + persist(t) + M.allChecks;
+  if(t.red)     b += M.redBonus;
+  if(t.d >= 20) b += M.godlyBonus;
+  return b;
+}
+function odds(target, bonus){
+  let w = 0;
+  for(let a=1;a<=6;a++) for(let b=1;b<=6;b++){
+    if(a===1 && b===1) continue;
+    if(a===6 && b===6){ w++; continue; }
+    if(a+b+bonus >= target) w++;
+  }
+  return Math.round(w/36*100);
+}
+function phase(h){
+  h = ((h%24)+24)%24;
+  if(h<5) return "深夜"; if(h<8) return "清晨"; if(h<11) return "上午";
+  if(h<13) return "正午"; if(h<17) return "下午"; if(h<19) return "黄昏";
+  if(h<23) return "夜晚"; return "深夜";
+}
+function copType(){
+  if(S.doneCount + S.failCount < 3) return "尚未定型";
+  let best = null, top = 0;
+  for(const t of TYPES){
+    const n = t.keys.reduce((a,k)=>a+(S.use[k]||0), 0);
+    if(n > top){ top = n; best = t; }
+  }
+  return top > 0 ? best.name : "尚未定型";
+}
+/* 尽量不连续说同一句话 */
+const _lastPick = new Map();
+function pick(a){
+  if(!a || !a.length) return "";
+  if(a.length === 1) return a[0];
+  const prev = _lastPick.get(a);
+  let v, i = 0;
+  do { v = a[Math.floor(Math.random()*a.length)]; } while(v === prev && ++i < 8);
+  _lastPick.set(a, v);
+  return v;
+}
+const el = (tag, cls, txt) => { const e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; };
+const $ = id => document.getElementById(id);
+
+/* ═══════════════ 思维流 ═══════════════ */
+function say(kind, key, text, meta, metaCls){
+  S.log.push({w:kind, k:key||"", t:text, m:meta||"", mc:metaCls||""});
+  if(S.log.length > 200) S.log.splice(0, S.log.length-200);
+}
+const saySkill = (k, text, meta, mc) => say("skill", k, text, meta, mc);
+const sayNarr  = text => say("narr", "", text);
+const sayBrain = text => say("brain", "", text);
+const saySys   = text => say("sys", "", text);
+
+function renderDlg(){
+  const box = $("dlgBox"); box.textContent = "";
+  const recent = S.log.slice(-60);
+  for(const e of recent){
+    const d = el("div", "dlg " + (e.w==="skill" ? "" : e.w));
+    if(e.w === "skill"){
+      const s = SKILLS[e.k];
+      d.style.setProperty("--c", "var(--" + s.a + ")");
+      const h = el("div","dh");
+      h.append(el("i",null,s.g), el("b",null,s.zh));
+      if(e.m) h.append(el("span","m "+e.mc, e.m));
+      d.append(h);
+    }else{
+      const label = e.w==="brain" ? "古老爬行动物脑" : e.w==="sys" ? "案卷" : "旁白";
+      const h = el("div","dh"); h.append(el("b",null,label)); d.append(h);
+    }
+    d.append(el("div","db", e.t));
+    box.append(d);
+  }
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ═══════════════ 渲染：角色 ═══════════════ */
+function renderVitals(){
+  const mk = (host, cur, max) => {
+    host.textContent = "";
+    for(let i=0;i<max;i++) host.append(el("i","pip"+(i<cur?" on":"")));
+  };
+  S.hp = Math.min(S.hp, maxHP()); S.mo = Math.min(S.mo, maxMO());
+  mk($("hpPips"), S.hp, maxHP()); $("hpNum").textContent = S.hp+"/"+maxHP();
+  mk($("moPips"), S.mo, maxMO()); $("moNum").textContent = S.mo+"/"+maxMO();
+  $("hHp").textContent = "生命 " + S.hp + "/" + maxHP();
+  $("hMo").textContent = "士气 " + S.mo + "/" + maxMO();
+}
+function renderAttrs(){
+  const box = $("attrBox"); box.textContent = "";
+  for(const a in ATTRS){
+    const d = el("div","attr"); d.style.setProperty("--c","var(--"+a+")");
+    d.append(el("div","ab",ATTRS[a].en), el("div","av",String(S.attrs[a])), el("div","az",ATTRS[a].zh));
+    box.append(d);
+  }
+}
+function renderSkills(){
+  const box = $("skillBox"); box.textContent = "";
+  for(const a in ATTRS){
+    const g = el("div","sgroup"); g.style.setProperty("--c","var(--"+a+")");
+    g.append(el("div","gh", ATTRS[a].zh + " · " + ATTRS[a].full));
+    for(const k of BY_ATTR[a]){
+      const s = SKILLS[k], L = lvl(k), can = baseLvl(k) < capBase(k);
+      const r = el("div","skill" + (can?" canup":"") + (can?"":" maxed"));
+      r.title = s.zh + " " + s.en + "\n" + s.d + "\n等级 " + L + " / 上限 " + (capBase(k) + (M.skills[k]||0));
+      const bonus = M.skills[k]||0;
+      const v = el("span","sv" + (bonus>0?" buffed":bonus<0?" nerfed":""), String(L));
+      r.append(el("i","gl",s.g), el("span","sn",s.zh), v);
+      const up = el("button","up","+");
+      up.setAttribute("aria-label","提升"+s.zh);
+      up.onclick = () => spend(k);
+      r.append(up);
+      g.append(r);
+    }
+    box.append(g);
+  }
+  document.body.classList.toggle("has-pt", S.spare>0);
+  $("ptNote").hidden = S.spare<=0;
+  $("ptNum").textContent = S.spare;
+}
+function renderXP(){
+  const need = xpNeed();
+  $("xpTxt").textContent = S.xp + " / " + need;
+  $("xpTot").textContent = "总计 " + S.xpTotal;
+  $("xpFill").style.width = Math.min(100, S.xp/need*100) + "%";
+}
+function spend(k){
+  if(S.spare<=0 || baseLvl(k) >= capBase(k)) return;
+  S.spare--; S.pts[k] = (S.pts[k]||0)+1;
+  refreshMods();
+  saySkill(k, pick(SKILLS[k].idle), "提升至 " + lvl(k), "ok");
+  renderAll(); save();
+}
+
+/* ═══════════════ 渲染：案卷 ═══════════════ */
+function renderTasks(){
+  const list = $("taskList"); list.textContent = "";
+  const open = openTasks();
+  $("openCount").textContent = open.length;
+  $("taskEmpty").hidden = open.length>0;
+
+  for(const t of open){
+    const s = SKILLS[t.k], df = DIFFS.find(d=>d.v===t.d) || DIFFS[2];
+    const li = el("li","task"); li.style.setProperty("--c","var(--"+s.a+")");
+
+    const top = el("div","ttop");
+    const ts = el("span","ts"); ts.append(el("i",null,s.g), document.createTextNode(s.zh));
+    top.append(ts, el("span","td", df.zh + " " + t.d));
+    if(t.tries>0) top.append(el("span","tp","坚持 +" + persist(t)));
+    li.append(top, el("p","ttext", t.x));
+
+    const acts = el("div","tacts");
+    const b = checkBonus(t), p = odds(t.d, b);
+    const go = el("button","btn","检定");
+    go.onclick = () => doCheck(t.id, false);
+    const red = el("button","btn red","红色检定");
+    red.title = "一次性。成功经验翻倍，失败则此案永久封存为「失败」。";
+    red.onclick = () => { if(confirm("红色检定不可重来。\n失败的话，这一条会被永久封存为「失败」。\n\n确定？")) doCheck(t.id, true); };
+    acts.append(go, red, el("span","odds", p + "% · 2d6+" + b + " ≥ " + t.d));
+
+    const del = el("button","del","×");
+    del.title = "放弃这一条";
+    del.onclick = () => quitTask(t.id);
+    acts.append(del);
+    li.append(acts);
+    list.append(li);
+  }
+  renderArchive();
+}
+function renderArchive(){
+  const done = S.tasks.filter(t=>t.st!=="open").slice().reverse();
+  $("archCount").textContent = done.length ? "· " + done.length : "";
+  $("archPanel").hidden = done.length===0;
+  const list = $("archList"); list.textContent = "";
+  for(const t of done){
+    const s = SKILLS[t.k];
+    const li = el("li", t.st==="done" ? "done" : "failed");
+    if(t.st==="done") li.style.setProperty("--c","var(--"+s.a+")");
+    li.append(el("span","mk", t.st==="done" ? "✓" : "✗"),
+              el("span","tx", t.x),
+              el("span","mt", "第" + (t.at||1) + "天 · " + s.zh));
+    list.append(li);
+  }
+}
+
+/* ═══════════════ 渲染：思维内阁 ═══════════════ */
+function renderThoughts(){
+  const box = $("thBox"); box.textContent = "";
+  $("slotTxt").textContent = usedSlots() + " / " + slots();
+  let shown = 0;
+  for(const t of THOUGHTS){
+    const st = S.th[t.id];
+    const status = st ? st.s : "locked";
+    if(status === "locked" && !t.start) {
+      // 未解锁的思维只露出轮廓
+      const d = el("div","th"); d.dataset.s = "locked"; d.style.setProperty("--h", t.h);
+      d.append(el("div","tn","？？？"), el("div","tdsc","一个还没有成形的念头。"));
+      d.append(el("div","tef", t.condTxt ? "解锁条件：" + t.condTxt : ""));
+      box.append(d); shown++;
+      continue;
+    }
+    const d = el("div","th"); d.dataset.s = status; d.style.setProperty("--h", t.h);
+    d.append(el("div","tn", t.name), el("div","tdsc", t.desc));
+
+    const ef = el("div","tef");
+    if(status === "internalized"){
+      ef.append(el("span","good","已内化：" + t.dTxt));
+    }else if(status === "researching"){
+      ef.append(el("span","bad","研究中：" + t.rTxt));
+      ef.append(el("br"));
+      ef.append(el("span","good","完成后：" + t.dTxt));
+    }else{
+      ef.append(el("span","bad","研究中：" + t.rTxt));
+      ef.append(el("br"));
+      ef.append(el("span","good","完成后：" + t.dTxt));
+    }
+    d.append(ef);
+
+    if(status === "researching"){
+      const bar = el("div","tprog"); const i = el("i");
+      i.style.width = Math.min(100, st.p/t.cost*100) + "%"; bar.append(i); d.append(bar);
+    }
+    const foot = el("div","tfoot");
+    if(status === "researching"){
+      foot.append(el("span","st","研究进度 " + st.p + " / " + t.cost + " 次结案"));
+      const f = el("button","btn ghost","放弃");
+      f.onclick = () => { if(confirm("放弃研究「"+t.name+"」？进度会清零。")){ S.th[t.id]={s:"known",p:0}; refreshMods(); saySys("你把「"+t.name+"」从脑子里请了出去。"); renderAll(); save(); } };
+      foot.append(f);
+    }else if(status === "internalized"){
+      foot.append(el("span","st","已内化"));
+      const f = el("button","btn ghost","遗忘");
+      f.onclick = () => { if(confirm("遗忘「"+t.name+"」？加成会消失。")){ S.th[t.id]={s:"known",p:0}; refreshMods(); saySys("「"+t.name+"」褪色了。你记得它曾经在那儿。"); renderAll(); save(); } };
+      foot.append(f);
+    }else{
+      const free = usedSlots() < slots();
+      foot.append(el("span","st", free ? "空闲 · 可放入内阁" : "内阁已满"));
+      const b = el("button","btn","开始研究");
+      b.disabled = !free;
+      b.onclick = () => { S.th[t.id]={s:"researching",p:0}; refreshMods();
+        saySys("「"+t.name+"」进入了思维内阁。它会在那儿待上一阵子。"); renderAll(); save(); };
+      foot.append(b);
+    }
+    d.append(foot);
+    box.append(d); shown++;
+  }
+  if(!shown) box.append(el("p","empty","还没有任何念头。\n先去做点什么。"));
+}
+
+function unlockThoughts(){
+  let found = false;
+  for(const t of THOUGHTS){
+    if(S.th[t.id]) continue;
+    if(t.start || (t.cond && t.cond(S))){
+      S.th[t.id] = {s:"known", p:0};
+      if(!t.start){ saySys("新的思维浮现了：「" + t.name + "」"); found = true; }
+    }
+  }
+  return found;
+}
+function advanceResearch(){
+  for(const t of THOUGHTS){
+    const st = S.th[t.id];
+    if(!st || st.s !== "researching") continue;
+    st.p++;
+    if(st.p >= t.cost){
+      st.s = "internalized"; st.p = t.cost;
+      refreshMods();
+      saySys("思维内化完成：「" + t.name + "」 — " + t.dTxt);
+    }
+  }
+}
+
+/* ═══════════════ 页首 ═══════════════ */
+function renderHeader(){
+  $("hName").textContent = S.name || "无名氏";
+  $("hType").textContent = copType();
+  $("hTime").textContent = "第 " + S.day + " 天 · " + phase(S.hour);
+}
+function renderAll(){
+  refreshMods();
+  renderHeader(); renderVitals(); renderAttrs(); renderSkills();
+  renderXP(); renderTasks(); renderThoughts(); renderDlg();
+}
+
+/* ═══════════════ 生命 / 士气 ═══════════════ */
+function hit(dHp, dMo){
+  if(dHp) S.hp = Math.max(0, Math.min(maxHP(), S.hp + dHp));
+  if(dMo) S.mo = Math.max(0, Math.min(maxMO(), S.mo + dMo));
+  if(dHp < 0 && S.hp > 0 && Math.random() < .4) say("skill","pain",pick(LIMBIC.hurt));
+  if(dMo < 0 && S.mo > 0 && S.mo <= 1) say("skill","voli",pick(LIMBIC.low));
+}
+function collapse(){
+  S.collapses++;
+  $("boText").textContent = pick(BRAIN);
+  $("blackout").classList.add("on");
+  sayBrain(pick(BRAIN));
+  save();
+}
+$("boBtn").onclick = () => { $("blackout").classList.remove("on"); sleep(true); };
+
+function sleep(forced){
+  S.day++; S.hour = 8;
+  refreshMods();
+  S.hp = maxHP(); S.mo = maxMO();
+  sayNarr(forced ? "你在某个地方醒来，不记得是怎么到那儿的。" : pick(NARR.sleep));
+  sayNarr(pick(NARR.wake));
+  unlockThoughts();
+  renderAll(); save();
+}
+$("btnSleep").onclick = () => {
+  if(!confirm("睡一觉？\n新的一天，生命与士气回满。")) return;
+  sleep(false);
+};
+$("btnMuse").onclick = () => {
+  const k = pick(SK);
+  saySkill(k, pick(SKILLS[k].idle));
+  renderDlg(); save();
+};
+
+/* ═══════════════ 立案 ═══════════════ */
+let curSkill = "logic", curDiff = 10;
+
+function buildPickers(){
+  const g = $("skillPickGrid"); g.textContent = "";
+  for(const a in ATTRS){
+    const c = el("div","pcol"); c.style.setProperty("--c","var(--"+a+")");
+    c.append(el("div","ph", ATTRS[a].zh));
+    for(const k of BY_ATTR[a]){
+      const s = SKILLS[k];
+      const b = el("button","popt"); b.title = s.d;
+      b.append(el("i",null,s.g), el("b",null,s.zh), el("em",null,String(lvl(k))));
+      b.onclick = () => { curSkill = k; closePickers(); syncPick(); };
+      c.append(b);
+    }
+    g.append(c);
+  }
+  const d = $("diffPickGrid"); d.textContent = "";
+  for(const df of DIFFS){
+    const b = el("button","dopt" + (df.v===curDiff?" on":""));
+    b.append(el("b",null,df.zh), el("span",null, df.en + " · " + df.v));
+    b.onclick = () => { curDiff = df.v; closePickers(); syncPick(); };
+    d.append(b);
+  }
+}
+function syncPick(){
+  const s = SKILLS[curSkill], df = DIFFS.find(x=>x.v===curDiff);
+  $("pickSkillTxt").textContent = s.zh;
+  $("pickSkill").style.setProperty("--c","var(--"+s.a+")");
+  $("pickDiffTxt").textContent = df.zh + " " + df.v;
+  buildPickers();
+}
+function closePickers(){ $("skillPicker").classList.remove("on"); $("diffPicker").classList.remove("on"); }
+$("pickSkill").onclick = e => { e.stopPropagation(); const on = $("skillPicker").classList.contains("on"); closePickers(); if(!on) $("skillPicker").classList.add("on"); };
+$("pickDiff").onclick  = e => { e.stopPropagation(); const on = $("diffPicker").classList.contains("on");  closePickers(); if(!on) $("diffPicker").classList.add("on"); };
+$("pickAuto").onclick  = () => { curSkill = pick(SK); closePickers(); syncPick(); };
+document.addEventListener("click", e => { if(!e.target.closest(".picker")) closePickers(); });
+
+function addTask(){
+  const ta = $("tText");
+  const x = ta.value.trim();
+  if(!x){ ta.focus(); return; }
+  const t = {id:S.seq++, x, k:curSkill, d:curDiff, tries:0, st:"open", red:false, at:S.day};
+  S.tasks.push(t);
+  ta.value = "";
+  sayNarr(pick(NARR.add));
+  saySkill(curSkill, pick(SKILLS[curSkill].add));
+  unlockThoughts();
+  renderAll(); save();
+}
+$("btnAdd").onclick = addTask;
+$("tText").addEventListener("keydown", e => {
+  if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); addTask(); }
+});
+
+function quitTask(id){
+  const t = S.tasks.find(x=>x.id===id); if(!t) return;
+  if(!confirm("放弃这一条？\n\n" + t.x)) return;
+  S.tasks = S.tasks.filter(x=>x.id!==id);
+  S.quitCount++;
+  sayNarr(pick(NARR.quit));
+  if(!M.flags.freeQuit){ hit(0,-1); saySkill("voli","每放弃一件事，下一件就更容易被放弃。这是有代价的。"); }
+  else saySkill("drama","陛下有权删掉任何一幕。这是导演的特权。");
+  unlockThoughts();
+  if(S.mo<=0){ renderAll(); save(); collapse(); return; }
+  renderAll(); save();
+}
+
+/* ═══════════════ 检定 ═══════════════ */
+let ckBusy = false;
+function doCheck(id, red){
+  if(ckBusy) return;
+  const t = S.tasks.find(x=>x.id===id); if(!t || t.st!=="open") return;
+  ckBusy = true;
+  t.red = !!red;
+
+  const s = SKILLS[t.k], df = DIFFS.find(d=>d.v===t.d) || DIFFS[2];
+  const bonus = checkBonus(t), target = t.d;
+
+  const card = $("chkCard");
+  card.style.setProperty("--c","var(--"+s.a+")");
+  $("ckEn").textContent = s.en;
+  $("ckZh").textContent = s.zh;
+  $("ckDiff").textContent = (red ? "红色检定 · " : "白色检定 · ") + df.zh + " · 目标 ";
+  $("ckDiff").append(el("b",null,String(target)));
+  $("ckDiff").append(document.createTextNode(" · 成功率 " + odds(target,bonus) + "%"));
+  $("ckQuote").textContent = "「" + t.x + "」";
+  $("ckMath").textContent = "";
+  $("ckLine").textContent = "";
+  const cv = $("ckVerdict"); cv.textContent = ""; cv.className = "cv";
+  const close = $("ckClose"); close.disabled = true; close.textContent = "……";
+  $("ov").classList.add("on");
+
+  const d1 = $("d1"), d2 = $("d2");
+  d1.classList.add("roll"); d2.classList.add("roll");
+  const spin = setInterval(() => {
+    d1.dataset.v = 1+Math.floor(Math.random()*6);
+    d2.dataset.v = 1+Math.floor(Math.random()*6);
+  }, 70);
+
+  setTimeout(() => {
+    clearInterval(spin);
+    d1.classList.remove("roll"); d2.classList.remove("roll");
+    const a = 1+Math.floor(Math.random()*6), b = 1+Math.floor(Math.random()*6);
+    d1.dataset.v = a; d2.dataset.v = b;
+
+    let res;
+    if(a===1 && b===1) res = "fum";
+    else if(a===6 && b===6) res = "crit";
+    else res = (a+b+bonus >= target) ? "ok" : "no";
+
+    const parts = [String(lvl(t.k)) + "(" + s.zh + ")"];
+    if(persist(t)) parts.push(persist(t) + "(坚持)");
+    if(M.allChecks) parts.push(M.allChecks + "(思维)");
+    if(red && M.redBonus) parts.push(M.redBonus + "(红检)");
+    if(t.d>=20 && M.godlyBonus) parts.push(M.godlyBonus + "(神性)");
+    $("ckMath").textContent = "";
+    $("ckMath").append(document.createTextNode((a+b) + " + " + parts.join(" + ") + " = "));
+    $("ckMath").append(el("b",null,String(a+b+bonus)));
+    $("ckMath").append(document.createTextNode("  vs  " + target));
+
+    cv.textContent = res==="fum" ? "大 失 败" : res==="crit" ? "大 成 功" : res==="ok" ? "成 功" : "失 败";
+    cv.className = "cv show " + (res==="fum" ? "fumble" : res);
+
+    const bucket = res==="fum" ? "fum" : res==="crit" ? "crit" : res;
+    const line = pick(SKILLS[t.k][bucket]);
+    $("ckLine").textContent = line;
+
+    resolve(t, res, line, df, red);
+    close.disabled = false;
+    close.textContent = res==="ok"||res==="crit" ? "结 案" : "记 下 来";
+    close.focus();
+  }, 850);
+}
+
+function resolve(t, res, line, df, red){
+  const win = (res==="ok" || res==="crit");
+  const metaCls = win ? "ok" : "no";
+  const metaTxt = (red?"红色 · ":"") + df.zh + " " + t.d + " · " +
+    (res==="crit"?"大成功":res==="fum"?"大失败":win?"成功":"失败");
+  saySkill(t.k, line, metaTxt, metaCls);
+
+  S.hour += 1;
+
+  if(win){
+    t.st = "done"; t.at = S.day;
+    S.doneCount++; S.streak++;
+    S.bestStreak = Math.max(S.bestStreak, S.streak);
+    S.use[t.k] = (S.use[t.k]||0)+1;
+
+    let xp = t.d * 3;
+    if(red) xp *= 2;
+    if(res==="crit") xp = Math.round(xp*1.5);
+    xp = Math.round(xp * M.xpMul);
+    grantXP(xp);
+
+    if(res==="crit"){ hit(0, +1); saySys("大成功 · 经验 +" + xp + " · 士气 +1"); }
+    else saySys("结案 · 经验 +" + xp);
+    if(M.flags.moraleOnDone){ hit(0, +1); }
+    advanceResearch();
+  }else{
+    S.failCount++; S.streak = 0;
+    if(red){
+      t.st = "failed"; t.at = S.day;
+      hit(-1, res==="fum" ? -3 : -2);
+      saySys("红色检定失败 · 此案永久封存");
+    }else{
+      t.tries = (t.tries||0)+1;
+      t.red = false;
+      hit(0, res==="fum" ? -2 : -1);
+      saySys("检定失败 · 「坚持」+1，下次更容易");
+    }
+  }
+  if(S.hour >= 26 && S.hp>0 && S.mo>0){
+    sayNarr("你撑不住了。身体在你同意之前就先关机了。");
+    setTimeout(()=>{ sleep(true); }, 60);
+  }
+  unlockThoughts();
+  renderAll(); save();
+}
+function grantXP(n){
+  S.xp += n; S.xpTotal += n;
+  while(S.xp >= xpNeed()){
+    S.xp -= xpNeed();
+    S.spare++; S.ptsEarned++;
+    saySys("获得 1 点技能点。你可以变成一个稍微不同的人了。");
+  }
+}
+$("ckClose").onclick = () => {
+  $("ov").classList.remove("on");
+  ckBusy = false;
+  if(S.hp<=0 || S.mo<=0) collapse();
+};
+$("ov").addEventListener("click", e => { if(e.target === $("ov") && !$("ckClose").disabled) $("ckClose").click(); });
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape" && $("ov").classList.contains("on") && !$("ckClose").disabled) $("ckClose").click();
+});
+
+/* ═══════════════ 捏人 ═══════════════ */
+let gAttrs = {int:1,psy:1,fys:1,mot:1};
+const G_POOL = 12;
+const gLeft = () => G_POOL - Object.values(gAttrs).reduce((a,b)=>a+b,0);
+
+function renderGate(){
+  const box = $("gAttrs"); box.textContent = "";
+  for(const a in ATTRS){
+    const d = el("div","ga"); d.style.setProperty("--c","var(--"+a+")");
+    const gi = el("div","gi");
+    gi.append(el("b",null, ATTRS[a].zh + " " + ATTRS[a].en), el("span",null, ATTRS[a].desc));
+    const gc = el("div","gc");
+    const minus = el("button",null,"−"); minus.disabled = gAttrs[a]<=1;
+    minus.onclick = () => { if(gAttrs[a]>1){ gAttrs[a]--; renderGate(); } };
+    const plus = el("button",null,"+"); plus.disabled = gLeft()<=0 || gAttrs[a]>=6;
+    plus.onclick = () => { if(gLeft()>0 && gAttrs[a]<6){ gAttrs[a]++; renderGate(); } };
+    gc.append(minus, el("span","gv",String(gAttrs[a])), plus);
+    d.append(gi, gc); box.append(d);
+  }
+  $("gLeft").textContent = gLeft();
+  $("gStart").disabled = gLeft() > 0;
+  $("gStart").textContent = gLeft()>0 ? "还有 " + gLeft() + " 点没分配" : "睁开眼睛";
+}
+$("gRandom").onclick = () => { $("gName").value = pick(NAMES); };
+$("gStart").onclick = () => {
+  if(gLeft() > 0) return;
+  S = DEF();
+  S.made = true;
+  S.name = ($("gName").value || "").trim().slice(0,16) || pick(NAMES);
+  S.attrs = Object.assign({}, gAttrs);
+  refreshMods();
+  S.hp = maxHP(); S.mo = maxMO();
+  sayBrain("醒醒。你还有事没做完。");
+  sayNarr("你在一个陌生的房间里坐起来。天花板上有水渍，形状像一只鸟，或者像一个正在离开的人。");
+  saySkill("voli","从今天起，我们记账。写下来的，就要做到。");
+  saySkill("inla","案卷是空的。空的案卷比满的更吓人。");
+  unlockThoughts();
+  $("gate").classList.add("off");
+  $("app").hidden = false;
+  syncPick(); renderAll(); save();
+  $("tText").focus();
+};
+
+/* ═══════════════ tab / 重置 ═══════════════ */
+document.querySelectorAll(".tabbar button").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll(".tabbar button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    $("wrap").dataset.tab = b.dataset.tab;
+    window.scrollTo({top:0, behavior:"smooth"});
+  };
+});
+$("btnWipe").onclick = () => {
+  if(!confirm("抹去这一切？\n案卷、技能、思维——全部。\n\n这个操作无法撤销。")) return;
+  if(!confirm("真的？\n那个人就不存在了。")) return;
+  try{ localStorage.removeItem(KEY); }catch(e){}
+  location.reload();
+};
+
+/* ═══════════════ 启动 ═══════════════ */
+load();
+refreshMods();
+if(S.made){
+  $("gate").classList.add("off");
+  $("app").hidden = false;
+  if(S.hp > maxHP()) S.hp = maxHP();
+  if(S.mo > maxMO()) S.mo = maxMO();
+  unlockThoughts();
+  syncPick(); renderAll();
+  if(!STORE_OK) saySys("浏览器不允许本地存储，这一局不会被保存。");
+}else{
+  $("gate").classList.remove("off");
+  renderGate();
+}
+</script>
+</body>
+</html>
