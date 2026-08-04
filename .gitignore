@@ -1,0 +1,2 @@
+# tools/build-globe-data.mjs 下载的 Natural Earth 原始数据缓存
+.cache/
