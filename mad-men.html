@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#2a2622">
+<title>SC&amp;P 人事档案 · 广告狂人</title>
+<style>
+  :root {
+    --paper:    #ece2cb;
+    --paper-hi: #f4ecd8;
+    --ink:      #1c1a17;
+    --type:     #4a453c;
+    --brick:    #a4342a;
+    --olive:    #4e6b45;
+    --mustard:  #c9a227;
+    --folder:   #7a6a52;
+    --desk:     #2a2622;
+
+    --sans: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --mono: 'Courier New', Courier, monospace;
+    --serif-en: Georgia, 'Times New Roman', serif;
+    --serif-cn: 'Songti SC', 'Noto Serif SC', 'Source Han Serif SC', SimSun, serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    touch-action: none;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background:
+      radial-gradient(120% 90% at 50% 18%, #3a342d 0%, #2a2622 55%, #1a1714 100%);
+    color: var(--paper);
+    font-family: var(--sans);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Rasterized once and tiled — a full-page feTurbulence would cost a repaint
+     on every drag frame. */
+  .grain {
+    position: fixed; inset: 0; pointer-events: none; z-index: 900;
+    opacity: .05; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ── top bar ───────────────────────────────────────────────── */
+  header {
+    width: 100%;
+    padding: max(14px, env(safe-area-inset-top)) 16px 8px;
+    text-align: center;
+    flex: 0 0 auto;
+  }
+  .agency {
+    font-size: 11px; letter-spacing: .34em; font-weight: 700;
+    color: #c8bda4;
+  }
+  .agency b { color: var(--mustard); font-weight: 700; }
+  .addr {
+    font-family: var(--mono);
+    font-size: 9px; letter-spacing: .16em; color: #7d7466; margin-top: 4px;
+  }
+  .progress {
+    margin-top: 9px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: .12em; color: #8d8474;
+  }
+  .pbar { width: 108px; height: 3px; background: #443d35; position: relative; }
+  .pbar i { position: absolute; inset: 0 auto 0 0; background: var(--mustard); transition: width .35s ease; }
+
+  /* ── deck ──────────────────────────────────────────────────── */
+  .stage {
+    flex: 1 1 auto;
+    width: 100%;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 0;
+    padding: 4px 0;
+  }
+  .deck {
+    position: relative;
+    width: min(90vw, 372px);
+    height: min(100%, 604px);
+    perspective: 1600px;
+  }
+
+  .card {
+    position: absolute; inset: 0;
+    transform-style: preserve-3d;
+    will-change: transform;
+    cursor: grab;
+  }
+  .card.top { cursor: grab; }
+  .card.top:active { cursor: grabbing; }
+  .card.glide { transition: transform .5s cubic-bezier(.2,.7,.3,1), opacity .5s ease; }
+  .card.gone  { pointer-events: none; }
+
+  .inner {
+    position: absolute; inset: 0;
+    transform-style: preserve-3d;
+    transition: transform .62s cubic-bezier(.4,.05,.2,1);
+  }
+  .card.flipped .inner { transform: rotateY(180deg); }
+
+  .face {
+    position: absolute; inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 3px;
+    background: var(--paper);
+    background-image:
+      linear-gradient(148deg, var(--paper-hi) 0%, var(--paper) 42%, #e2d6bb 100%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.36'/%3E%3C/svg%3E");
+    background-blend-mode: normal, multiply;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.5) inset,
+      0 18px 34px rgba(0,0,0,.44),
+      0 3px 8px rgba(0,0,0,.3);
+    color: var(--ink);
+    display: flex; flex-direction: column;
+    padding: 13px 15px 11px;
+    overflow: hidden;
+  }
+  .face.back { transform: rotateY(180deg); padding: 13px 0 11px; }
+
+  /* letterhead */
+  .lh { text-align: center; flex: 0 0 auto; }
+  .lh .n {
+    font-size: 10px; font-weight: 700; letter-spacing: .2em; color: var(--ink);
+  }
+  .lh .a {
+    font-family: var(--mono); font-size: 7.5px; letter-spacing: .1em;
+    color: var(--type); margin-top: 2px;
+  }
+  .rule { border: 0; border-top: 1.5px solid var(--ink); margin: 5px 0 1px; opacity: .8; }
+  .rule.thin { border-top: .5px solid var(--folder); margin: 1px 0 0; }
+
+  .fileline {
+    display: flex; align-items: baseline; justify-content: space-between;
+    font-family: var(--mono); font-size: 8.5px; letter-spacing: .07em;
+    color: var(--type); margin-top: 7px; flex: 0 0 auto;
+  }
+  .conf {
+    border: 1.2px solid var(--brick); color: var(--brick);
+    padding: 1px 5px; font-weight: 700; letter-spacing: .14em;
+    transform: rotate(-4deg); opacity: .72; font-size: 8px;
+  }
+
+  /* identity row */
+  .idrow { display: flex; gap: 12px; margin-top: 10px; flex: 0 0 auto; }
+  .pt-frame {
+    width: 104px; height: 117px; flex: 0 0 auto;
+    border: 1px solid var(--ink);
+    padding: 3px; background: #ded2b6;
+    box-shadow: 1px 1px 0 rgba(0,0,0,.18);
+  }
+  .pt-frame svg { display: block; width: 100%; height: 100%; }
+  .idcol { min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .name-en {
+    font-size: 16.5px; font-weight: 700; letter-spacing: .012em;
+    line-height: 1.08; text-transform: uppercase;
+  }
+  .name-cn {
+    font-family: var(--serif-cn); font-size: 14px; margin-top: 5px; letter-spacing: .05em;
+  }
+  .meta {
+    font-family: var(--mono); font-size: 9px; color: var(--type);
+    margin-top: 6px; letter-spacing: .04em; line-height: 1.5;
+  }
+  .title-en {
+    margin-top: 5px; font-size: 8px; letter-spacing: .17em;
+    color: var(--ink); border-top: .5px solid var(--folder);
+    padding-top: 4px; text-transform: uppercase;
+  }
+
+  /* quote */
+  .quote { margin-top: 10px; flex: 0 0 auto; }
+  .q-en {
+    font-family: var(--serif-en); font-style: italic; font-size: 14px;
+    line-height: 1.38; color: var(--ink);
+  }
+  .q-cn {
+    font-family: var(--serif-cn); font-size: 11.5px; color: var(--type);
+    margin-top: 4px; line-height: 1.45;
+  }
+
+  /* 十四个人的正文长短不一，卡片高度却是固定的。与其让余量塌成一块空洞，
+     不如给摘要区打上表格横线 —— 正文落在线上，剩下的就是表单上还没写满的
+     那几行，这才是一份 1960 年代人事表该有的样子 */
+  .summary {
+    flex: 1 1 auto; min-height: 0; margin-top: 10px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .ruled {
+    flex: 1 1 auto; min-height: 0; overflow: hidden;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0 21px,
+      rgba(122,106,82,.26) 21px 22px);
+  }
+  .summary > h4 {
+    margin: 0 0 6px; font-size: 8px; letter-spacing: .2em; font-weight: 700;
+    color: var(--type); text-transform: uppercase;
+    border-bottom: .5px solid var(--folder); padding-bottom: 3px;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .summary > h4 em {
+    font-family: var(--serif-cn); font-style: normal; font-size: 9px;
+    letter-spacing: .1em; color: var(--ink);
+  }
+  /* line-height 必须等于横线周期，正文才会正好坐在线上 */
+  .bio {
+    font-family: var(--serif-cn); font-size: 12.5px; line-height: 22px;
+    color: #2c2822;
+  }
+
+  /* stats — typed scale */
+  .stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 7px 12px;
+    margin-top: 9px; flex: 0 0 auto;
+    padding-top: 8px; border-top: .5px solid var(--folder);
+  }
+  .stat { display: flex; align-items: center; gap: 6px; }
+  .stat span {
+    font-family: var(--serif-cn); font-size: 9.5px; color: var(--type);
+    width: 26px; flex: 0 0 auto; letter-spacing: .04em;
+  }
+  .scale { display: flex; gap: 1.5px; }
+  .scale i { width: 4px; height: 10px; background: #cbbd9e; display: block; }
+  .scale i.on { background: var(--ink); }
+  .scale i.hot { background: var(--brick); }
+
+  /* tags */
+  .tags {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; flex: 0 0 auto;
+    max-height: 40px; overflow: hidden;
+  }
+  .tag {
+    font-family: var(--serif-cn); font-size: 9px; letter-spacing: .03em;
+    border: .8px solid var(--folder); color: var(--type);
+    padding: 2px 6px; white-space: nowrap;
+  }
+  .tag::before { content: '◆'; margin-right: 3px; font-size: 7px; color: var(--mustard); }
+
+  .flip-hint {
+    margin-top: 8px; flex: 0 0 auto;
+    font-family: var(--mono); font-size: 8px; letter-spacing: .12em;
+    color: var(--folder); text-align: right;
+  }
+
+  /* ── card back ─────────────────────────────────────────────── */
+  .back-scroll {
+    overflow-y: auto; flex: 1 1 auto; min-height: 0;
+    padding: 0 15px;
+    scrollbar-width: thin; scrollbar-color: var(--folder) transparent;
+  }
+  .back-scroll::-webkit-scrollbar { width: 4px; }
+  .back-scroll::-webkit-scrollbar-thumb { background: var(--folder); }
+  .back-head {
+    flex: 0 0 auto; padding: 0 15px;
+    display: flex; align-items: baseline; justify-content: space-between;
+    font-family: var(--mono); font-size: 8.5px; letter-spacing: .07em; color: var(--type);
+  }
+  .back-title {
+    font-size: 12px; font-weight: 700; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--ink);
+  }
+  .sec { margin-top: 12px; }
+  .sec h4 {
+    margin: 0 0 5px; font-size: 8.5px; letter-spacing: .2em; font-weight: 700;
+    color: var(--type); text-transform: uppercase;
+    border-bottom: .5px solid var(--folder); padding-bottom: 3px;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .sec h4 em {
+    font-family: var(--serif-cn); font-style: normal; letter-spacing: .08em;
+    font-size: 9.5px; color: var(--ink);
+  }
+  .kv {
+    display: flex; gap: 8px; font-family: var(--serif-cn); font-size: 10.5px;
+    line-height: 1.6; color: #2c2822;
+  }
+  .kv b { flex: 0 0 52px; font-weight: 400; color: var(--type); }
+  ul.flags { margin: 0; padding: 0; list-style: none; }
+  ul.flags li {
+    font-family: var(--serif-cn); font-size: 10.5px; line-height: 1.5;
+    padding: 3px 0 3px 17px; position: relative; color: #2c2822;
+  }
+  ul.flags li::before {
+    position: absolute; left: 0; top: 3px; font-size: 9px; font-family: var(--mono);
+  }
+  ul.red  li::before { content: '▌'; color: var(--brick); }
+  ul.grn  li::before { content: '▌'; color: var(--olive); }
+  .looking {
+    font-family: var(--serif-cn); font-size: 11px; line-height: 1.6;
+    color: var(--ink); font-style: italic;
+  }
+  .secret {
+    margin-top: 12px; border: 1px dashed var(--brick); padding: 8px 10px;
+    background: rgba(164,52,42,.05);
+  }
+  .secret h5 {
+    margin: 0 0 4px; font-family: var(--mono); font-size: 8px; letter-spacing: .16em;
+    color: var(--brick); font-weight: 700;
+  }
+  .secret p {
+    margin: 0; font-family: var(--serif-cn); font-size: 10.5px; line-height: 1.6; color: #34281f;
+  }
+  .back-foot {
+    flex: 0 0 auto; padding: 8px 15px 0; margin-top: 4px;
+    font-family: var(--mono); font-size: 8px; letter-spacing: .12em;
+    color: var(--folder); text-align: left;
+    border-top: .5px solid rgba(122,106,82,.4);
+  }
+
+  /* ── stamps ────────────────────────────────────────────────── */
+  /* 盖在信笺抬头上，而不是压着肖像 —— 真正的橡皮图章就是往抬头上砸的 */
+  .stamp {
+    position: absolute; top: 26px;
+    transform: translateZ(4px) rotate(-12deg);
+    opacity: 0; pointer-events: none;
+    border: 4px double currentColor; border-radius: 4px;
+    padding: 7px 15px 9px; text-align: center;
+    font-family: var(--sans); font-weight: 700;
+    background: rgba(236,226,203,.55);
+  }
+  .stamp .cn { font-size: 33px; letter-spacing: .22em; text-indent: .22em; line-height: 1.02; }
+  .stamp .en { font-size: 10px; letter-spacing: .34em; text-indent: .34em; margin-top: 3px; }
+  .stamp.sold { left: 16px;  color: var(--olive); }
+  .stamp.kill { right: 16px; color: var(--brick); transform: translateZ(4px) rotate(12deg); }
+
+  /* ── controls ──────────────────────────────────────────────── */
+  .controls {
+    flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center; gap: 20px;
+    padding: 12px 0 max(14px, env(safe-area-inset-bottom));
+  }
+  .btn {
+    width: 54px; height: 54px; border-radius: 50%;
+    border: 1.5px solid #6a6154; background: #3a352e;
+    color: var(--paper); font-size: 20px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: transform .12s ease, background .16s ease, border-color .16s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,.4);
+  }
+  .btn:active { transform: scale(.9); }
+  .btn.kill:hover { border-color: var(--brick); color: #e8776a; }
+  .btn.sold:hover { border-color: var(--olive); color: #94c288; }
+  .btn.info {
+    width: 46px; height: 46px; font-family: var(--mono); font-size: 10px;
+    letter-spacing: .06em;
+  }
+  .btn.info:hover { border-color: var(--mustard); color: var(--mustard); }
+  .keyhint {
+    position: absolute; bottom: 4px; width: 100%; text-align: center;
+    font-family: var(--mono); font-size: 8px; letter-spacing: .1em; color: #5d564b;
+  }
+
+  /* ── overlays ──────────────────────────────────────────────── */
+  .veil {
+    position: fixed; inset: 0; z-index: 800;
+    background: rgba(14,12,10,.72);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity .3s ease;
+  }
+  .veil.on { opacity: 1; pointer-events: auto; }
+
+  .memo {
+    width: min(92vw, 400px);
+    max-height: 88vh; overflow-y: auto;
+    background: var(--paper-hi);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.3'/%3E%3C/svg%3E");
+    color: var(--ink); padding: 20px 22px 18px;
+    box-shadow: 0 26px 60px rgba(0,0,0,.6);
+    transform: translateY(16px) rotate(-.6deg) scale(.96);
+    transition: transform .42s cubic-bezier(.2,.8,.3,1);
+  }
+  .veil.on .memo { transform: translateY(0) rotate(-.6deg) scale(1); }
+
+  .memo-hd {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .2em;
+    text-align: center; color: var(--type); font-weight: 700;
+  }
+  .memo-rule { border: 0; border-top: 2px solid var(--ink); margin: 6px 0 10px; }
+  .memo-rows { font-family: var(--mono); font-size: 10px; line-height: 1.9; color: var(--type); }
+  .memo-rows b { display: inline-block; width: 46px; color: var(--ink); font-weight: 700; }
+  .memo-body { margin-top: 14px; display: flex; gap: 14px; align-items: flex-start; }
+  .memo-body .pt-frame { width: 76px; height: 85px; }
+  .memo-hit {
+    font-size: 21px; font-weight: 700; letter-spacing: .1em; line-height: 1.15;
+  }
+  .memo-sub {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .1em;
+    color: var(--type); margin-top: 5px;
+  }
+  .memo-line {
+    font-family: var(--serif-cn); font-size: 12.5px; line-height: 1.7;
+    margin-top: 12px; padding: 10px 12px;
+    border-left: 3px solid var(--mustard); background: rgba(201,162,39,.09);
+  }
+  .memo-act {
+    margin-top: 16px; display: flex; justify-content: flex-end; gap: 10px;
+  }
+  .paper-btn {
+    font-family: var(--sans); font-size: 10.5px; letter-spacing: .16em; font-weight: 700;
+    padding: 9px 18px; cursor: pointer;
+    background: transparent; color: var(--ink); border: 1.5px solid var(--ink);
+    transition: background .16s ease, color .16s ease;
+  }
+  .paper-btn:hover { background: var(--ink); color: var(--paper); }
+  .paper-btn.ghost { border-color: var(--folder); color: var(--type); }
+  .paper-btn.ghost:hover { background: var(--folder); color: var(--paper-hi); }
+
+  /* rejection slip */
+  .slip {
+    position: fixed; left: 50%; z-index: 850;
+    bottom: calc(96px + env(safe-area-inset-bottom));
+    transform: translate(-50%, 22px) rotate(-1.4deg);
+    width: min(84vw, 320px);
+    background: #ded2b6; color: #2c2822;
+    border: 1px solid #a89a7c; border-left: 4px solid var(--brick);
+    padding: 9px 13px; box-shadow: 0 12px 26px rgba(0,0,0,.5);
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  .slip.on { opacity: 1; transform: translate(-50%, 0) rotate(-1.4deg); }
+  .slip .t {
+    font-family: var(--mono); font-size: 8px; letter-spacing: .2em;
+    color: var(--brick); font-weight: 700;
+  }
+  .slip .l {
+    font-family: var(--serif-cn); font-size: 11.5px; line-height: 1.55; margin-top: 4px;
+  }
+  .slip .w { font-family: var(--mono); font-size: 8.5px; color: var(--type); margin-top: 5px; }
+
+  /* ── report ────────────────────────────────────────────────── */
+  .report {
+    position: fixed; inset: 0; z-index: 700;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    background: radial-gradient(120% 80% at 50% 10%, #3a342d 0%, #241f1b 60%, #16130f 100%);
+    padding: 26px 16px calc(30px + env(safe-area-inset-bottom));
+    display: none;
+  }
+  .report.on { display: block; }
+  .rpaper {
+    width: min(94vw, 460px); margin: 0 auto;
+    background: var(--paper);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.32'/%3E%3C/svg%3E");
+    color: var(--ink); padding: 24px 22px 22px;
+    box-shadow: 0 30px 70px rgba(0,0,0,.6);
+  }
+  .r-hd { text-align: center; }
+  .r-hd .n { font-size: 10px; letter-spacing: .3em; font-weight: 700; }
+  .r-hd .t {
+    font-family: var(--serif-cn); font-size: 21px; letter-spacing: .12em;
+    margin-top: 10px; font-weight: 700;
+  }
+  .r-hd .s {
+    font-family: var(--mono); font-size: 8.5px; letter-spacing: .16em;
+    color: var(--type); margin-top: 6px;
+  }
+  .r-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    margin-top: 18px; text-align: center;
+  }
+  .r-cell { border: 1px solid var(--folder); padding: 8px 3px; }
+  .r-cell b { display: block; font-family: var(--mono); font-size: 19px; color: var(--ink); }
+  .r-cell span {
+    display: block; font-family: var(--serif-cn); font-size: 8.5px;
+    color: var(--type); margin-top: 3px; letter-spacing: .05em;
+  }
+  .r-sec { margin-top: 20px; }
+  .r-sec > h4 {
+    margin: 0 0 9px; font-size: 9px; letter-spacing: .22em; font-weight: 700;
+    color: var(--type); border-bottom: 1.5px solid var(--ink); padding-bottom: 5px;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .r-sec > h4 em {
+    font-family: var(--serif-cn); font-style: normal; font-size: 11px;
+    letter-spacing: .1em; color: var(--ink);
+  }
+  .verdict-t {
+    font-family: var(--serif-cn); font-size: 17px; font-weight: 700;
+    letter-spacing: .06em; line-height: 1.4;
+  }
+  .verdict-b {
+    font-family: var(--serif-cn); font-size: 11.5px; line-height: 1.75;
+    color: #2c2822; margin-top: 8px;
+  }
+  .mlist { display: flex; flex-direction: column; gap: 8px; }
+  .mrow { display: flex; gap: 10px; align-items: flex-start; }
+  .mrow .pt-frame { width: 46px; height: 52px; padding: 2px; }
+  .mrow .mn { font-size: 11.5px; font-weight: 700; letter-spacing: .02em; }
+  .mrow .mc { font-family: var(--serif-cn); font-size: 10px; color: var(--type); margin-top: 2px; }
+  .mrow .ml {
+    font-family: var(--serif-cn); font-size: 10px; color: #3a332b;
+    margin-top: 4px; line-height: 1.5; font-style: italic;
+  }
+  .empty {
+    font-family: var(--serif-cn); font-size: 11px; color: var(--type);
+    line-height: 1.7; font-style: italic;
+  }
+  .r-act { margin-top: 22px; text-align: center; }
+  .r-foot {
+    margin-top: 18px; padding-top: 10px; border-top: .5px solid var(--folder);
+    font-family: var(--mono); font-size: 7.5px; letter-spacing: .1em;
+    color: var(--folder); text-align: center; line-height: 1.7;
+  }
+
+  /* ── intro ─────────────────────────────────────────────────── */
+  .intro-t {
+    font-family: var(--serif-cn); font-size: 19px; font-weight: 700;
+    letter-spacing: .1em; margin-top: 14px;
+  }
+  .intro-p {
+    font-family: var(--serif-cn); font-size: 11.5px; line-height: 1.8;
+    color: #2c2822; margin-top: 12px;
+  }
+  .intro-keys {
+    margin-top: 14px; font-family: var(--mono); font-size: 9.5px;
+    line-height: 2; color: var(--type);
+  }
+  .intro-keys b { color: var(--ink); }
+
+  @media (max-width: 470px) { .addr .tel { display: none; } }
+
+  @media (max-height: 680px) {
+    .deck { height: min(100%, 540px); }
+    .bio { font-size: 11px; line-height: 1.5; }
+    .pt-frame { width: 84px; height: 94px; }
+    .btn { width: 48px; height: 48px; font-size: 18px; }
+    .btn.info { width: 42px; height: 42px; }
+  }
+  @media (max-width: 340px) {
+    .name-en { font-size: 13px; }
+    .q-en { font-size: 11.5px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<!-- Shared defs: every portrait references these by id, so the halftone
+     pattern is defined once instead of 14 times with colliding ids. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <pattern id="ht" width="5" height="5" patternUnits="userSpaceOnUse">
+    <circle cx="1.25" cy="1.25" r="1.05" fill="#000" opacity=".17"/>
+    <circle cx="3.75" cy="3.75" r="1.05" fill="#000" opacity=".17"/>
+  </pattern>
+</defs></svg>
+
+<header>
+  <div class="agency">STERLING COOPER <b>DRAPER</b> PRYCE</div>
+  <div class="addr">405 MADISON AVENUE &nbsp;·&nbsp; NEW YORK 22, N.Y.<span class="tel"> &nbsp;·&nbsp; MURRAY HILL 5-9975</span></div>
+  <div class="progress">
+    <span id="pnum">档案 01 / 14</span>
+    <div class="pbar"><i id="pfill" style="width:7%"></i></div>
+    <span id="pcount">成交 0</span>
+  </div>
+</header>
+
+<div class="stage"><div class="deck" id="deck"></div></div>
+
+<div class="controls">
+  <div class="btn kill" id="bKill" title="毙稿（←）">✕</div>
+  <div class="btn info" id="bInfo" title="翻面看完整档案（↑）">详情</div>
+  <div class="btn sold" id="bSold" title="成交（→）">♥</div>
+</div>
+
+<div class="slip" id="slip">
+  <div class="t">RETURNED TO SENDER · 退 件</div>
+  <div class="l" id="slipLine"></div>
+  <div class="w" id="slipWho"></div>
+</div>
+
+<div class="veil" id="veil">
+  <div class="memo" id="memo"></div>
+</div>
+
+<div class="report" id="report"></div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════════
+   肖像:参数化的中世纪广告插画。共用一个底座(肩→颈→头→五官),
+   每个角色换发型/服装/配饰的 path,再叠一层半调网点 —— 十四张
+   手绘不现实，但十四组参数足以让每个人一眼可辨。
+   ═══════════════════════════════════════════════════════════ */
+
+const HAIR = {
+  // 男式侧分:头顶一弯，外加一缕斜过额头的刘海
+  part: c => `<path d="M30 45C29 25 37 17 50 17s21 8 20 27c-1-10-6-15-15-13.5C46 32 37 37 32 45Z" fill="${c}"/>`
+           + `<path d="M35 27c9-6 21-6 28 1-9-3-19-2-28 4Z" fill="#fff" opacity=".13"/>`,
+  // 后退的发际线:头发还是满的，只是两边的角退进去了一截
+  // ——他还年轻，只是每天早上都要在镜子前确认一次（Pete 不许提这件事）
+  recede: c => `<path d="M30 45C29.5 27 36 19 50 19s20.5 8 20 26c-.5-8-3-12-7-13.5`
+             + `C61 30 60 34 60 38c-2-4-5-6-10-6s-8 2-10 6c0-4-1-8-3-6.5-4 1.5-6.5 5.5-7 13.5Z" fill="${c}"/>`,
+  // 全秃 + 两撮:伯特
+  bald: c => `<path d="M30 48c-1-8 0-14 4-17-1 6-1 12 0 17Z" fill="${c}"/>`
+           + `<path d="M70 48c1-8 0-14-4-17 1 6 1 12 0 17Z" fill="${c}"/>`,
+  // 蓬松高髻:琼、贝蒂、特鲁迪
+  bouffant: c => `<path d="M23 52C18 24 32 6 50 6s32 18 27 46c-3-16-10-24-20-26-13-2-25 7-29 18-1 3-3 6-5 8Z" fill="${c}"/>`
+               + `<path d="M25 46c-3 10-2 19 3 25-3-10-2-19 0-24Z" fill="${c}"/>`
+               + `<path d="M75 46c3 10 2 19-3 25 3-10 2-19 0-24Z" fill="${c}"/>`
+               + `<path d="M34 20c9-8 24-8 33 2-10-6-23-6-33-2Z" fill="#fff" opacity=".16"/>`,
+  // 齐刘海波波头:佩姬
+  bob: c => `<path d="M27 55C25 26 36 13 50 13s25 13 23 42c0-9-1-15-2-20-11-4-31-4-42 0-1 5-2 11-2 20Z" fill="${c}"/>`,
+  // 中分长直发:梅根
+  long: c => `<path d="M27 76C25 32 35 13 50 13s25 19 23 63c-2-21-5-34-10-41-6-8-20-8-26 0-5 7-8 20-10 41Z" fill="${c}"/>`,
+  // 一团卷:金斯伯格、斯坦
+  curly: c => [[34,29],[42,21],[50,18],[58,21],[66,29],[30,39],[70,39],[38,24],[62,24],[50,26]]
+              .map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="8.4" fill="${c}"/>`).join('')
+};
+
+const EX = {
+  cig: `<rect x="57" y="55" width="17" height="2.6" rx="1" fill="#f6f0e0"/>`
+     + `<rect x="72.5" y="55" width="3.4" height="2.6" fill="#b8560f"/>`
+     + `<path d="M78 55c5-4 0-8 5-12" stroke="#fff" stroke-width="1.4" fill="none" opacity=".5" stroke-linecap="round"/>`,
+  martini: `<path d="M76 74l-9 11 9 11 9-11Z" fill="#f6f0e0" opacity=".9"/>`
+         + `<rect x="74.6" y="95" width="2.8" height="10" fill="#f6f0e0" opacity=".9"/>`
+         + `<rect x="69" y="104" width="14" height="2.6" fill="#f6f0e0" opacity=".9"/>`
+         + `<circle cx="76" cy="82" r="2.4" fill="#4e6b45"/>`,
+  glassRound: `<circle cx="41" cy="44" r="6.4" fill="none" stroke="#1c1a17" stroke-width="1.5"/>`
+            + `<circle cx="59" cy="44" r="6.4" fill="none" stroke="#1c1a17" stroke-width="1.5"/>`
+            + `<path d="M47.4 44h5.2M34.6 43l-4-2M65.4 43l4-2" stroke="#1c1a17" stroke-width="1.5" fill="none"/>`,
+  glassHeavy: `<rect x="33.5" y="38.5" width="15" height="11" rx="2.4" fill="none" stroke="#1c1a17" stroke-width="2.4"/>`
+            + `<rect x="51.5" y="38.5" width="15" height="11" rx="2.4" fill="none" stroke="#1c1a17" stroke-width="2.4"/>`
+            + `<path d="M48.5 43h3" stroke="#1c1a17" stroke-width="2.4"/>`,
+  patch: `<path d="M31.5 39.5l16-2v11l-16-2Z" fill="#1c1a17"/>`
+       + `<path d="M30 37.5L71 33" stroke="#1c1a17" stroke-width="1.5" fill="none"/>`,
+  beard: c => `<path d="M31 41c0 23 9 35 19 35s19-12 19-35c-3 13-9 17-19 17s-16-4-19-17Z" fill="${c}"/>`,
+  headband: c => `<path d="M29 31c13-7 29-7 42 0l-1.4 4.6c-12-6-27-6-39 0Z" fill="${c}"/>`,
+  bow: c => `<path d="M50 84l-11-6v12ZM50 84l11-6v12Z" fill="${c}"/><circle cx="50" cy="84" r="3" fill="${c}"/>`,
+  pendant: `<path d="M40 78c4 7 16 7 20 0" stroke="#c9a227" stroke-width="1.4" fill="none"/>`
+         + `<rect x="48.6" y="83" width="2.8" height="11" rx="1.4" fill="#c9a227"/>`,
+  sideburn: c => `<path d="M31 42c0 8 1 13 3 16 1-5 1-11 0-16Z" fill="${c}"/>`
+                + `<path d="M69 42c0 8-1 13-3 16-1-5-1-11 0-16Z" fill="${c}"/>`
+};
+
+// 领口:西装翻领 + 衬衫 V + 领带，或女装的开领
+function suit(coat, shirt, tie) {
+  return `<path d="M50 76c-17 0-31 12-34 36h68c-3-24-17-36-34-36Z" fill="${coat}"/>`
+       + `<path d="M42 77l8 13 8-13c-3-1.6-5-2.4-8-2.4s-5 .8-8 2.4Z" fill="${shirt}"/>`
+       + `<path d="M46.4 84l3.6 5 3.6-5-1.6-2.6h-4Z" fill="${tie}"/>`
+       + `<path d="M47 89h6l2 23h-10Z" fill="${tie}"/>`
+       + `<path d="M50 76 38 82l-6-2c3-2 8-3.6 12-4.4Zm0 0 12 6 6-2c-3-2-8-3.6-12-4.4Z" fill="${coat}" opacity=".55"/>`;
+}
+function dress(cloth, trim) {
+  return `<path d="M50 76c-17 0-31 12-34 36h68c-3-24-17-36-34-36Z" fill="${cloth}"/>`
+       + `<path d="M43 75.6C45 84 47 88 50 88s5-4 7-12.4c-2.4-1-4.4-1.4-7-1.4s-4.6.4-7 1.4Z" fill="${trim}"/>`;
+}
+function shirtOpen(cloth, skin) {
+  return `<path d="M50 76c-17 0-31 12-34 36h68c-3-24-17-36-34-36Z" fill="${cloth}"/>`
+       + `<path d="M43 75.4 50 92l7-16.6c-2.2-1-4.4-1.4-7-1.4s-4.8.4-7 1.4Z" fill="${skin}"/>`
+       + `<path d="M43 75.4 50 92 41 84Zm14 0L50 92l9-8Z" fill="#000" opacity=".14"/>`;
+}
+
+function portrait(p) {
+  const dark = p.dark || 'rgba(0,0,0,.16)';
+  const lash = p.femme
+    ? `<path d="M35.6 40.6q5.4-3.4 10.8 0M53.6 40.6q5.4-3.4 10.8 0" stroke="${p.hair}" stroke-width="1.5" fill="none" stroke-linecap="round"/>`
+    : `<path d="M36 39.6q5-2.6 10 0M54 39.6q5-2.6 10 0" stroke="${p.hair}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
+  const mouth = p.femme
+    ? `<path d="M44.6 58.4q5.4-2.6 10.8 0q-5.4 4.6-10.8 0Z" fill="${p.lip || '#a4342a'}"/>`
+    : `<path d="M45 59q5 2.6 10 0" stroke="#8a5a48" stroke-width="1.5" fill="none" stroke-linecap="round"/>`;
+
+  return `<svg viewBox="0 0 100 112" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="112" fill="${p.bg}"/>
+    <rect width="100" height="112" fill="url(#ht)"/>
+    <circle cx="50" cy="44" r="33" fill="#fff" opacity=".1"/>
+    ${p.body}
+    <path d="M43 60h14v17H43Z" fill="${p.skin}"/>
+    <path d="M43 60h14v8c-5 3-10 3-14 0Z" fill="${dark}"/>
+    <ellipse cx="50" cy="44" rx="20" ry="24" fill="${p.skin}"/>
+    <ellipse cx="29.6" cy="46" rx="3.4" ry="5" fill="${p.skin}"/>
+    <ellipse cx="70.4" cy="46" rx="3.4" ry="5" fill="${p.skin}"/>
+    ${p.hairPath}
+    ${lash}
+    <ellipse cx="41" cy="44.4" rx="2.2" ry="2.6" fill="#1c1a17"/>
+    <ellipse cx="59" cy="44.4" rx="2.2" ry="2.6" fill="#1c1a17"/>
+    <path d="M50.4 46.6 53 53.6h-4.6" fill="none" stroke="${dark}" stroke-width="1.3" stroke-linejoin="round"/>
+    ${mouth}
+    ${(p.extras || []).join('')}
+  </svg>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   档案
+   ═══════════════════════════════════════════════════════════ */
+
+const SKIN = { pale: '#efc9a8', warm: '#e8bd9a', tan: '#dfb083' };
+
+const CAST = [
+{
+  id: 'don',
+  en: 'Donald F. Draper', cn: '唐·德雷柏', age: 36,
+  title: '创意总监', titleEn: 'Creative Director',
+  art: {
+    bg: '#3f5750', skin: SKIN.warm, hair: '#2b2118',
+    hairPath: HAIR.part('#2b2118'),
+    body: suit('#2f3338', '#f4ecd8', '#37455c'),
+    extras: [EX.cig]
+  },
+  quote: { en: '"Advertising is based on one thing: happiness."', cn: '「广告只基于一件事——幸福。」' },
+  bio: '从毛皮店的文案写到麦迪逊大道最贵的三十分钟。他能把你此刻的空虚重新命名成一件你买得起的东西。别问他从哪儿来。',
+  stats: { 酒量: 9, 烟量: 9, 忠诚: 1, 才华: 10, 野心: 7, 危险: 9 },
+  tags: ['威士忌不加冰', '独自开车', '加州', '会毫无预告地消失'],
+  marital: '已婚（第二段）', exes: '两段婚姻，以及数不清的下午',
+  red: ['他消失起来没有预告，有时候三天', '他喝得比你以为的多得多', '他给你的名字，可能不是他的'],
+  green: ['他会在你放弃自己的时候看见你', '他的提案能让客户当场落泪', '他从不在你面前提前任'],
+  looking: '一个不必解释自己是谁的夜晚。',
+  secret: '他不叫唐·德雷柏。1950 年的朝鲜，他和一位中尉换了身份牌——那位中尉才是 Draper。这件事只有两个人知道，其中一个已经不在了。',
+  openness: .55,
+  open: '我不认识你。这大概是我今年听到的最好的消息。',
+  brush: '我现在有点忙。以后再说吧。',
+  arch: { 危险: 3, 才华: 3, 享乐: 2 }
+},
+{
+  id: 'peggy',
+  en: 'Peggy Olson', cn: '佩姬·奥尔森', age: 26,
+  title: '文案', titleEn: 'Copywriter',
+  art: {
+    bg: '#b5613a', skin: SKIN.pale, hair: '#7b4f2a', femme: true, lip: '#8e3a30',
+    hairPath: HAIR.bob('#7b4f2a'),
+    body: dress('#8a7f5f', '#f4ecd8')
+  },
+  quote: { en: '"I don\'t think anyone wants to be one of a hundred colors in a box."', cn: '「我想没人愿意做颜料盒里一百种颜色中的一种。」' },
+  bio: '从德雷柏先生的秘书起步，现在她的名字印在方案封面上。她记得每一个说过她不行的人的名字，而且名单还留着。',
+  stats: { 酒量: 5, 烟量: 6, 忠诚: 8, 才华: 9, 野心: 10, 危险: 3 },
+  tags: ['加班到凌晨', '抽别人的烟', '一个人看电影', '名字要印在封面上'],
+  marital: '单身', exes: '几段，都输给了工作',
+  red: ['周五晚上她在办公室', '她会把你说的话写进文案', '她比你更清楚自己要什么——这吓跑过人'],
+  green: ['她是真的在听你说话', '她会为你据理力争，对着一屋子男人', '她自己付账'],
+  looking: '一个不会因为她比他强而记恨她的人。',
+  secret: '1960 年她生下过一个孩子，送走了。整间公司只有一个人知道——而那个人从没提过。',
+  openness: .5,
+  open: '我十分钟后有个会。所以你有八分钟。',
+  brush: '我不觉得这是个好主意。我们还得一起工作。',
+  arch: { 才华: 3, 野心: 3, 真诚: 1 }
+},
+{
+  id: 'roger',
+  en: 'Roger Sterling Jr.', cn: '罗杰·斯特林', age: 52,
+  title: '高级合伙人', titleEn: 'Senior Partner',
+  art: {
+    bg: '#55606b', skin: SKIN.pale, hair: '#d8d4cc',
+    hairPath: HAIR.part('#d8d4cc'),
+    body: suit('#4a4f57', '#f4ecd8', '#7fa4c4'),
+    extras: [EX.martini]
+  },
+  quote: { en: '"I bet daily friendship with that bottle attracts more people to advertising than any salary."', cn: '「我打赌，和那只酒瓶的日常友谊，比任何薪水都更能把人吸引进广告业。」' },
+  bio: '公司名字里的第二个字。他一句文案也没写过，却签下了半张客户名单——全在午餐桌上签的。',
+  stats: { 酒量: 10, 烟量: 8, 忠诚: 2, 才华: 5, 野心: 3, 危险: 7 },
+  tags: ['午餐从两杯起步', '口述回忆录', '牡蛎', '随时准备退休'],
+  marital: '已婚（第二段，她二十岁）', exes: '两段婚姻，外加若干位秘书',
+  red: ['他犯过两次心脏病', '他娶了他二十岁的秘书', '他试过 LSD,并且非常推荐'],
+  green: ['全曼哈顿最好笑的人', '他不装深沉', '账单永远是他付'],
+  looking: '有人陪我把这一天喝完。',
+  secret: '琼的儿子凯文是他的。他知道。他什么也没说，只是每个月把钱寄过去。',
+  openness: .85,
+  open: '我这辈子最好的决定都是在第二杯之后做的。现在是第三杯了。',
+  brush: '亲爱的，我已经付不起再一次离婚了。',
+  arch: { 享乐: 3, 危险: 2, 才华: 1 }
+},
+{
+  id: 'joan',
+  en: 'Joan P. Holloway', cn: '琼·霍洛威', age: 31,
+  title: '办公室主任', titleEn: 'Office Manager',
+  art: {
+    bg: '#6e4a5c', skin: SKIN.pale, hair: '#b5401f', femme: true, lip: '#9c2f26',
+    hairPath: HAIR.bouffant('#b5401f'),
+    body: dress('#2f6b52', '#f4ecd8'),
+    extras: [EX.pendant]
+  },
+  quote: { en: '"You want to be taken seriously? Stop dressing like a little girl."', cn: '「想被当回事?那就先别再穿得像个小女孩。」' },
+  bio: '整栋楼真正在运转的那个人。三十秒之内她能告诉你:谁下周会被解雇、谁在撒谎、以及你今天不该穿这件。',
+  stats: { 酒量: 6, 烟量: 4, 忠诚: 7, 才华: 9, 野心: 8, 危险: 6 },
+  tags: ['手写便签', '正红色', '风琴合唱', '知道所有人的秘密'],
+  marital: '已婚 → 离婚', exes: '一位医生，和一段她不愿再提的婚姻',
+  red: ['她的评判标准比你的高一整个档次', '她已经原谅过太多人了', '她不接受被安排'],
+  green: ['五分钟之内解决你所有的麻烦', '她会告诉你实话，哪怕难听', '她见过最坏的情况，而且还站着'],
+  looking: '一个不需要她假装无所谓的人。',
+  secret: '她那个合伙人席位，是用一个晚上换来的。她再也没提过那一夜——包括对她自己。',
+  openness: .3,
+  open: '我给你三分钟。别浪费在夸我头发上。',
+  brush: '谢谢。我认识的像你这样的人已经够多了。',
+  arch: { 才华: 2, 野心: 2, 稳定: 2, 危险: 1 }
+},
+{
+  id: 'pete',
+  en: 'Peter D. Campbell', cn: '皮特·坎贝尔', age: 28,
+  title: '客户总监', titleEn: 'Account Director',
+  art: {
+    bg: '#5b7a94', skin: SKIN.pale, hair: '#a98a5c',
+    hairPath: HAIR.recede('#a98a5c'),
+    body: suit('#3f4a58', '#f4ecd8', '#8e3a30')
+  },
+  quote: { en: '"Why can\'t I get anything good all at once?"', cn: '「为什么我就不能一次性得到点好东西?」' },
+  bio: '曼哈顿老钱人家最不受宠的那个儿子。他会在第一次约会时告诉你，他的家族 1620 年就到了美洲——然后再说一遍。',
+  stats: { 酒量: 6, 烟量: 5, 忠诚: 3, 才华: 6, 野心: 10, 危险: 5 },
+  tags: ['家谱', '猎枪', '他真的很努力', '康涅狄格'],
+  marital: '已婚 → 分居', exes: '一位，而且他还在给她打电话',
+  red: ['他会把你说的话汇报给上级', '他记仇，而且记很久', '不要提发际线。真的不要'],
+  green: ['他会真的为你打一架（然后输）', '他从不假装自己不在乎', '他比这层楼里任何人都更努力'],
+  looking: '有人告诉我，我做的这些事是有意义的。',
+  secret: '他曾经向创始人举报唐的真实身份。创始人听完，只说了一句:「谁在乎呢?」',
+  openness: .95,
+  open: '太好了。真的。我是说——太好了。我这就去订位子。',
+  brush: '……行吧。反正我本来今晚也有别的安排。',
+  arch: { 野心: 3, 危险: 1, 真诚: 1 }
+},
+{
+  id: 'betty',
+  en: 'Elizabeth "Betty" Draper', cn: '贝蒂·德雷柏', age: 30,
+  title: '前模特 / 主妇', titleEn: 'Homemaker, Fmr. Model',
+  art: {
+    bg: '#8fae9b', skin: SKIN.pale, hair: '#e0c88a', femme: true, lip: '#a4342a',
+    hairPath: HAIR.bouffant('#e0c88a'),
+    body: dress('#5b7a94', '#f4ecd8')
+  },
+  quote: { en: '"Only boring people are bored."', cn: '「只有无聊的人，才会觉得无聊。」' },
+  bio: '布林莫尔学院的人类学学位，意大利语流利，在米兰拍过时装。现在她住在奥辛宁，有一栋很大的房子，和很多个下午。',
+  stats: { 酒量: 5, 烟量: 8, 忠诚: 5, 才华: 6, 野心: 4, 危险: 8 },
+  tags: ['马术', '意大利语', '气枪', '完美的餐桌'],
+  marital: '已婚 → 离婚 → 再婚', exes: '一位，他毁了她对婚姻的全部看法',
+  red: ['她的冷淡不是欲擒故纵，是真的冷', '她拿气枪打过邻居家的鸽子', '她的心理医生每周向她丈夫汇报'],
+  green: ['她比所有人以为的都聪明得多', '她会说三种语言', '她曾经真的很快乐，而且她还记得那是什么感觉'],
+  looking: '一个不把我当装饰品的人。',
+  secret: '她知道的比她说出来的多得多——关于她丈夫，关于这条街上的每一户人家。她只是选择不说。',
+  openness: .2,
+  open: '我不太确定我为什么答应了。……坐吧。',
+  brush: '我想我们都很清楚这不合适。',
+  arch: { 危险: 3, 稳定: 1, 享乐: 1 }
+},
+{
+  id: 'bert',
+  en: 'Bertram Cooper', cn: '伯特·库珀', age: 71,
+  title: '创始合伙人', titleEn: 'Founding Partner',
+  art: {
+    bg: '#6b4f3a', skin: SKIN.pale, hair: '#d8d4cc',
+    hairPath: HAIR.bald('#d8d4cc'),
+    body: suit('#3a3a3a', '#f4ecd8', '#3a3a3a'),
+    extras: [EX.glassRound, EX.bow('#8e3a30'),
+      `<path d="M40 47q4 3 8 0M52 47q4 3 8 0" stroke="#8a7a6a" stroke-width="1.1" fill="none" opacity=".7"/>`]
+  },
+  quote: { en: '"Young men love risks because they cannot imagine the consequences."', cn: '「年轻人喜欢冒险，因为他们想象不出后果。」' },
+  bio: '公司名字里的第一个字。他的办公室里有一幅浮世绘、一套茶具，和一条不容商量的规矩:进门请脱鞋。',
+  stats: { 酒量: 3, 烟量: 2, 忠诚: 9, 才华: 7, 野心: 2, 危险: 2 },
+  tags: ['浮世绘', '安·兰德', '围棋', '进门请脱鞋'],
+  marital: '未婚', exes: '无人知晓',
+  red: ['他七十一岁了', '他会送你一本《源泉》并且过问读后感', '他对你的道德困境不太感兴趣'],
+  green: ['他见过一切，所以什么都不会让他惊慌', '他记得这栋楼里每个人的名字', '他从不提高音量'],
+  looking: '一位能安静地把一整盘棋下完的人。',
+  secret: '一次手术之后他不能有孩子了。整间公司只当他是个爱穿袜子走路的怪老头。',
+  openness: .4,
+  open: '把鞋脱在门口。然后我们可以聊聊。',
+  brush: '年轻人，把鞋穿上吧。',
+  arch: { 稳定: 3, 才华: 1 }
+},
+{
+  id: 'lane',
+  en: 'Lane Pryce', cn: '莱恩·普莱斯', age: 45,
+  title: '财务总监', titleEn: 'Chief Financial Officer',
+  art: {
+    bg: '#4a6b5f', skin: SKIN.pale, hair: '#6b4b33',
+    hairPath: HAIR.part('#6b4b33'),
+    body: suit('#33383f', '#f4ecd8', '#6b3a3a'),
+    extras: [EX.sideburn('#6b4b33')]
+  },
+  quote: { en: '"Very good."', cn: '「好极了。」——他一天要说十七次。' },
+  bio: '从伦敦派来看住账本的人。每一分钱他都记在册子上，包括他自己那些。他会为你拉开椅子，并且认为这理所当然。',
+  stats: { 酒量: 6, 烟量: 5, 忠诚: 8, 才华: 7, 野心: 5, 危险: 4 },
+  tags: ['板球', '伦敦', '一本账册', '牛排馆'],
+  marital: '已婚', exes: '一段，还在进行中',
+  red: ['他已婚，而且他自己非常清楚这一点', '关于钱，他从不肯说实话', '他父亲曾用手杖把他的脸按在地板上'],
+  green: ['他会为你拉开椅子、接过大衣', '他是这栋楼里唯一会说谢谢的人', '他是真心喜欢这里的，尽管这里没什么人喜欢他'],
+  looking: '一个愿意把我当自己人的地方。',
+  secret: '有些事他没有告诉任何人。他那本账册的最后一页上，有一个不该出现在那里的签名。',
+  openness: .35,
+  open: '好极了。请允许我——请，这边坐。',
+  brush: '承蒙抬爱。恐怕不太合适。',
+  arch: { 稳定: 2, 真诚: 2, 危险: 1 }
+},
+{
+  id: 'megan',
+  en: 'Megan Calvet Draper', cn: '梅根·德雷柏', age: 26,
+  title: '秘书 → 演员', titleEn: 'Secretary → Actress',
+  art: {
+    bg: '#a4342a', skin: SKIN.warm, hair: '#2b1f1a', femme: true, lip: '#7d2a22',
+    hairPath: HAIR.long('#2b1f1a'),
+    body: dress('#1c1a17', '#f4ecd8')
+  },
+  quote: { en: '"Zou bisou, zou bisou bisou…"', cn: '——她在你的生日派对上唱的，当着整间公司的面。' },
+  bio: '蒙特利尔来的，法语英语都好，打字很快。但她要的从来不是一台打字机。她能在一首歌里把整个房间点着。',
+  stats: { 酒量: 4, 烟量: 4, 忠诚: 8, 才华: 7, 野心: 8, 危险: 4 },
+  tags: ['法语', '试镜', '加州', '会唱歌'],
+  marital: '已婚', exes: '很少',
+  red: ['她的心已经在洛杉矶了', '她需要观众，而你可能只是第一排', '她对你的工作没什么兴趣'],
+  green: ['她对孩子是真的好', '她会法语、会唱歌、能让你重新年轻一次', '她不怕难堪'],
+  looking: '有人相信我不只是个漂亮的秘书。',
+  secret: '她递辞呈的那天，去洛杉矶的机票已经买好了，躺在抽屉里三个星期了。',
+  openness: .6,
+  open: 'Bonjour——我今天试镜搞砸了，所以今晚我打算玩得非常开心。',
+  brush: '你人很好。真的，你人很好。',
+  arch: { 享乐: 2, 真诚: 1, 才华: 1 }
+},
+{
+  id: 'stan',
+  en: 'Stanley Rizzo', cn: '斯坦·瑞佐', age: 30,
+  title: '美术总监', titleEn: 'Art Director',
+  art: {
+    bg: '#7d8c4a', skin: SKIN.tan, hair: '#8a6a44',
+    hairPath: HAIR.curly('#8a6a44'),
+    body: shirtOpen('#9c6b3a', SKIN.tan),
+    extras: [EX.beard('#8a6a44'), EX.headband('#a4342a')]
+  },
+  quote: { en: '"I\'m in love with you."', cn: '「我爱你。」——他在电话里说的，隔着一整个大陆。' },
+  bio: '留胡子，穿凉鞋，在办公室里抽大麻。他画得比谁都快，而且他从来不假装自己喜欢客户。',
+  stats: { 酒量: 7, 烟量: 7, 忠诚: 9, 才华: 8, 野心: 3, 危险: 3 },
+  tags: ['大麻', '摄影', '不穿正装', '凌晨三点的电话'],
+  marital: '单身', exes: '几个，分得都很和平',
+  red: ['他在办公室抽大麻，而且不藏', '他有一次全裸着画完了一整套稿', '他不会为任何人换掉那件衬衫'],
+  green: ['凌晨三点他会接你的电话', '他从不评判你', '他是真的听得懂你在说什么'],
+  looking: '一个我什么都不用解释的人。',
+  secret: '那句话他等了很多年才说出口，而且是在电话里说的——因为当面他说不出来。',
+  openness: .8,
+  open: '嘿。我这儿有酒、有唱片，还有一整晚不用干活。',
+  brush: '都行，老兄。回头见。',
+  arch: { 真诚: 3, 享乐: 2, 稳定: 1 }
+},
+{
+  id: 'harry',
+  en: 'Harry Crane', cn: '哈里·克莱恩', age: 32,
+  title: '电视部主任', titleEn: 'Head of Television',
+  art: {
+    bg: '#b08d3f', skin: SKIN.pale, hair: '#4a3626',
+    hairPath: HAIR.part('#4a3626'),
+    body: suit('#55503f', '#f4ecd8', '#7d8c4a'),
+    extras: [EX.glassHeavy]
+  },
+  quote: { en: '"I invented this department!"', cn: '「这个部门是我发明的!」' },
+  bio: '他确实一个人发明了电视部。他也确实会在你们第二次见面之前，把这件事讲上四遍。',
+  stats: { 酒量: 6, 烟量: 5, 忠诚: 3, 才华: 5, 野心: 9, 危险: 4 },
+  tags: ['黄金时段', '洛杉矶出差', '他认识一个人', '粗黑框'],
+  marital: '已婚', exes: '一位;外加一次他非常后悔的加班',
+  red: ['他会一直谈他自己', '他出差时的表现和在家不太一样', '他觉得自己被低估了——每天都觉得'],
+  green: ['他真的白手起家造出了一个部门', '他知道每档节目的收视率', '他不难懂，他把一切都写在脸上'],
+  looking: '有人终于承认这个部门是我建的。',
+  secret: '公司分家那天没人通知他。他是第二天早上从报纸上看到的。',
+  openness: .9,
+  open: '你知道吗，电视部完全是我一个人建起来的。……不好意思，你刚才说什么?',
+  brush: '行吧。反正我下周要去洛杉矶。',
+  arch: { 野心: 3, 享乐: 1 }
+},
+{
+  id: 'ken',
+  en: 'Kenneth Cosgrove', cn: '肯·科斯格罗夫', age: 29,
+  title: '客户主管', titleEn: 'Account Executive',
+  art: {
+    bg: '#2e6b6b', skin: SKIN.pale, hair: '#a58554',
+    hairPath: HAIR.part('#a58554'),
+    body: suit('#4a5560', '#f4ecd8', '#4e6b45'),
+    extras: [EX.patch]
+  },
+  quote: { en: '"Ben Hargrove."', cn: '——他发表小说时用的名字。公司不知道。' },
+  bio: '全公司唯一一个下班之后真的有生活的人。他在杂志上发表过短篇小说，用的不是这个名字。',
+  stats: { 酒量: 5, 烟量: 4, 忠诚: 9, 才华: 8, 野心: 4, 危险: 3 },
+  tags: ['短篇小说', '打字机', '高尔夫（应酬）', '他其实想辞职'],
+  marital: '已婚，而且幸福', exes: '很少',
+  red: ['他结婚了，并且非常喜欢他太太', '一次打猎，客户的高管打瞎了他一只眼睛', '他随时可能辞职去写小说'],
+  green: ['他是这栋楼里唯一一个正常人', '他不会在背后捅你', '他是真有才华，只是用在了别处'],
+  looking: '一个安静的下午，和一台打字机。',
+  secret: '他一直在写。总有一天他会把辞呈拍在桌上，然后再也不回来——他已经想好那天穿什么了。',
+  openness: .15,
+  open: '我得先说清楚——我结婚了，而且很幸福。不过我们可以聊聊书。',
+  brush: '抱歉，我太太在楼下等我。',
+  arch: { 真诚: 3, 稳定: 3, 才华: 1 }
+},
+{
+  id: 'trudy',
+  en: 'Gertrude "Trudy" Campbell', cn: '特鲁迪·坎贝尔', age: 26,
+  title: '主妇 / 社交家', titleEn: 'Homemaker & Hostess',
+  art: {
+    bg: '#c17f6a', skin: SKIN.pale, hair: '#4a3324', femme: true, lip: '#a4342a',
+    hairPath: HAIR.bouffant('#4a3324'),
+    body: dress('#b56a75', '#f4ecd8')
+  },
+  quote: { en: '"I will not be made a fool of."', cn: '「我不会让自己变成一个笑话。」' },
+  bio: '她能在四十八小时内办成一场晚宴、搞定一个客户、修好一段婚姻——而她丈夫会以为这些全是他干的。',
+  stats: { 酒量: 4, 烟量: 3, 忠诚: 9, 才华: 8, 野心: 7, 危险: 3 },
+  tags: ['查尔斯顿', '晚宴', '她父亲认识所有人', '康涅狄格的房子'],
+  marital: '已婚 → 分居（是她把他赶出去的）', exes: '一位，他还想回来',
+  red: ['她还没离婚', '她父亲会插手你的一切', '她已经原谅过一次了，不会有第二次'],
+  green: ['她跳查尔斯顿跳得比全场都好', '她的办事能力是她丈夫的十倍', '她说到做到，一次都没落空'],
+  looking: '一个不用我替他收拾局面的人。',
+  secret: '皮特能有今天，一半是她父亲的几通电话打出来的。她从来没提过，一次也没有。',
+  openness: .45,
+  open: '先说清楚:我不需要人来救我。我只是想跳个舞。',
+  brush: '谢谢你的好意。我现在的生活已经够复杂了。',
+  arch: { 稳定: 2, 野心: 2, 真诚: 2 }
+},
+{
+  id: 'ginsberg',
+  en: 'Michael Ginsberg', cn: '迈克尔·金斯伯格', age: 24,
+  title: '文案', titleEn: 'Copywriter',
+  art: {
+    bg: '#6b7a4a', skin: SKIN.pale, hair: '#3a2a1e',
+    hairPath: HAIR.curly('#3a2a1e'),
+    body: suit('#7a7a6a', '#f4ecd8', '#a4342a')
+  },
+  quote: { en: '"I am from Mars."', cn: '「我是从火星来的。」' },
+  bio: '面试当天他就告诉唐，他会是这里最好的那一个。他没说错。他一晚上能写出二十个方案，而且每一个都比你的好。',
+  stats: { 酒量: 3, 烟量: 6, 忠诚: 7, 才华: 10, 野心: 8, 危险: 5 },
+  tags: ['一晚二十个方案', '跳蚤市场的衬衫', '他会打断你', '布鲁克林'],
+  marital: '单身', exes: '零',
+  red: ['他会当着你的面说你的方案很烂', '他几乎不睡觉', '有些日子他不太对劲，他自己也说不清'],
+  green: ['他是这栋楼里最有天赋的人，没有之一', '他毫无城府，一句假话都不会说', '一个好点子能让他高兴一整天'],
+  looking: '一个愿意听我把话说完的人。',
+  secret: '他出生在战后的一个难民营里。他父亲告诉他，是从一个袋子里把他找到的。他把这句话当成笑话讲，每次都笑。',
+  openness: .7,
+  open: '我准备了二十个开场白。第一个是:嗨。',
+  brush: '没关系!我本来概率上也不太行!',
+  arch: { 才华: 3, 真诚: 2 }
+}
+];
+
+/* 判语:对右滑对象的原型向量求和，最高的一维决定结果。
+   全部毙掉是它自己的一种答案。 */
+const VERDICTS = {
+  危险: ['你是 Don Draper 型', '你要的从来不是一个人，是一条逃跑路线。你挑中的每一个都带着一个你还没听过的故事——而你正是冲着那个故事去的。等故事讲完，你会发现自己已经在找下一份档案了。'],
+  才华: ['你是 Peggy Olson 型', '你被才华吸引，而不是被人。你想要的是一个能在凌晨两点跟你吵「这个字该不该换」的人。这很难找，但你显然不打算将就。'],
+  野心: ['你是 Pete Campbell 型', '你要的是一张入场券。你挑的人都能带你走进某个房间——你只是还没想清楚，进去之后要干什么。'],
+  真诚: ['你是 Stan Rizzo 型', '整栋楼的人都在演，而你挑出来的全是不演的那几个。在麦迪逊大道，这是一种罕见的病症，而且通常不治而愈。希望你的不会。'],
+  享乐: ['你是 Roger Sterling 型', '明天的事明天再说。你的档案里全是能陪你喝到打烊的人——这不是错，只是这笔账迟早要结，而且从来不便宜。'],
+  稳定: ['你是 Ken Cosgrove 型', '在一栋着火的楼里，你挑了几个手里拿着灭火器的人。全公司大概只有你打算活到六十岁，并且真的做得到。'],
+  空: ['你是 Bert Cooper 型', '你把所有档案都退了回来，一份没留。也许你根本不在这个游戏里——这也是一种答案，而且可能是最体面的那种。请把鞋穿上。']
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   渲染
+   ═══════════════════════════════════════════════════════════ */
+
+const $ = id => document.getElementById(id);
+const deck = $('deck');
+const pad2 = n => String(n).padStart(2, '0');
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function scale(v, hot) {
+  let s = '';
+  for (let i = 0; i < 10; i++) {
+    s += `<i class="${i < v ? (hot ? 'hot' : 'on') : ''}"></i>`;
+  }
+  return `<div class="scale">${s}</div>`;
+}
+
+const STAT_KEYS = ['酒量', '烟量', '忠诚', '才华', '野心', '危险'];
+
+// 把 openness 翻译成人话 —— 右滑之前你真正想知道的那一件事
+function approach(o) {
+  if (o >= .8) return '一约就出来。别把这当成他看上你了。';
+  if (o >= .5) return '看那天下午过得怎么样。';
+  if (o >= .3) return '你得有一个正当理由，而且最好和工作有关。';
+  return '基本不可能。真成了,那是你的本事。';
+}
+
+function statRow(p, key) {
+  // 「危险」拉满时用砖红刻度 —— 档案上的红字向来比数字更管用
+  const hot = key === '危险' && p.stats[key] >= 7;
+  return `<div class="stat"><span>${key}</span>${scale(p.stats[key], hot)}</div>`;
+}
+
+function frontHTML(p, i) {
+  return `
+  <div class="lh">
+    <div class="n">STERLING COOPER DRAPER PRYCE</div>
+    <div class="a">PERSONNEL DIVISION &nbsp;·&nbsp; NEW YORK</div>
+  </div>
+  <hr class="rule"><hr class="rule thin">
+  <div class="fileline">
+    <span>FILE No. SC-${pad2(i + 1)}&nbsp;&nbsp;·&nbsp;&nbsp;REV. 1969</span>
+    <span class="conf">CONFIDENTIAL</span>
+  </div>
+
+  <div class="idrow">
+    <div class="pt-frame">${portrait(p.art)}</div>
+    <div class="idcol">
+      <div class="name-en">${esc(p.en)}</div>
+      <div class="name-cn">${esc(p.cn)}</div>
+      <div class="meta">AGE ${p.age} &nbsp;/&nbsp; ${esc(p.title)}</div>
+      <div class="title-en">${esc(p.titleEn)}</div>
+    </div>
+  </div>
+
+  <div class="quote">
+    <div class="q-en">${esc(p.quote.en)}</div>
+    <div class="q-cn">${esc(p.quote.cn)}</div>
+  </div>
+
+  <div class="summary">
+    <h4>Summary <em>人事摘要</em></h4>
+    <div class="ruled"><div class="bio">${esc(p.bio)}</div></div>
+  </div>
+
+  <div class="stats">${STAT_KEYS.map(k => statRow(p, k)).join('')}</div>
+  <div class="tags">${p.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
+  <div class="flip-hint">点击卡片 · 完整档案 ▸</div>`;
+}
+
+function backHTML(p, i) {
+  return `
+  <div class="back-head">
+    <span class="back-title">Dossier</span>
+    <span>SC-${pad2(i + 1)} · 续页</span>
+  </div>
+  <hr class="rule" style="margin:5px 15px 0">
+  <div class="back-scroll">
+    <div class="sec">
+      <h4>Status <em>状况</em></h4>
+      <div class="kv"><b>婚姻</b><span>${esc(p.marital)}</span></div>
+      <div class="kv"><b>前任</b><span>${esc(p.exes)}</span></div>
+    </div>
+    <div class="sec">
+      <h4>Red Flags <em>红旗</em></h4>
+      <ul class="flags red">${p.red.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+    </div>
+    <div class="sec">
+      <h4>Green Flags <em>绿灯</em></h4>
+      <ul class="flags grn">${p.green.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+    </div>
+    <div class="sec">
+      <h4>Looking For <em>他/她在找什么</em></h4>
+      <div class="looking">${esc(p.looking)}</div>
+    </div>
+    <div class="sec">
+      <h4>Approach <em>接触建议</em></h4>
+      <div class="kv"><b>难度</b><span>${approach(p.openness)}</span></div>
+    </div>
+    <div class="secret">
+      <h5>CONFIDENTIAL NOTE · 机密附注</h5>
+      <p>${esc(p.secret)}</p>
+    </div>
+  </div>
+  <div class="back-foot">◂ 再次点击 · 返回正面</div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   牌堆
+   ═══════════════════════════════════════════════════════════ */
+
+const cards = [];
+let idx = 0;
+const decisions = [];          // {p, liked, matched}
+
+CAST.forEach((p, i) => {
+  const el = document.createElement('div');
+  el.className = 'card';
+  el.innerHTML =
+    `<div class="inner">
+       <div class="face front">${frontHTML(p, i)}</div>
+       <div class="face back">${backHTML(p, i)}</div>
+     </div>
+     <div class="stamp sold"><div class="cn">成交</div><div class="en">SOLD</div></div>
+     <div class="stamp kill"><div class="cn">毙稿</div><div class="en">KILLED</div></div>`;
+  deck.appendChild(el);
+  cards.push({
+    p, el,
+    sold: el.querySelector('.stamp.sold'),
+    kill: el.querySelector('.stamp.kill')
+  });
+});
+
+// 底下的卡按固定角度错开，像档案夹里叠着的几张纸（不用随机，以免每次
+// layout 都跳一下）
+const rest = i => (i % 2 ? 1.1 : -1.3);
+const deckT = (d, i) =>
+  `translate3d(0,${d * 11}px,0) scale(${1 - d * .035}) rotate(${d === 0 ? 0 : rest(i)}deg)`;
+
+function layout() {
+  cards.forEach((c, i) => {
+    const d = i - idx;
+    c.el.classList.toggle('top', d === 0);
+    if (d < 0) return;
+    if (d > 2) { c.el.style.display = 'none'; return; }
+    c.el.style.display = '';
+    c.el.style.zIndex = String(50 - d);
+    c.el.classList.add('glide');
+    c.el.style.transform = deckT(d, i);
+  });
+  const n = Math.min(idx + 1, CAST.length);
+  $('pnum').textContent = `档案 ${pad2(n)} / ${CAST.length}`;
+  $('pfill').style.width = (idx / CAST.length * 100) + '%';
+  $('pcount').textContent = `成交 ${decisions.filter(d => d.liked).length}`;
+}
+
+const topCard = () => (idx < cards.length ? cards[idx] : null);
+
+/* ── 拖拽 ─────────────────────────────────────────────────────
+   与 liquid-glass.html 相同的指针模式:capture 之后一切都在
+   pointermove 里算，松手时按位移或速度二选一判定。 */
+
+let drag = null;
+const THRESH = () => Math.min(deck.clientWidth * .28, 110);
+
+deck.addEventListener('pointerdown', e => {
+  const c = topCard();
+  if (!c || busy) return;
+  if (e.target.closest('.back-scroll') && c.el.classList.contains('flipped')) {
+    // 背面正文可以滚动，别把滚动当成滑牌
+    if (e.target.closest('.back-scroll').scrollHeight > e.target.closest('.back-scroll').clientHeight) return;
+  }
+  drag = { c, x: e.clientX, y: e.clientY, dx: 0, dy: 0, vx: 0, t: e.timeStamp, moved: false };
+  c.el.classList.remove('glide');
+  c.el.setPointerCapture(e.pointerId);
+});
+
+deck.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  const dt = Math.max(1, e.timeStamp - drag.t);
+  drag.vx = (dx - drag.dx) / dt * 1000;
+  drag.t = e.timeStamp;
+  drag.dx = dx; drag.dy = dy;
+  if (Math.abs(dx) > 8 || Math.abs(dy) > 8) drag.moved = true;
+
+  const rot = Math.max(-18, Math.min(18, dx * .06));
+  drag.c.el.style.transform = `translate3d(${dx}px,${dy}px,0) rotate(${rot}deg)`;
+  const k = Math.min(1, Math.abs(dx) / THRESH());
+  drag.c.sold.style.opacity = dx > 0 ? k : 0;
+  drag.c.kill.style.opacity = dx < 0 ? k : 0;
+});
+
+function endDrag(e) {
+  if (!drag) return;
+  const d = drag; drag = null;
+  d.c.el.classList.add('glide');
+
+  const far = Math.abs(d.dx) > THRESH();
+  const flick = Math.abs(d.vx) > 620 && Math.abs(d.dx) > 26;
+  if (far || flick) { commit(d.dx > 0, d.dy); return; }
+
+  d.c.el.style.transform = deckT(0, idx);
+  d.c.sold.style.opacity = 0;
+  d.c.kill.style.opacity = 0;
+  if (!d.moved) d.c.el.classList.toggle('flipped');   // 位移够小才算点击
+}
+deck.addEventListener('pointerup', endDrag);
+deck.addEventListener('pointercancel', endDrag);
+
+/* ── 判定 ───────────────────────────────────────────────────── */
+
+let busy = false;
+
+function commit(liked, dy) {
+  const c = topCard();
+  if (!c || busy) return;
+  busy = true;
+
+  (liked ? c.sold : c.kill).style.opacity = 1;
+  c.el.classList.add('glide', 'gone');
+  const fly = (liked ? 1 : -1) * (deck.clientWidth + 340);
+  c.el.style.transform =
+    `translate3d(${fly}px, ${(dy || 0) + 40}px, 0) rotate(${liked ? 26 : -26}deg)`;
+  c.el.style.opacity = '0';
+
+  const matched = liked && Math.random() < c.p.openness;
+  decisions.push({ p: c.p, liked, matched });
+
+  setTimeout(() => {
+    idx++;
+    layout();
+    const done = idx >= CAST.length;
+    // 最后一张也配上时，备忘录要先弹完再结算，否则那一次配对就白配了
+    if (matched) { showMemo(c.p, done ? showReport : null); return; }
+    if (liked) showSlip(c.p);
+    busy = false;
+    if (done) showReport();
+  }, 300);
+}
+
+$('bKill').onclick = () => commit(false, 0);
+$('bSold').onclick = () => commit(true, 0);
+$('bInfo').onclick = () => { const c = topCard(); if (c && !busy) c.el.classList.toggle('flipped'); };
+
+addEventListener('keydown', e => {
+  if ($('veil').classList.contains('on')) {
+    if (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') { e.preventDefault(); closeVeil(); }
+    return;
+  }
+  if ($('report').classList.contains('on')) return;
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); commit(false, 0); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); commit(true, 0); }
+  if (e.key === 'ArrowUp' || e.key === ' ') {
+    e.preventDefault();
+    const c = topCard(); if (c && !busy) c.el.classList.toggle('flipped');
+  }
+});
+
+/* ── 配对备忘录 / 退件条 ──────────────────────────────────── */
+
+const veil = $('veil');
+let veilAfter = null;
+
+function openVeil(html, after) {
+  $('memo').innerHTML = html;
+  veilAfter = after || null;
+  veil.classList.add('on');
+}
+function closeVeil() {
+  veil.classList.remove('on');
+  const f = veilAfter; veilAfter = null;
+  busy = false;
+  if (f) f();
+}
+veil.addEventListener('click', e => { if (e.target === veil) closeVeil(); });
+
+function showMemo(p, after) {
+  const from = p.en.replace(/"[^"]*"\s*/, '');
+  openVeil(`
+    <div class="memo-hd">INTEROFFICE MEMORANDUM</div>
+    <hr class="memo-rule">
+    <div class="memo-rows">
+      <div><b>TO</b>:&nbsp; 你</div>
+      <div><b>FROM</b>:&nbsp; ${esc(from)}</div>
+      <div><b>DATE</b>:&nbsp; ${1960 + (idx % 10)} 年，一个星期四的下午</div>
+      <div><b>RE</b>:&nbsp; 你的档案已被批准</div>
+    </div>
+    <div class="memo-body">
+      <div class="pt-frame">${portrait(p.art)}</div>
+      <div>
+        <div class="memo-hit">IT'S A MATCH</div>
+        <div class="memo-sub">档案已归入「待跟进」</div>
+      </div>
+    </div>
+    <div class="memo-line">${esc(p.open)}</div>
+    <div class="memo-act">
+      <button class="paper-btn" id="memoOk">${after ? '看结论' : '继续翻档案'}</button>
+    </div>`, after);
+  $('memoOk').onclick = closeVeil;
+}
+
+const slip = $('slip');
+let slipTimer = 0;
+function showSlip(p) {
+  $('slipLine').textContent = p.brush;
+  $('slipWho').textContent = `— ${p.en}`;
+  slip.classList.add('on');
+  clearTimeout(slipTimer);
+  slipTimer = setTimeout(() => slip.classList.remove('on'), 2600);
+}
+
+/* ── 结算报告 ─────────────────────────────────────────────── */
+
+function showReport() {
+  const liked   = decisions.filter(d => d.liked);
+  const matches = decisions.filter(d => d.matched);
+
+  const sum = {};
+  liked.forEach(d => {
+    for (const k in d.p.arch) sum[k] = (sum[k] || 0) + d.p.arch[k];
+  });
+  let key = '空', best = 0;
+  for (const k in sum) if (sum[k] > best) { best = sum[k]; key = k; }
+  const [vt, vb] = VERDICTS[key];
+
+  const booze = liked.reduce((a, d) => a + d.p.stats.酒量, 0);
+  const rate  = liked.length ? Math.round(matches.length / liked.length * 100) : 0;
+
+  const mlist = matches.length
+    ? `<div class="mlist">${matches.map(d => `
+        <div class="mrow">
+          <div class="pt-frame">${portrait(d.p.art)}</div>
+          <div>
+            <div class="mn">${esc(d.p.en)}</div>
+            <div class="mc">${esc(d.p.cn)} · ${esc(d.p.title)}</div>
+            <div class="ml">「${esc(d.p.open)}」</div>
+          </div>
+        </div>`).join('')}</div>`
+    : `<div class="empty">没有一份档案回到你手上。这在这一行里很常见，而且从来不是一件值得谈论的事。</div>`;
+
+  $('report').innerHTML = `
+    <div class="rpaper">
+      <div class="r-hd">
+        <div class="n">STERLING COOPER DRAPER PRYCE</div>
+        <div class="t">你的麦迪逊大道档案</div>
+        <div class="s">PERSONNEL SUMMARY &nbsp;·&nbsp; FOR INTERNAL USE ONLY</div>
+      </div>
+
+      <div class="r-grid">
+        <div class="r-cell"><b>${liked.length}</b><span>成交</span></div>
+        <div class="r-cell"><b>${CAST.length - liked.length}</b><span>毙稿</span></div>
+        <div class="r-cell"><b>${rate}<small style="font-size:11px">%</small></b><span>回信率</span></div>
+        <div class="r-cell"><b>${booze}</b><span>他们的日均杯数</span></div>
+      </div>
+
+      <div class="r-sec">
+        <h4>Verdict <em>结论</em></h4>
+        <div class="verdict-t">${vt}</div>
+        <div class="verdict-b">${vb}</div>
+      </div>
+
+      <div class="r-sec">
+        <h4>Matches <em>已配对 ${matches.length} 人</em></h4>
+        ${mlist}
+      </div>
+
+      <div class="r-act">
+        <button class="paper-btn" id="again">重新审阅档案</button>
+      </div>
+
+      <div class="r-foot">
+        本档案为虚构作品的同人致敬，人物与台词版权归《MAD MEN》原作者所有。<br>
+        THE END IS ALWAYS THE BEGINNING OF SOMETHING ELSE.
+      </div>
+    </div>`;
+  $('report').classList.add('on');
+  $('report').scrollTop = 0;
+  $('again').onclick = () => location.reload();
+}
+
+/* ── 开场 ─────────────────────────────────────────────────── */
+
+layout();
+
+openVeil(`
+  <div class="memo-hd">STERLING COOPER DRAPER PRYCE</div>
+  <hr class="memo-rule">
+  <div class="memo-rows">
+    <div><b>TO</b>:&nbsp; 你</div>
+    <div><b>FROM</b>:&nbsp; 人事部</div>
+    <div><b>RE</b>:&nbsp; 十四份档案，今天下班前给我答复</div>
+  </div>
+  <div class="intro-t">人事档案 · 机密</div>
+  <div class="intro-p">
+    这是 405 麦迪逊大道十四个人的完整档案。有些人你会想认识，有些人你不会——
+    但你得先读完，才知道是哪一种。
+  </div>
+  <div class="intro-keys">
+    <b>← / 左滑</b> &nbsp;毙稿<br>
+    <b>→ / 右滑</b> &nbsp;成交<br>
+    <b>↑ / 点击卡片</b> &nbsp;翻到背面，看完整档案
+  </div>
+  <div class="memo-act">
+    <button class="paper-btn" id="startBtn">开始审阅</button>
+  </div>`);
+$('startBtn').onclick = closeVeil;
+</script>
+</body>
+</html>
