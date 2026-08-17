@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="银玉传说">
+<meta name="theme-color" content="#05060f">
+<meta name="format-detection" content="telephone=no">
+<title>银玉传说 · 手机柏青哥</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    height:100%;width:100%;overflow:hidden;position:fixed;
+    background:#05060f;
+    font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Noto Sans SC',sans-serif;
+    color:#e8ecf8;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+    overscroll-behavior:none;touch-action:none;
+  }
+
+  #app{
+    position:fixed;inset:0;display:flex;flex-direction:column;
+    padding-top:env(safe-area-inset-top);
+    padding-bottom:env(safe-area-inset-bottom);
+    padding-left:env(safe-area-inset-left);
+    padding-right:env(safe-area-inset-right);
+    background:
+      radial-gradient(120% 70% at 50% 0%,#161a3a 0%,#08091a 55%,#05060f 100%);
+  }
+
+  /* ---------------- HUD ---------------- */
+  #hud{
+    flex:0 0 auto;padding:6px 12px 5px;
+    display:flex;flex-direction:column;gap:5px;
+  }
+  .hud-row{display:flex;align-items:center;gap:8px;}
+  .stat{
+    flex:1;background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03));
+    border:1px solid rgba(255,255,255,.12);border-radius:9px;
+    padding:4px 8px;min-width:0;
+  }
+  .stat .k{font-size:9px;letter-spacing:1px;color:#8d97b8;display:block;line-height:1.2;}
+  .stat .v{
+    font-size:17px;font-weight:800;line-height:1.15;
+    font-variant-numeric:tabular-nums;font-feature-settings:"tnum";
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .v.gold{color:#ffd76a;text-shadow:0 0 12px rgba(255,190,60,.5);}
+  .v.cyan{color:#6fe6ff;text-shadow:0 0 12px rgba(80,220,255,.4);}
+  .v.pink{color:#ff8fd0;text-shadow:0 0 12px rgba(255,110,190,.4);}
+
+  #modeBar{
+    display:flex;align-items:center;gap:8px;
+    border-radius:9px;padding:4px 9px;
+    border:1px solid rgba(255,255,255,.12);
+    background:linear-gradient(90deg,rgba(90,110,200,.22),rgba(90,110,200,.06));
+    font-size:11px;letter-spacing:.5px;color:#aab4d8;min-height:26px;
+  }
+  #modeBar.rush{
+    border-color:rgba(255,190,60,.55);
+    background:linear-gradient(90deg,rgba(255,140,40,.35),rgba(255,60,140,.18));
+    color:#ffe9b8;
+    animation:rushGlow 1s ease-in-out infinite alternate;
+  }
+  #modeBar.bonus{
+    border-color:rgba(255,80,80,.6);
+    background:linear-gradient(90deg,rgba(255,40,60,.4),rgba(255,170,40,.22));
+    color:#fff2d0;
+    animation:rushGlow .5s ease-in-out infinite alternate;
+  }
+  @keyframes rushGlow{from{box-shadow:0 0 0 rgba(255,180,60,0);}to{box-shadow:0 0 14px rgba(255,180,60,.55);}}
+  #modeName{font-weight:800;font-size:12px;}
+  #holds{display:flex;gap:5px;margin-left:auto;}
+  .hold{
+    width:11px;height:11px;border-radius:50%;
+    background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);
+    transition:background .15s,box-shadow .15s;
+  }
+  .hold.g{background:#43e08a;box-shadow:0 0 8px #43e08a;border-color:#8dffc0;}
+  .hold.b{background:#4fa8ff;box-shadow:0 0 9px #4fa8ff;border-color:#a8d4ff;}
+  .hold.r{background:#ff4f6d;box-shadow:0 0 10px #ff4f6d;border-color:#ffb0bd;}
+  .hold.k{background:#ffcb45;box-shadow:0 0 12px #ffcb45;border-color:#fff0b8;}
+
+  /* ---------------- Board ---------------- */
+  #stage{flex:1 1 auto;position:relative;min-height:0;}
+  #board{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    border-radius:16px;
+    box-shadow:0 10px 40px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.07);
+    touch-action:none;
+  }
+
+  /* ---------------- Controls ---------------- */
+  #pad{
+    flex:0 0 auto;height:120px;padding:6px 12px 8px;
+    display:flex;align-items:stretch;gap:10px;
+  }
+  #padLeft{flex:1 1 auto;display:flex;flex-direction:column;gap:6px;min-width:0;}
+
+  #powerWrap{
+    flex:1 1 auto;position:relative;border-radius:11px;overflow:hidden;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+    display:flex;align-items:center;padding:0 10px;
+  }
+  #powerFill{
+    position:absolute;left:0;top:0;bottom:0;width:0%;
+    background:linear-gradient(90deg,#2b6cff,#38e1ff 45%,#ffd45a 78%,#ff5b7f);
+    opacity:.5;transition:width .06s linear;
+  }
+  #powerTick{
+    position:absolute;top:0;bottom:0;width:2px;left:0;
+    background:#7dffb0;box-shadow:0 0 10px #7dffb0;
+    opacity:0;transition:left .18s ease,opacity .25s;
+  }
+  #powerTick.on{opacity:1;}
+  #powerTick.flash{animation:tickFlash .5s ease;}
+  @keyframes tickFlash{0%{transform:scaleX(4);filter:brightness(2.2);}100%{transform:scaleX(1);filter:none;}}
+  #powerTxt{position:relative;font-size:11px;letter-spacing:1px;color:#cdd6f2;}
+  #powerRate{
+    position:relative;margin-left:auto;margin-right:10px;
+    font-size:10px;color:#8d97b8;font-variant-numeric:tabular-nums;white-space:nowrap;
+  }
+  #powerNum{position:relative;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;}
+
+  .btnRow{display:flex;gap:6px;}
+  .btn{
+    flex:1;border:1px solid rgba(255,255,255,.14);border-radius:10px;
+    background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.03));
+    color:#dbe2f5;font-size:11px;font-weight:600;letter-spacing:.5px;
+    padding:8px 2px;text-align:center;font-family:inherit;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .btn:active{background:rgba(255,255,255,.2);}
+  .btn.on{
+    background:linear-gradient(180deg,#3ddc84,#18a55b);color:#04240f;
+    border-color:#8bffc0;box-shadow:0 0 12px rgba(60,220,130,.5);
+  }
+
+  /* handle */
+  #handleWrap{
+    flex:0 0 108px;display:flex;align-items:center;justify-content:center;
+    position:relative;
+  }
+  #handle{
+    width:104px;height:104px;border-radius:50%;position:relative;
+    background:
+      radial-gradient(circle at 35% 28%,#5c6480 0%,#2a2f42 45%,#14161f 100%);
+    border:2px solid rgba(255,255,255,.16);
+    box-shadow:0 6px 18px rgba(0,0,0,.6),inset 0 2px 6px rgba(255,255,255,.16);
+    display:flex;align-items:center;justify-content:center;
+    touch-action:none;
+  }
+  #handle.firing{
+    border-color:#ff9b3d;
+    box-shadow:0 0 22px rgba(255,140,40,.75),inset 0 2px 6px rgba(255,255,255,.2);
+  }
+  #handleGrip{
+    position:absolute;inset:9px;border-radius:50%;
+    background:conic-gradient(from 0deg,#3a4056,#20242f,#3a4056,#20242f,#3a4056,#20242f,#3a4056,#20242f,#3a4056);
+    opacity:.85;
+  }
+  #handleKnob{
+    position:absolute;left:50%;top:50%;width:4px;height:38px;margin-left:-2px;
+    transform-origin:50% 100%;
+    background:linear-gradient(180deg,#ff6a3d,#ffd45a);
+    border-radius:2px;box-shadow:0 0 10px rgba(255,140,40,.9);
+    transform:translate(0,-100%) rotate(0deg);
+  }
+  #handleCore{
+    position:relative;width:44px;height:44px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#f0f4ff,#98a3c0 60%,#5a6280 100%);
+    box-shadow:inset 0 -3px 6px rgba(0,0,0,.4),0 2px 6px rgba(0,0,0,.5);
+    display:flex;align-items:center;justify-content:center;
+    font-size:9px;font-weight:800;color:#20263a;letter-spacing:.5px;
+  }
+  #handleHint{
+    position:absolute;bottom:-1px;left:0;right:0;text-align:center;
+    font-size:9px;color:#7b85a6;letter-spacing:.5px;
+  }
+
+  /* ---------------- Overlay ---------------- */
+  #overlay{
+    position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+    background:rgba(4,5,14,.86);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    padding:calc(env(safe-area-inset-top) + 16px) 20px calc(env(safe-area-inset-bottom) + 16px);
+  }
+  #overlay.hidden{display:none;}
+  .sheet{
+    width:100%;max-width:400px;max-height:100%;overflow-y:auto;
+    background:linear-gradient(180deg,#161a30,#0c0e1c);
+    border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:18px 18px 16px;
+    box-shadow:0 20px 60px rgba(0,0,0,.7);
+    -webkit-overflow-scrolling:touch;
+  }
+  .sheet h1{
+    font-size:22px;font-weight:900;letter-spacing:2px;text-align:center;
+    background:linear-gradient(90deg,#ffd45a,#ff6a9d,#5ad1ff);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .sheet .sub{text-align:center;font-size:11px;color:#8d97b8;letter-spacing:2px;margin-top:4px;}
+  .sheet ul{list-style:none;margin:14px 0 4px;}
+  .sheet li{
+    font-size:12.5px;line-height:1.65;color:#c3ccea;padding:6px 0 6px 24px;position:relative;
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .sheet li:last-child{border-bottom:none;}
+  .sheet li b{color:#ffd76a;font-weight:700;}
+  .sheet li i{font-style:normal;color:#6fe6ff;}
+  .sheet li::before{
+    content:attr(data-i);position:absolute;left:0;top:6px;
+    width:17px;height:17px;border-radius:50%;background:rgba(255,255,255,.1);
+    font-size:10px;display:flex;align-items:center;justify-content:center;color:#9fa9cc;
+  }
+  #startBtn{
+    display:block;width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;
+    background:linear-gradient(180deg,#ff9b3d,#ff4d6d);color:#fff;
+    font-size:16px;font-weight:900;letter-spacing:4px;font-family:inherit;
+    box-shadow:0 6px 20px rgba(255,80,90,.45);
+  }
+  #startBtn:active{transform:translateY(1px);}
+
+  /* toast */
+  #toast{
+    position:fixed;left:50%;transform:translateX(-50%);
+    bottom:calc(env(safe-area-inset-bottom) + 138px);
+    background:rgba(10,12,26,.92);border:1px solid rgba(255,255,255,.18);
+    border-radius:999px;padding:7px 16px;font-size:12px;color:#ffe9b8;
+    opacity:0;transition:opacity .25s;pointer-events:none;z-index:15;white-space:nowrap;
+  }
+  #toast.show{opacity:1;}
+
+  /* 竖屏游戏：横过来时给出提示而不是挤成一团 */
+  #rotate{display:none;}
+  @media (orientation:landscape) and (max-height:560px){
+    #rotate{
+      display:flex;position:fixed;inset:0;z-index:40;background:#05060f;
+      align-items:center;justify-content:center;flex-direction:column;gap:16px;
+    }
+    #rotate .ico{font-size:38px;}
+    #rotate .t{font-size:15px;font-weight:800;letter-spacing:3px;color:#ffd76a;}
+    #rotate .s{font-size:12px;color:#8d97b8;letter-spacing:1px;}
+  }
+
+  @media (max-height:700px){
+    #pad{height:104px;}
+    #handleWrap{flex-basis:94px;}
+    #handle{width:92px;height:92px;}
+    .stat .v{font-size:15px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="hud">
+    <div class="hud-row">
+      <div class="stat"><span class="k">持球</span><span class="v gold" id="sBalls">500</span></div>
+      <div class="stat"><span class="k">本局出球</span><span class="v cyan" id="sOut">0</span></div>
+      <div class="stat"><span class="k">中奖 / 最高</span><span class="v pink" id="sJack">0 / 0</span></div>
+    </div>
+    <div class="hud-row">
+      <div id="modeBar">
+        <span id="modeName">通常模式</span>
+        <span id="modeInfo">中奖率 1/30</span>
+        <div id="holds">
+          <div class="hold"></div><div class="hold"></div><div class="hold"></div><div class="hold"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="stage"><canvas id="board"></canvas></div>
+
+  <div id="pad">
+    <div id="padLeft">
+      <div id="powerWrap">
+        <div id="powerFill"></div>
+        <div id="powerTick"></div>
+        <span id="powerTxt">发射强度</span>
+        <span id="powerRate">近50发 中0</span>
+        <span id="powerNum">62</span>
+      </div>
+      <div class="btnRow">
+        <button class="btn" id="btnAuto">自动发射</button>
+        <button class="btn" id="btnSound">音效 开</button>
+        <button class="btn" id="btnHelp">玩法</button>
+      </div>
+      <div class="btnRow">
+        <button class="btn" id="btnMinus">强度 −</button>
+        <button class="btn" id="btnPlus">强度 ＋</button>
+        <button class="btn" id="btnRefill">补充球</button>
+      </div>
+    </div>
+    <div id="handleWrap">
+      <div id="handle">
+        <div id="handleGrip"></div>
+        <div id="handleKnob"></div>
+        <div id="handleCore">发射</div>
+      </div>
+      <div id="handleHint">按住发射 · 上下调力</div>
+    </div>
+  </div>
+</div>
+
+<div id="rotate">
+  <div class="ico">📱</div>
+  <div class="t">请竖屏游玩</div>
+  <div class="s">银玉伝説 · 手机柏青哥</div>
+</div>
+
+<div id="toast"></div>
+
+<div id="overlay">
+  <div class="sheet">
+    <h1>银玉伝説</h1>
+    <div class="sub">P A C H I N K O · 手机柏青哥</div>
+    <ul>
+      <li data-i="1"><b>按住右下角手柄</b>连续发射钢珠；手指在手柄上<i>上下滑动</i>可微调发射强度，也可以用「强度 ±」逐格调。</li>
+      <li data-i="2"><b>强度决定钢珠从盘面顶部哪里落下</b>，这是本作唯一的技术点。盘顶左侧的 <i>天入口</i> 只有很窄的一段强度打得进去——把它打进去，是整局的关键。</li>
+      <li data-i="3">进了天入口的钢珠会送上液晶下方的 <b>舞台</b>：滚得慢的从中央落口<i>直通开始口</i>，滚得快的会冲出舞台前功尽弃。</li>
+      <li data-i="4"><b>开始口</b>返还 <i>3 球</i> 并让液晶<b>转数字</b>；三位<b>全部相同即中奖</b>。两位相同时进入<i>「リーチ」</i>长抽。保留灯变<i>红</i>或<i>金</i>是强烈预告。</li>
+      <li data-i="5">中奖后下方 <b>大开口</b> 分轮次开启，每颗进袋 <i>15 球</i>——中奖期间保持同样强度持续发射。</li>
+      <li data-i="6">中奖数字为<b>单数</b>时进入 <b>RUSH</b>，中奖率从 1/32 飙到 <i>1/8</i>，直到开出双数才结束，这是爆分的关键。</li>
+      <li data-i="7">找强度的窍门：每打进一次天入口，强度条上会留下一道<i>绿色刻度</i>；再看「近50发 中N」的实时命中数，就能慢慢逼近甜点区。</li>
+      <li data-i="8">力度不足的钢珠会滚回发射口并<b>自动退还</b>，不扣球。没球了点「补充球」。</li>
+    </ul>
+    <button id="startBtn">开 始 游 戏</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   银玉传说 · Pachinko
+   单文件实现：自研 2D 圆形刚体物理 + 柏青哥完整机种规则
+   ========================================================================= */
+'use strict';
+
+/* ---------------------------------------------------------------- 常量 */
+const BW = 380, BH = 540;             // 盘面逻辑尺寸
+const CX = 190, CY = 190;             // 上部圆弧圆心
+const R_OUT = 170;                    // 外框圆弧（= 左右外墙 20 / 360）
+const R_IN  = 142;                    // 内轨（发射通道内侧）
+const RAIL_T = 3.2;                   // 轨道半厚
+const LANE_X_IN = CX + R_IN;          // 332 通道内壁
+const LANE_X_OUT = CX + R_OUT;        // 360 通道外壁
+const WALL_L = CX - R_OUT;            // 20  盘面左墙
+const RAIL_END_DEG = -95;             // 内轨终点角（过顶点 5°）
+const RAIL_END_Y = CY + R_IN * Math.sin(RAIL_END_DEG * Math.PI / 180);
+
+const BALL_R = 5.5;
+const G = 900;                        // 重力 (unit/s^2)
+const DT = 1 / 240;                   // 物理定步长
+const LAUNCH_X = (LANE_X_IN + LANE_X_OUT) / 2 + 2;
+const LAUNCH_Y = BH - 28;
+
+const FCX = 176;                      // 盘面（游戏区）中心 x
+const LCD = { x0: 96, y0: 152, x1: 256, y1: 276 };
+const ROOF = [[88, 154], [FCX, 138], [264, 154]];   // 液晶人字顶（防止钢珠停在平顶上）
+const TOP_CUP = { x0: 128, y0: 48, x1: 146, y1: 72 };  // 天入口接球杯
+
+/* 收益 / 概率 */
+const PAY_START = 3;
+const PAY_POCKET = 5;
+const PAY_ATTACK = 15;
+const ROUND_BALLS = 5;                // 每轮大开口收几颗
+const ODDS_NORMAL = 32;
+const ODDS_RUSH = 8;
+const FIRE_INTERVAL = 0.2;            // 5 发/秒
+
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const ri = n => (Math.random() * n) | 0;
+const rr = (a, b) => a + Math.random() * (b - a);
+
+/* ================================================================ 盘面构筑 */
+/* 障碍物：pin=圆钉 / cap=胶囊（导轨）/ box=方块 */
+const OBS = [];
+const SENSORS = [];
+const WINDMILLS = [];
+
+function pin(x, y, r = 3.2) { OBS.push({ t: 0, x, y, r, e: 0.42, f: 1, pin: 1 }); }
+function bump(x, y, r, e = 0.8) { OBS.push({ t: 0, x, y, r, e, f: 1 }); }
+function cap(x1, y1, x2, y2, r = 3, e = 0.3, f = 0.999) { OBS.push({ t: 1, x1, y1, x2, y2, r, e, f }); }
+function box(x0, y0, x1, y1, e = 0.28) { OBS.push({ t: 2, x0, y0, x1, y1, e, f: 0.99 }); }
+function sensor(id, x0, y0, x1, y1) { SENSORS.push({ id, x0, y0, x1, y1 }); }
+
+/* 盘面右上：发射通道内轨（圆弧 + 直段） */
+function buildRail() {
+  const seg = 22;
+  const a0 = 0, a1 = RAIL_END_DEG * Math.PI / 180;
+  let px = CX + R_IN, py = CY;
+  for (let i = 1; i <= seg; i++) {
+    const a = a0 + (a1 - a0) * i / seg;
+    const nx = CX + R_IN * Math.cos(a), ny = CY + R_IN * Math.sin(a);
+    cap(px, py, nx, ny, RAIL_T, 0.22, 0.9995);
+    px = nx; py = ny;
+  }
+  // 直段：通道内壁一路到底
+  cap(LANE_X_IN, CY, LANE_X_IN, BH + 10, RAIL_T, 0.22, 0.9995);
+}
+
+/* 可用盘面左右边界（给定 y，pad 为额外内缩） */
+function fieldBounds(y, pad) {
+  pad = pad || 0;
+  let l, r;
+  if (y < CY) {
+    const dy = CY - y;
+    l = CX - Math.sqrt(Math.max(0, R_OUT * R_OUT - dy * dy));
+    r = (y >= RAIL_END_Y)
+      ? CX + Math.sqrt(Math.max(0, R_IN * R_IN - dy * dy)) - RAIL_T
+      : CX + Math.sqrt(Math.max(0, R_OUT * R_OUT - dy * dy));
+  } else { l = WALL_L; r = LANE_X_IN - RAIL_T; }
+  return [l + pad, r - pad];
+}
+
+function row(y, n, pad) {
+  const [l, r] = fieldBounds(y, pad === undefined ? 17 : pad);
+  if (n === 1) { pin((l + r) / 2, y); return; }
+  const step = (r - l) / (n - 1);
+  for (let i = 0; i < n; i++) pin(l + step * i, y);
+}
+
+function buildBoard() {
+  OBS.length = 0; SENSORS.length = 0; WINDMILLS.length = 0;
+  buildRail();
+
+  /* --- 天入口（V-ZONE）：本作的瞄准目标，只有特定发射强度能打进 --- */
+  cap(TOP_CUP.x0, TOP_CUP.y0, TOP_CUP.x0, TOP_CUP.y1, 2.6, 0.16, 0.99);
+  cap(TOP_CUP.x1, TOP_CUP.y0, TOP_CUP.x1, TOP_CUP.y1, 2.6, 0.16, 0.99);
+  sensor('warpT', TOP_CUP.x0 + 3, TOP_CUP.y1 - 12, TOP_CUP.x1 - 3, TOP_CUP.y1 + 2);
+
+  /* --- 天钉：三排引导钉（第一排让开天入口） --- */
+  for (const x of [88, 108, 168, 194, 220, 244]) pin(x, 68);
+  row(99, 8);
+  row(126, 9);
+
+  /* --- 液晶框（实体障碍 + 人字顶） --- */
+  box(LCD.x0, LCD.y0, LCD.x1, LCD.y1, 0.22);
+  cap(ROOF[0][0], ROOF[0][1], ROOF[1][0], ROOF[1][1], 3.2, 0.25, 0.997);
+  cap(ROOF[1][0], ROOF[1][1], ROOF[2][0], ROOF[2][1], 3.2, 0.25, 0.997);
+
+  /* --- 左右侧通路 --- */
+  pin(38, 166); pin(70, 162);
+  pin(54, 196); pin(86, 192);
+  pin(38, 226); pin(70, 224);
+  pin(60, 252); pin(84, 296);
+  pin(38, 330); pin(70, 334);
+
+  pin(310, 166); pin(282, 162);
+  pin(298, 196); pin(266, 192);
+  pin(310, 226); pin(282, 224);
+  pin(292, 252); pin(268, 296);
+  pin(310, 330); pin(282, 334);
+
+  /* --- 风车 --- */
+  WINDMILLS.push({ x: 48, y: 292, r: 12, a: 0, w: 2.2, dir: 1 });
+  WINDMILLS.push({ x: 304, y: 292, r: 12, a: 0, w: 2.2, dir: -1 });
+  for (const w of WINDMILLS) bump(w.x, w.y, w.r, 0.5);
+
+  /* --- 侧边传送口：上方有こぼし釘挡着，属于运气路线 --- */
+  pin(86, 228); pin(266, 228);
+  sensor('warpL', 80, 242, 92, 256);
+  sensor('warpR', 260, 242, 272, 256);
+
+  /* --- 舞台（ステージ）--- 左侧平台面 + 右侧低一截的出口滑台。
+     滚得慢的钢珠掉进中央落口直通开始口；滚得快的飞越落口、落到右滑台冲出舞台。 */
+  cap(126, 292, 158, 292, 3, 0.12, 0.9995);
+  cap(194, 316, 228, 320, 3, 0.12, 0.9995);
+  /* 落口漏斗（净宽须大于钢珠直径 11） */
+  cap(158, 300, 167, 322, 2.4, 0.1, 0.985);
+  cap(194, 300, 185, 322, 2.4, 0.1, 0.985);
+
+  /* --- 命钉 + 开始口 --- */
+  pin(FCX - 14, 332); pin(FCX + 14, 332);
+  sensor('start', FCX - 9, 326, FCX + 9, 344);
+
+  /* --- 开始口下方散钉 --- */
+  pin(FCX - 44, 352); pin(FCX, 366); pin(FCX + 44, 352);
+  pin(FCX - 76, 366); pin(FCX + 76, 366);
+  pin(40, 340); pin(312, 340);
+
+  /* --- 一般入赏口（左右）：闸钉偏置，只在一侧留出比钢珠略宽的入口，进球稀有 --- */
+  pin(40, 388); pin(312, 388);
+  sensor('pocketL', 36, 402, 56, 416);
+  sensor('pocketR', 296, 402, 316, 416);
+  cap(34, 400, 34, 416, 2.4, 0.15); cap(58, 400, 58, 416, 2.4, 0.15);
+  cap(294, 400, 294, 416, 2.4, 0.15); cap(318, 400, 318, 416, 2.4, 0.15);
+
+  /* --- 大开口（attacker）--- */
+  pin(FCX - 62, 400); pin(FCX + 62, 400);
+  sensor('attack', FCX - 45, 412, FCX + 45, 434);
+
+  /* --- 底部漏斗 --- */
+  cap(WALL_L, 452, 118, 502, 4, 0.2, 0.995);
+  cap(LANE_X_IN, 452, 234, 502, 4, 0.2, 0.995);
+  pin(FCX - 26, 470); pin(FCX + 26, 470);
+}
+buildBoard();
+
+/* attacker 关闭时是实体盖板：做成微斜的屋脊，钢珠不会停在上面 */
+const LID_TOP = 414, LID_PEAK = 408;
+const ATTACK_LID = [
+  { t: 1, x1: FCX - 46, y1: LID_TOP, x2: FCX, y2: LID_PEAK, r: 3, e: 0.28, f: 0.995 },
+  { t: 1, x1: FCX, y1: LID_PEAK, x2: FCX + 46, y2: LID_TOP, r: 3, e: 0.28, f: 0.995 },
+];
+
+/* ---------------------------------------------------- 空间网格（静态加速） */
+const CELL = 26, GW = Math.ceil(BW / CELL) + 1, GH = Math.ceil(BH / CELL) + 1;
+const GRID = new Array(GW * GH);
+(function buildGrid() {
+  for (let i = 0; i < GRID.length; i++) GRID[i] = [];
+  for (const o of OBS) {
+    let a, b, c, d;
+    if (o.t === 0) { a = o.x - o.r; b = o.y - o.r; c = o.x + o.r; d = o.y + o.r; }
+    else if (o.t === 1) {
+      a = Math.min(o.x1, o.x2) - o.r; b = Math.min(o.y1, o.y2) - o.r;
+      c = Math.max(o.x1, o.x2) + o.r; d = Math.max(o.y1, o.y2) + o.r;
+    } else { a = o.x0; b = o.y0; c = o.x1; d = o.y1; }
+    a -= BALL_R; b -= BALL_R; c += BALL_R; d += BALL_R;
+    const i0 = clamp((a / CELL) | 0, 0, GW - 1), i1 = clamp((c / CELL) | 0, 0, GW - 1);
+    const j0 = clamp((b / CELL) | 0, 0, GH - 1), j1 = clamp((d / CELL) | 0, 0, GH - 1);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) GRID[j * GW + i].push(o);
+  }
+})();
+
+/* ================================================================ 物理 */
+let hitFx = null;   // 命中回调（音效/火花），模拟时置空
+
+function resolveCircle(b, cx, cy, cr, e, f, isPin) {
+  const dx = b.x - cx, dy = b.y - cy;
+  const rr2 = cr + BALL_R;
+  const d2 = dx * dx + dy * dy;
+  if (d2 >= rr2 * rr2) return false;
+  const d = Math.sqrt(d2) || 0.0001;
+  const nx = dx / d, ny = dy / d;
+  b.x = cx + nx * rr2; b.y = cy + ny * rr2;
+  const vn = b.vx * nx + b.vy * ny;
+  if (vn < 0) {
+    b.vx -= (1 + e) * vn * nx; b.vy -= (1 + e) * vn * ny;
+    if (isPin) {                       // 钉子的混沌：微小横向扰动
+      const s = Math.min(1, -vn / 260);
+      b.vx += (Math.random() - 0.5) * 42 * s;
+      b.vy += (Math.random() - 0.5) * 12 * s;
+      if (hitFx && -vn > 60) hitFx(b.x, b.y, -vn);
+    }
+  }
+  if (f !== 1) {                       // 切向摩擦
+    const tvx = b.vx - (b.vx * nx + b.vy * ny) * nx;
+    const tvy = b.vy - (b.vx * nx + b.vy * ny) * ny;
+    b.vx += tvx * (f - 1); b.vy += tvy * (f - 1);
+  }
+  return true;
+}
+
+function resolveCapsule(b, o) {
+  const ax = o.x1, ay = o.y1, bx = o.x2 - ax, by = o.y2 - ay;
+  const L2 = bx * bx + by * by;
+  let t = L2 > 0 ? ((b.x - ax) * bx + (b.y - ay) * by) / L2 : 0;
+  t = clamp(t, 0, 1);
+  return resolveCircle(b, ax + bx * t, ay + by * t, o.r, o.e, o.f, false);
+}
+
+function resolveBox(b, o) {
+  const qx = clamp(b.x, o.x0, o.x1), qy = clamp(b.y, o.y0, o.y1);
+  let nx, ny, pen;
+  if (qx === b.x && qy === b.y) {                       // 球心在盒内 → 推向最近面
+    const dl = b.x - o.x0, dr = o.x1 - b.x, dt = b.y - o.y0, db = o.y1 - b.y;
+    const m = Math.min(dl, dr, dt, db);
+    if (m === dl) { nx = -1; ny = 0; pen = dl + BALL_R; }
+    else if (m === dr) { nx = 1; ny = 0; pen = dr + BALL_R; }
+    else if (m === dt) { nx = 0; ny = -1; pen = dt + BALL_R; }
+    else { nx = 0; ny = 1; pen = db + BALL_R; }
+  } else {
+    const dx = b.x - qx, dy = b.y - qy;
+    const d2 = dx * dx + dy * dy;
+    if (d2 >= BALL_R * BALL_R) return false;
+    const d = Math.sqrt(d2) || 0.0001;
+    nx = dx / d; ny = dy / d; pen = BALL_R - d;
+  }
+  b.x += nx * pen; b.y += ny * pen;
+  const vn = b.vx * nx + b.vy * ny;
+  if (vn < 0) { b.vx -= (1 + o.e) * vn * nx; b.vy -= (1 + o.e) * vn * ny; }
+  const tvx = b.vx - (b.vx * nx + b.vy * ny) * nx;
+  const tvy = b.vy - (b.vx * nx + b.vy * ny) * ny;
+  b.vx += tvx * (o.f - 1); b.vy += tvy * (o.f - 1);
+  return true;
+}
+
+/* 外框约束 */
+function container(b) {
+  if (b.y < CY) {
+    const dx = b.x - CX, dy = b.y - CY;
+    const lim = R_OUT - BALL_R;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d > lim) {
+      const nx = dx / d, ny = dy / d;
+      b.x = CX + nx * lim; b.y = CY + ny * lim;
+      const vn = b.vx * nx + b.vy * ny;
+      if (vn > 0) { b.vx -= 1.15 * vn * nx; b.vy -= 1.15 * vn * ny; }
+      const tvx = b.vx - (b.vx * nx + b.vy * ny) * nx;
+      const tvy = b.vy - (b.vx * nx + b.vy * ny) * ny;
+      b.vx -= tvx * 0.0006; b.vy -= tvy * 0.0006;
+    }
+  } else {
+    if (b.x < WALL_L + BALL_R) { b.x = WALL_L + BALL_R; if (b.vx < 0) b.vx *= -0.25; }
+    if (b.x > LANE_X_OUT - BALL_R) { b.x = LANE_X_OUT - BALL_R; if (b.vx > 0) b.vx *= -0.25; }
+  }
+}
+
+/* 单球推进一个定步长；返回事件字符串或 null */
+function stepBall(b, attackerOpen) {
+  b.vy += G * DT;
+  b.x += b.vx * DT; b.y += b.vy * DT;
+
+  container(b);
+
+  const gi = clamp((b.x / CELL) | 0, 0, GW - 1), gj = clamp((b.y / CELL) | 0, 0, GH - 1);
+  const cell = GRID[gj * GW + gi];
+  for (let k = 0; k < cell.length; k++) {
+    const o = cell[k];
+    if (o.t === 0) resolveCircle(b, o.x, o.y, o.r, o.e, o.f, o.pin);
+    else if (o.t === 1) resolveCapsule(b, o);
+    else resolveBox(b, o);
+  }
+  if (!attackerOpen) { resolveCapsule(b, ATTACK_LID[0]); resolveCapsule(b, ATTACK_LID[1]); }
+
+  // 风车切向助推
+  for (const w of WINDMILLS) {
+    const dx = b.x - w.x, dy = b.y - w.y, d = Math.hypot(dx, dy);
+    if (d < w.r + BALL_R + 0.7) {
+      b.vx += -dy / d * w.w * w.dir * 9;
+      b.vy += dx / d * w.w * w.dir * 9;
+    }
+  }
+
+  // 传感器
+  for (let k = 0; k < SENSORS.length; k++) {
+    const s = SENSORS[k];
+    if (b.x > s.x0 && b.x < s.x1 && b.y > s.y0 && b.y < s.y1) {
+      if (s.id === 'attack' && !attackerOpen) continue;
+      return s.id;
+    }
+  }
+
+  // 防卡死：长时间近乎静止的钢珠先轻推，仍不动则判出局（实机盘面是向后倾斜的，不存在停球）
+  if (b.vx * b.vx + b.vy * b.vy < 500) {
+    b.st = (b.st || 0) + DT; b.tot = (b.tot || 0) + DT;
+    if (b.st > 0.9) { b.st = 0; b.vx += (Math.random() - .5) * 130; b.vy -= 50; }
+    if (b.tot > 9) return 'out';
+  } else b.st = 0;
+
+  // 出局判定：发射通道内的球滚回底部 → 退还；盘面内的球落到出球口 → 出局
+  if (b.x > LANE_X_IN) {
+    if (b.y > BH - 4) return 'return';
+  } else if (b.y > 506) return 'out';
+  if (b.y > BH + 60) return 'out';
+  return null;
+}
+
+/* ================================================================ 游戏状态 */
+const G_ = {
+  balls: [],
+  stock: 500,
+  out: 0,                 // 本局出球
+  jackpots: 0,
+  best: 0,
+  holds: [],              // {win,num,color}
+  spin: null,
+  bonus: null,
+  rush: false,
+  power: 62,
+  firing: false,
+  auto: false,
+  fireT: 0,
+  shake: 0,
+  flash: 0,
+  fx: [],
+  banner: null,
+  started: false,
+  time: 0,
+  shots: 0,
+  hitAt: [],
+};
+
+function odds() { return G_.rush ? ODDS_RUSH : ODDS_NORMAL; }
+
+/* 发射初速：实机手柄也存在细微误差，这点抖动让落点不是完全固定的 */
+function launchSpeed(power) { return (936 + power * 1.38) * (1 + (Math.random() - 0.5) * 0.011); }
+
+function launch() {
+  if (G_.stock <= 0) { toast('没球了，点「补充球」'); G_.firing = false; setFiring(false); return; }
+  if (G_.balls.length > 48) return;
+  G_.stock--;
+  G_.shots++;
+  const v0 = launchSpeed(G_.power);
+  G_.balls.push({
+    x: LAUNCH_X, y: LAUNCH_Y,
+    vx: v0 * 0.045, vy: -v0 * 0.999,
+    tr: [], pw: G_.power,
+  });
+  Snd.launch();
+}
+
+function addHold() {
+  if (G_.holds.length >= 4) return;
+  const win = Math.random() < 1 / odds();
+  const num = win ? ri(10) : 0;
+  let color = 0;                                   // 0绿 1蓝 2红 3金
+  if (win) color = Math.random() < .45 ? 3 : (Math.random() < .7 ? 2 : 1);
+  else { const r = Math.random(); color = r < .82 ? 0 : (r < .96 ? 1 : 2); }
+  G_.holds.push({ win, num, color });
+  renderHolds();
+}
+
+function startSpin() {
+  const h = G_.holds.shift();
+  renderHolds();
+  let a, b, c, reach = false;
+  if (h.win) { a = b = c = h.num; reach = true; }
+  else {
+    a = ri(10);
+    if (Math.random() < 0.24) {                    // リーチ 落选
+      b = a; reach = true;
+      c = Math.random() < .55 ? (a + (Math.random() < .5 ? 1 : 9)) % 10 : ri(10);
+      if (c === a) c = (a + 1) % 10;
+    } else {
+      do { b = ri(10); } while (b === a);
+      c = ri(10);
+    }
+  }
+  const fast = G_.rush ? 0.55 : 1;
+  G_.spin = {
+    t: 0, syms: [a, b, c], win: h.win, reach, hold: h,
+    stopAt: [0.6 * fast, 1.2 * fast, reach ? (h.win ? 4.2 : 3.2) * fast : 1.8 * fast],
+    reels: [reel(), reel(), reel()],
+    done: false, resolveAt: 0, announced: false,
+  };
+  Snd.spin();
+}
+function reel() { return { pos: Math.random() * 10, spd: 15, ease: null }; }
+
+function updateSpin(dt) {
+  const s = G_.spin; if (!s) return;
+  s.t += dt;
+  for (let i = 0; i < 3; i++) {
+    const r = s.reels[i];
+    if (r.ease) {
+      r.ease.t += dt;
+      const k = clamp(r.ease.t / r.ease.d, 0, 1);
+      const ek = 1 - Math.pow(1 - k, 3);
+      r.pos = r.ease.from + (r.ease.to - r.ease.from) * ek;
+      if (k >= 1) { r.pos = r.ease.to; r.ease = null; r.stopped = true; Snd.stop(); }
+    } else if (!r.stopped) {
+      if (s.t >= s.stopAt[i]) {
+        const cur = r.pos;
+        let to = Math.ceil(cur + 1.4);
+        while (((to % 10) + 10) % 10 !== s.syms[i]) to++;
+        r.ease = { from: cur, to, t: 0, d: i === 2 && s.reach ? 0.75 : 0.42 };
+      } else {
+        const near = Math.max(0, 1 - (s.stopAt[i] - s.t) / 0.7);
+        r.pos += r.spd * (1 - near * 0.55) * dt;
+      }
+    }
+  }
+  if (s.reach && !s.announced && s.t > s.stopAt[1] + 0.15) {
+    s.announced = true;
+    banner(s.win ? 'リーチ!!' : 'リーチ', s.win ? '#ffd45a' : '#ff6fae', 1.3);
+    G_.flash = Math.max(G_.flash, .5);
+    Snd.reach();
+  }
+  if (s.reels.every(r => r.stopped)) {
+    if (!s.done) { s.done = true; s.resolveAt = s.t + 0.55; }
+    if (s.t >= s.resolveAt) { const win = s.win, num = s.syms[0]; G_.spin = null; if (win) startBonus(num); }
+  }
+}
+
+function startBonus(num) {
+  const rounds = num === 7 ? 10 : (num % 2 === 1 ? 6 : 4);
+  G_.bonus = { round: 1, rounds, in: 0, open: false, t: 0, phase: 'intro', num };
+  G_.jackpots++;
+  G_.flash = 1.2; G_.shake = 14;
+  banner('大 当 り !!', '#ffd45a', 2.2);
+  Snd.jackpot();
+  updateHUD();
+}
+
+function updateBonus(dt) {
+  const b = G_.bonus; if (!b) return;
+  b.t += dt;
+  if (b.phase === 'intro') {
+    if (b.t > 2.0) { b.phase = 'round'; b.t = 0; b.open = true; b.in = 0; banner('ROUND ' + b.round, '#ff8a4d', 1.0); Snd.open(); }
+  } else if (b.phase === 'round') {
+    b.open = true;
+    if (b.in >= ROUND_BALLS || b.t > 10) {
+      b.open = false; b.phase = 'gap'; b.t = 0; Snd.close();
+    }
+  } else if (b.phase === 'gap') {
+    b.open = false;
+    if (b.t > 1.1) {
+      if (b.round >= b.rounds) {
+        const wasRush = G_.rush;
+        G_.rush = (b.num % 2 === 1);
+        G_.bonus = null;
+        if (G_.rush) { banner('RUSH 突入!!', '#ffd45a', 2.0); Snd.rush(); }
+        else if (wasRush) { banner('RUSH 终了', '#8fa0d0', 1.6); }
+        updateHUD();
+        return;
+      }
+      b.round++; b.in = 0; b.phase = 'round'; b.t = 0;
+      banner('ROUND ' + b.round, '#ff8a4d', 0.9); Snd.open(); updateHUD();
+    }
+  }
+}
+
+/* 事件处理 */
+function onEvent(id, b) {
+  switch (id) {
+    case 'start':
+      pay(PAY_START); popFx(b.x, b.y, '#6fe6ff', 12);
+      G_.hitAt.push(G_.shots);
+      if (G_.hitAt.length > 200) G_.hitAt.splice(0, 120);
+      addHold(); Snd.chucker(); updateHUD();
+      break;
+    case 'pocketL': case 'pocketR':
+      pay(PAY_POCKET); popFx(b.x, b.y, '#ffd45a', 10); Snd.pocket();
+      break;
+    case 'attack':
+      pay(PAY_ATTACK); popFx(b.x, b.y, '#ff7a4d', 14);
+      if (G_.bonus) G_.bonus.in++;
+      Snd.pocket();
+      break;
+    case 'return':
+      G_.stock++; updateHUD();
+      break;
+    case 'warpT': case 'warpL': case 'warpR': {
+      if (id === 'warpT' && b.pw !== undefined) markPower(b.pw);
+      G_.balls.push({ x: 130, y: 283, vx: rr(90, 560), vy: 0, tr: [], stage: 1, pw: b.pw });
+      Snd.warp();
+      popFx(b.x, b.y, '#7fe8ff', 8);
+      break;
+    }
+  }
+}
+function pay(n) { G_.stock += n; G_.out += n; if (G_.out > G_.best) { G_.best = G_.out; saveBest(); } updateHUD(); }
+
+/* ================================================================ 主循环 */
+let acc = 0, last = 0;
+
+function frame(ts) {
+  requestAnimationFrame(frame);
+  if (!last) last = ts;
+  let dt = (ts - last) / 1000; last = ts;
+  if (dt > 0.1) dt = 0.1;
+  if (!G_.started) { draw(0); return; }
+  G_.time += dt;
+
+  // 发射
+  if ((G_.firing || G_.auto) && !overlayOpen) {
+    G_.fireT -= dt;
+    if (G_.fireT <= 0) { G_.fireT = FIRE_INTERVAL; launch(); }
+  } else G_.fireT = 0;
+
+  // 物理
+  acc += dt;
+  let guard = 0;
+  const open = !!(G_.bonus && G_.bonus.open);
+  while (acc >= DT && guard++ < 30) {
+    acc -= DT;
+    for (let i = G_.balls.length - 1; i >= 0; i--) {
+      const b = G_.balls[i];
+      const ev = stepBall(b, open);
+      if (ev) { G_.balls.splice(i, 1); onEvent(ev, b); }
+    }
+  }
+  if (guard >= 30) acc = 0;
+
+  // 轨迹
+  for (const b of G_.balls) {
+    b.tr.push(b.x, b.y);
+    if (b.tr.length > 8) b.tr.splice(0, 2);
+  }
+
+  // 状态机
+  if (G_.spin) updateSpin(dt);
+  else if (G_.bonus) updateBonus(dt);
+  else if (G_.holds.length) startSpin();
+
+  for (const w of WINDMILLS) w.a += w.w * w.dir * dt;
+  if (G_.shake > 0) G_.shake = Math.max(0, G_.shake - dt * 26);
+  if (G_.flash > 0) G_.flash = Math.max(0, G_.flash - dt * 2.2);
+  if (G_.banner) { G_.banner.t -= dt; if (G_.banner.t <= 0) G_.banner = null; }
+  for (let i = G_.fx.length - 1; i >= 0; i--) {
+    const p = G_.fx[i];
+    p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 420 * dt;
+    if (p.t > p.life) G_.fx.splice(i, 1);
+  }
+  draw(dt);
+}
+
+function popFx(x, y, color, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, s = rr(40, 170);
+    G_.fx.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 40, t: 0, life: rr(.3, .7), c: color });
+  }
+}
+function banner(text, color, life) { G_.banner = { text, color, t: life, life }; }
+
+/* ================================================================ 渲染 */
+const cv = document.getElementById('board');
+const ctx = cv.getContext('2d');
+let SC = 1, DPR = 1;
+let staticCv = null;
+
+function resize() {
+  const stage = document.getElementById('stage');
+  const aw = stage.clientWidth, ah = stage.clientHeight;
+  if (!aw || !ah) return;
+  SC = Math.min(aw / BW, ah / BH);
+  DPR = Math.min(window.devicePixelRatio || 1, 3);
+  cv.style.width = (BW * SC) + 'px';
+  cv.style.height = (BH * SC) + 'px';
+  cv.width = Math.round(BW * SC * DPR);
+  cv.height = Math.round(BH * SC * DPR);
+  buildStatic();
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 260));
+
+/* ---- 静态层（背景 / 钉 / 框） ---- */
+function buildStatic() {
+  staticCv = document.createElement('canvas');
+  staticCv.width = cv.width; staticCv.height = cv.height;
+  const c = staticCv.getContext('2d');
+  c.scale(SC * DPR, SC * DPR);
+  drawStatic(c);
+}
+
+/* 只追加子路径，不调用 beginPath —— 供 evenodd 复合路径使用 */
+function fieldOutline(c) {
+  c.moveTo(WALL_L, BH);
+  c.lineTo(WALL_L, CY);
+  c.arc(CX, CY, R_OUT, Math.PI, 0, false);
+  c.lineTo(LANE_X_OUT, BH);
+  c.closePath();
+}
+function fieldPath(c) { c.beginPath(); fieldOutline(c); }
+
+function drawStatic(c) {
+  // 机台底色
+  c.fillStyle = '#07081a'; c.fillRect(0, 0, BW, BH);
+
+  c.save();
+  fieldPath(c); c.clip();
+
+  // 盘面渐层
+  let g = c.createLinearGradient(0, 0, 0, BH);
+  g.addColorStop(0, '#1b1f52'); g.addColorStop(.42, '#131634'); g.addColorStop(1, '#0a0b1e');
+  c.fillStyle = g; c.fillRect(0, 0, BW, BH);
+
+  // 背景光带
+  g = c.createRadialGradient(FCX, 250, 20, FCX, 250, 260);
+  g.addColorStop(0, 'rgba(90,140,255,.30)'); g.addColorStop(.6, 'rgba(70,60,180,.12)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = g; c.fillRect(0, 0, BW, BH);
+
+  // 放射线
+  c.save(); c.translate(FCX, 240);
+  for (let i = 0; i < 24; i++) {
+    c.rotate(Math.PI * 2 / 24);
+    c.fillStyle = i % 2 ? 'rgba(255,255,255,.028)' : 'rgba(255,120,220,.022)';
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(300, -26); c.lineTo(300, 26); c.fill();
+  }
+  c.restore();
+
+  // 装饰同心圆
+  c.strokeStyle = 'rgba(140,180,255,.10)'; c.lineWidth = 1;
+  for (let r = 60; r < 240; r += 34) { c.beginPath(); c.arc(FCX, 240, r, 0, 7); c.stroke(); }
+
+  // 底部漏斗阴影
+  g = c.createLinearGradient(0, 430, 0, BH);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.75)');
+  c.fillStyle = g; c.fillRect(0, 430, BW, BH - 430);
+
+  c.restore();
+
+  drawRails(c);
+  drawStage(c);
+  drawPockets(c);
+  drawLcdFrame(c);
+  drawWinds(c, true);
+  drawPins(c);
+  drawTopCup(c);
+  drawFrame(c);
+}
+
+function drawRails(c) {
+  const ea = RAIL_END_DEG * Math.PI / 180;
+
+  // 发射通道底色
+  c.save();
+  c.beginPath();
+  c.moveTo(LANE_X_OUT, BH); c.lineTo(LANE_X_OUT, CY);
+  c.arc(CX, CY, R_OUT, 0, ea, true);
+  c.lineTo(CX + R_IN * Math.cos(ea), CY + R_IN * Math.sin(ea));
+  c.arc(CX, CY, R_IN, ea, 0, false);
+  c.lineTo(LANE_X_IN, BH); c.closePath();
+  c.fillStyle = 'rgba(10,14,34,.9)'; c.fill();
+  c.restore();
+
+  // 内轨
+  c.lineCap = 'round';
+  for (const pass of [[6.5, 'rgba(110,230,255,.18)'], [3.4, '#cfe4ff'], [1.2, '#ffffff']]) {
+    c.lineWidth = pass[0]; c.strokeStyle = pass[1];
+    c.beginPath(); c.arc(CX, CY, R_IN, ea, 0, false); c.lineTo(LANE_X_IN, BH); c.stroke();
+  }
+  // 外轨（内侧高光）
+  for (const pass of [[5, 'rgba(255,200,120,.18)'], [2.4, '#e8d3a8']]) {
+    c.lineWidth = pass[0]; c.strokeStyle = pass[1];
+    c.beginPath(); c.arc(CX, CY, R_OUT - 1, Math.PI, 0, false); c.lineTo(LANE_X_OUT - 1, BH); c.stroke();
+    c.beginPath(); c.moveTo(WALL_L + 1, CY); c.lineTo(WALL_L + 1, BH); c.stroke();
+  }
+  // 发射口
+  c.fillStyle = '#2a3350';
+  c.beginPath(); c.roundRect(LANE_X_IN + 2, BH - 46, 24, 40, 5); c.fill();
+  c.fillStyle = '#ff8a3d';
+  c.beginPath(); c.roundRect(LANE_X_IN + 6, BH - 42, 16, 5, 2); c.fill();
+}
+
+function drawStage(c) {
+  c.save();
+  // 落口漏斗（金色高亮 = 直通开始口）
+  c.fillStyle = 'rgba(255,205,90,.22)';
+  c.beginPath();
+  c.moveTo(158, 300); c.lineTo(194, 300); c.lineTo(185, 322); c.lineTo(167, 322); c.closePath();
+  c.fill();
+  c.strokeStyle = 'rgba(255,214,110,.9)'; c.lineWidth = 2.6; c.lineCap = 'round';
+  c.beginPath();
+  c.moveTo(158, 300); c.lineTo(167, 322); c.moveTo(194, 300); c.lineTo(185, 322); c.stroke();
+
+  // 左侧平台面（钢珠从这里滚入）
+  c.strokeStyle = 'rgba(150,215,255,.8)'; c.lineWidth = 6;
+  c.beginPath(); c.moveTo(126, 292); c.lineTo(158, 292); c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(126, 292); c.lineTo(158, 292); c.stroke();
+
+  // 右侧出口滑台（冲过落口的钢珠从这里滑出）
+  c.strokeStyle = 'rgba(150,215,255,.5)'; c.lineWidth = 6;
+  c.beginPath(); c.moveTo(194, 316); c.lineTo(228, 320); c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(194, 316); c.lineTo(228, 320); c.stroke();
+
+  c.fillStyle = 'rgba(255,224,150,.9)'; c.font = '900 7px -apple-system,sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('▼', 176, 310);
+  c.restore();
+
+  // 侧边传送口（位置与传感器一致）
+  for (const x of [82, 270]) {
+    c.save(); c.translate(x, 248);
+    c.fillStyle = 'rgba(80,220,255,.25)';
+    c.beginPath(); c.roundRect(-8, -8, 16, 16, 4); c.fill();
+    c.strokeStyle = 'rgba(120,240,255,.9)'; c.lineWidth = 1.4;
+    c.beginPath(); c.roundRect(-8, -8, 16, 16, 4); c.stroke();
+    c.fillStyle = 'rgba(200,250,255,.95)'; c.font = '900 8px -apple-system,sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('W', 0, .5);
+    c.restore();
+  }
+}
+
+/* 天入口：本作的瞄准目标，画得显眼一点 */
+function drawTopCup(c) {
+  const { x0, y0, x1, y1 } = TOP_CUP, cx = (x0 + x1) / 2;
+  c.save();
+  const g = c.createLinearGradient(0, y0, 0, y1);
+  g.addColorStop(0, 'rgba(120,240,255,.30)'); g.addColorStop(1, 'rgba(255,205,90,.42)');
+  c.fillStyle = g;
+  c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y0); c.lineTo(x1 - 2, y1); c.lineTo(x0 + 2, y1); c.closePath(); c.fill();
+
+  c.strokeStyle = 'rgba(140,245,255,.95)'; c.lineWidth = 2.6; c.lineCap = 'round';
+  c.beginPath();
+  c.moveTo(x0 - 4, y0 - 5); c.lineTo(x0, y0); c.lineTo(x0, y1);
+  c.moveTo(x1 + 4, y0 - 5); c.lineTo(x1, y0); c.lineTo(x1, y1);
+  c.stroke();
+
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.font = '900 8px -apple-system,sans-serif';
+  c.lineWidth = 3; c.strokeStyle = 'rgba(6,8,20,.9)';
+  c.strokeText('天入口', cx, y0 - 8);
+  c.fillStyle = 'rgba(190,250,255,.98)';
+  c.fillText('天入口', cx, y0 - 8);
+  c.fillStyle = 'rgba(255,235,170,.95)'; c.font = '900 11px -apple-system,sans-serif';
+  c.fillText('▼', cx, y0 + 13);
+
+  // 通往舞台的导管示意
+  c.strokeStyle = 'rgba(120,240,255,.35)'; c.lineWidth = 5;
+  c.setLineDash([4, 5]);
+  c.beginPath();
+  c.moveTo(cx, y1 + 2); c.bezierCurveTo(cx - 40, 140, 96, 220, 128, 286);
+  c.stroke();
+  c.setLineDash([]);
+  c.restore();
+}
+
+function drawPockets(c) {
+  // 开始口
+  c.save();
+  let g = c.createLinearGradient(0, 328, 0, 352);
+  g.addColorStop(0, 'rgba(110,235,255,.85)'); g.addColorStop(1, 'rgba(30,90,180,.6)');
+  c.fillStyle = g;
+  c.beginPath(); c.roundRect(FCX - 12, 330, 24, 20, 4); c.fill();
+  c.strokeStyle = '#bff4ff'; c.lineWidth = 1.6;
+  c.beginPath(); c.roundRect(FCX - 12, 330, 24, 20, 4); c.stroke();
+  c.fillStyle = '#04202e'; c.font = '900 8px -apple-system,sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('START', FCX, 342);
+  c.fillStyle = 'rgba(190,245,255,.9)'; c.font = '800 7px -apple-system,sans-serif';
+  c.fillText('3球', FCX, 356);
+  c.restore();
+
+  // 一般入赏口
+  for (const x of [46, 306]) {
+    c.save();
+    const g2 = c.createLinearGradient(0, 398, 0, 416);
+    g2.addColorStop(0, 'rgba(255,214,110,.9)'); g2.addColorStop(1, 'rgba(150,90,20,.6)');
+    c.fillStyle = g2;
+    c.beginPath(); c.roundRect(x - 9, 400, 18, 16, 3); c.fill();
+    c.strokeStyle = '#ffe9a8'; c.lineWidth = 1.4;
+    c.beginPath(); c.roundRect(x - 9, 400, 18, 16, 3); c.stroke();
+    c.fillStyle = '#2b1a00'; c.font = '900 7px -apple-system,sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('5球', x, 408);
+    c.restore();
+  }
+
+  // 大开口底座
+  c.fillStyle = 'rgba(0,0,0,.45)';
+  c.beginPath(); c.roundRect(FCX - 52, 408, 104, 30, 6); c.fill();
+  c.strokeStyle = 'rgba(255,120,80,.55)'; c.lineWidth = 1.2;
+  c.beginPath(); c.roundRect(FCX - 52, 408, 104, 30, 6); c.stroke();
+
+  // 出球口
+  c.fillStyle = 'rgba(0,0,0,.85)';
+  c.beginPath(); c.roundRect(120, 496, 114, 20, 6); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.22)'; c.font = '700 9px -apple-system,sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('OUT', FCX, 506);
+}
+
+function drawLcdFrame(c) {
+  c.save();
+  // 外框
+  const g = c.createLinearGradient(LCD.x0, LCD.y0, LCD.x1, LCD.y1);
+  g.addColorStop(0, '#5d6ba8'); g.addColorStop(.5, '#2b3158'); g.addColorStop(1, '#5d6ba8');
+  c.fillStyle = g;
+  c.beginPath(); c.roundRect(LCD.x0 - 5, LCD.y0 - 5, LCD.x1 - LCD.x0 + 10, LCD.y1 - LCD.y0 + 10, 12); c.fill();
+  c.strokeStyle = 'rgba(180,210,255,.5)'; c.lineWidth = 1.2;
+  c.beginPath(); c.roundRect(LCD.x0 - 5, LCD.y0 - 5, LCD.x1 - LCD.x0 + 10, LCD.y1 - LCD.y0 + 10, 12); c.stroke();
+
+  // 人字顶（导珠檐）
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  c.beginPath();
+  c.moveTo(ROOF[0][0], ROOF[0][1]); c.lineTo(ROOF[1][0], ROOF[1][1]); c.lineTo(ROOF[2][0], ROOF[2][1]);
+  c.strokeStyle = 'rgba(255,215,140,.85)'; c.lineWidth = 6.4; c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 2.2; c.stroke();
+  c.restore();
+}
+
+function drawWinds(c, staticPass) {
+  for (const w of WINDMILLS) {
+    c.save(); c.translate(w.x, w.y);
+    if (staticPass) {
+      c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.arc(0, 0, w.r + 2.5, 0, 7); c.fill();
+    } else {
+      c.rotate(w.a);
+      for (let i = 0; i < 4; i++) {
+        c.rotate(Math.PI / 2);
+        c.fillStyle = i % 2 ? '#7fd4ff' : '#ff9bd0';
+        c.beginPath(); c.moveTo(0, 0); c.lineTo(w.r, -3.4); c.lineTo(w.r, 3.4); c.closePath(); c.fill();
+      }
+      c.fillStyle = '#f2f6ff'; c.beginPath(); c.arc(0, 0, 3, 0, 7); c.fill();
+    }
+    c.restore();
+  }
+}
+
+function drawPins(c) {
+  for (const o of OBS) {
+    if (o.t !== 0 || !o.pin) continue;
+    c.fillStyle = 'rgba(0,0,0,.5)';
+    c.beginPath(); c.arc(o.x + .8, o.y + 1.2, o.r, 0, 7); c.fill();
+    const g = c.createRadialGradient(o.x - 1, o.y - 1.2, .3, o.x, o.y, o.r);
+    g.addColorStop(0, '#fff6d8'); g.addColorStop(.45, '#f3c95e'); g.addColorStop(1, '#8b6413');
+    c.fillStyle = g;
+    c.beginPath(); c.arc(o.x, o.y, o.r, 0, 7); c.fill();
+  }
+  // 导轨类胶囊（舞台/漏斗/入赏口壁）
+  c.lineCap = 'round';
+  for (const o of OBS) {
+    if (o.t !== 1) continue;
+    if (o.y1 < 100) continue;                       // 天入口的杯壁由 drawTopCup 单独绘制
+    if (Math.abs(o.x1 - LANE_X_IN) < .01 && Math.abs(o.x2 - LANE_X_IN) < .01) continue;
+    if (Math.hypot(o.x1 - CX, o.y1 - CY) > R_IN - 3 && Math.hypot(o.x1 - CX, o.y1 - CY) < R_IN + 3) continue;
+    c.strokeStyle = 'rgba(190,215,255,.65)'; c.lineWidth = o.r * 2;
+    c.beginPath(); c.moveTo(o.x1, o.y1); c.lineTo(o.x2, o.y2); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = o.r * .7;
+    c.beginPath(); c.moveTo(o.x1, o.y1); c.lineTo(o.x2, o.y2); c.stroke();
+  }
+}
+
+function drawFrame(c) {
+  // 机框：矩形 + 盘面轮廓的 evenodd 复合路径，只填充盘面之外的一圈
+  c.save();
+  const g = c.createLinearGradient(0, 0, BW, BH);
+  g.addColorStop(0, '#3a4166'); g.addColorStop(.3, '#191d33'); g.addColorStop(.6, '#3a4166'); g.addColorStop(1, '#12142a');
+  c.fillStyle = g;
+  c.beginPath(); c.rect(0, 0, BW, BH); fieldOutline(c); c.fill('evenodd');
+  c.restore();
+
+  c.save();
+  fieldPath(c);
+  c.strokeStyle = 'rgba(255,220,150,.55)'; c.lineWidth = 2.4; c.stroke();
+  c.restore();
+
+  // 机顶标题
+  c.save();
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.font = '900 11px -apple-system,sans-serif';
+  c.fillStyle = 'rgba(255,220,150,.55)';
+  c.fillText('銀 玉 伝 説', BW / 2, 9);
+  c.restore();
+}
+
+/* ---- 动态层 ---- */
+function draw() {
+  const c = ctx;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, cv.width, cv.height);
+  const sh = G_.shake;
+  const ox = sh ? (Math.random() - .5) * sh : 0, oy = sh ? (Math.random() - .5) * sh : 0;
+  c.setTransform(SC * DPR, 0, 0, SC * DPR, ox * SC * DPR, oy * SC * DPR);
+
+  if (staticCv) {
+    c.save(); c.setTransform(1, 0, 0, 1, ox * SC * DPR, oy * SC * DPR);
+    c.drawImage(staticCv, 0, 0); c.restore();
+  }
+
+  c.save();
+  fieldPath(c); c.clip();
+
+  // RUSH 背景着色
+  if (G_.rush || G_.bonus) {
+    const p = (Math.sin(G_.time * 4) * .5 + .5);
+    c.fillStyle = G_.bonus
+      ? `rgba(255,${70 + p * 60},40,${.10 + p * .07})`
+      : `rgba(255,${150 + p * 50},60,${.07 + p * .04})`;
+    c.fillRect(0, 0, BW, BH);
+  }
+
+  drawWinds(c, false);
+  drawLcd(c);
+  drawAttacker(c);
+  drawBalls(c);
+
+  // 火花
+  for (const p of G_.fx) {
+    const a = 1 - p.t / p.life;
+    c.globalAlpha = a; c.fillStyle = p.c;
+    c.beginPath(); c.arc(p.x, p.y, 1.9 * a + .5, 0, 7); c.fill();
+  }
+  c.globalAlpha = 1;
+
+  // 闪光
+  if (G_.flash > 0) {
+    c.fillStyle = `rgba(255,240,200,${Math.min(.55, G_.flash * .4)})`;
+    c.fillRect(0, 0, BW, BH);
+  }
+
+  // 大字
+  if (G_.banner) {
+    const b = G_.banner;
+    const k = 1 - b.t / b.life;
+    const pop = k < .18 ? (k / .18) : 1;
+    const fade = b.t < .3 ? b.t / .3 : 1;
+    c.save();
+    c.globalAlpha = fade;
+    c.translate(FCX, 232);
+    c.scale(.6 + pop * .45, .6 + pop * .45);
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = '900 34px -apple-system,sans-serif';
+    c.lineWidth = 7; c.strokeStyle = 'rgba(0,0,0,.85)';
+    c.strokeText(b.text, 0, 0);
+    const g = c.createLinearGradient(0, -20, 0, 20);
+    g.addColorStop(0, '#fff'); g.addColorStop(.5, b.color); g.addColorStop(1, '#ff8a3d');
+    c.fillStyle = g;
+    c.shadowColor = b.color; c.shadowBlur = 22;
+    c.fillText(b.text, 0, 0);
+    c.restore();
+  }
+
+  c.restore();
+}
+
+function drawLcd(c) {
+  const w = LCD.x1 - LCD.x0, h = LCD.y1 - LCD.y0;
+  c.save();
+  c.beginPath(); c.roundRect(LCD.x0, LCD.y0, w, h, 8); c.clip();
+
+  // 屏幕背景
+  let g = c.createLinearGradient(LCD.x0, LCD.y0, LCD.x0, LCD.y1);
+  if (G_.bonus) { g.addColorStop(0, '#5c1204'); g.addColorStop(1, '#1a0400'); }
+  else if (G_.rush) { g.addColorStop(0, '#4a2200'); g.addColorStop(1, '#14060a'); }
+  else { g.addColorStop(0, '#0a1440'); g.addColorStop(1, '#03050f'); }
+  c.fillStyle = g; c.fillRect(LCD.x0, LCD.y0, w, h);
+
+  // 星尘
+  for (let i = 0; i < 26; i++) {
+    const t = (G_.time * (12 + i % 5 * 6) + i * 37) % (h + 40);
+    c.fillStyle = 'rgba(255,255,255,' + (.05 + (i % 4) * .04) + ')';
+    c.fillRect(LCD.x0 + ((i * 53) % w), LCD.y1 - t, 1.4, 6);
+  }
+
+  // 顶部小字
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.font = '800 9px -apple-system,sans-serif';
+  c.fillStyle = G_.rush ? 'rgba(255,220,140,.9)' : 'rgba(150,190,255,.7)';
+  c.fillText(G_.bonus ? `BONUS  ROUND ${G_.bonus.round}/${G_.bonus.rounds}`
+    : (G_.rush ? 'R U S H   1/8' : 'NORMAL   1/32'), FCX, LCD.y0 + 14);
+
+  // 三列数字
+  const cy = LCD.y0 + h * .52, cw = 42, gap = 6;
+  const totalW = cw * 3 + gap * 2;
+  const x0 = FCX - totalW / 2;
+  const s = G_.spin;
+  for (let i = 0; i < 3; i++) {
+    const rx = x0 + i * (cw + gap);
+    c.save();
+    c.beginPath(); c.roundRect(rx, cy - 30, cw, 60, 6); c.clip();
+    const rg = c.createLinearGradient(0, cy - 30, 0, cy + 30);
+    rg.addColorStop(0, 'rgba(255,255,255,.05)'); rg.addColorStop(.5, 'rgba(255,255,255,.16)'); rg.addColorStop(1, 'rgba(255,255,255,.05)');
+    c.fillStyle = rg; c.fillRect(rx, cy - 30, cw, 60);
+
+    const pos = s ? s.reels[i].pos : (i === 0 ? 7 : i === 1 ? 7 : 7);
+    const frac = pos - Math.floor(pos);
+    for (let k = -1; k <= 1; k++) {
+      const idx = ((Math.floor(pos) + k) % 10 + 10) % 10;
+      const yy = cy + (k + frac) * 42;
+      if (yy < cy - 46 || yy > cy + 46) continue;
+      const focus = 1 - Math.min(1, Math.abs(yy - cy) / 42);
+      c.font = '900 34px -apple-system,sans-serif';
+      c.globalAlpha = .25 + focus * .75;
+      c.fillStyle = idx === 7 ? '#ffd45a' : (idx % 2 ? '#ff7aa8' : '#7fd8ff');
+      c.shadowColor = c.fillStyle; c.shadowBlur = focus * 16;
+      c.fillText(String(idx), rx + cw / 2, yy);
+      c.globalAlpha = 1; c.shadowBlur = 0;
+    }
+    c.restore();
+    c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 1;
+    c.beginPath(); c.roundRect(rx, cy - 30, cw, 60, 6); c.stroke();
+  }
+
+  // 保留数显示
+  c.font = '700 8px -apple-system,sans-serif';
+  c.fillStyle = 'rgba(255,255,255,.45)';
+  c.fillText('保留 ' + G_.holds.length + '/4', FCX, LCD.y1 - 12);
+
+  // リーチ 特效
+  if (s && s.reach && s.t > s.stopAt[1]) {
+    const p = Math.sin(G_.time * 18) * .5 + .5;
+    c.strokeStyle = `rgba(255,${80 + p * 120},60,${.5 + p * .5})`;
+    c.lineWidth = 4;
+    c.beginPath(); c.roundRect(LCD.x0 + 2, LCD.y0 + 2, w - 4, h - 4, 7); c.stroke();
+  }
+  c.restore();
+}
+
+function drawAttacker(c) {
+  const open = !!(G_.bonus && G_.bonus.open);
+  const x0 = FCX - 45, x1 = FCX + 45;
+  c.save();
+  if (open) {
+    // 开启：盖板下翻成导板
+    c.fillStyle = 'rgba(255,120,60,.25)';
+    c.fillRect(x0, 412, x1 - x0, 22);
+    c.strokeStyle = '#ffb347'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(x0, 414); c.lineTo(x0 - 6, 434); c.stroke();
+    c.beginPath(); c.moveTo(x1, 414); c.lineTo(x1 + 6, 434); c.stroke();
+    const p = Math.sin(G_.time * 12) * .5 + .5;
+    c.fillStyle = `rgba(255,${180 + p * 60},80,${.6 + p * .4})`;
+    c.font = '900 11px -apple-system,sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('▼ OPEN ▼', FCX, 424);
+  } else {
+    // 关闭：微斜屋脊状盖板
+    const g = c.createLinearGradient(0, LID_PEAK, 0, 434);
+    g.addColorStop(0, '#d9452c'); g.addColorStop(1, '#5c1108');
+    c.fillStyle = g;
+    c.beginPath();
+    c.moveTo(x0 - 1, LID_TOP + 2); c.lineTo(FCX, LID_PEAK - 4); c.lineTo(x1 + 1, LID_TOP + 2);
+    c.lineTo(x1 + 1, 432); c.lineTo(x0 - 1, 432); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(255,190,150,.7)'; c.lineWidth = 1.4;
+    c.beginPath();
+    c.moveTo(x0 - 1, LID_TOP + 2); c.lineTo(FCX, LID_PEAK - 4); c.lineTo(x1 + 1, LID_TOP + 2); c.stroke();
+    c.fillStyle = 'rgba(255,225,205,.8)';
+    c.font = '900 9px -apple-system,sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('大 開 口', FCX, 424);
+  }
+  c.restore();
+}
+
+function drawBalls(c) {
+  for (const b of G_.balls) {
+    // 拖影
+    if (b.tr.length >= 4) {
+      c.strokeStyle = 'rgba(200,225,255,.10)';
+      c.lineWidth = BALL_R * 0.8; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(b.tr[0], b.tr[1]);
+      for (let i = 2; i < b.tr.length; i += 2) c.lineTo(b.tr[i], b.tr[i + 1]);
+      c.stroke();
+    }
+    c.fillStyle = 'rgba(0,0,0,.45)';
+    c.beginPath(); c.arc(b.x + 1, b.y + 1.6, BALL_R, 0, 7); c.fill();
+    const g = c.createRadialGradient(b.x - 2, b.y - 2.4, .4, b.x, b.y, BALL_R);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(.35, '#d7e2f5'); g.addColorStop(.75, '#8b97b5'); g.addColorStop(1, '#39405a');
+    c.fillStyle = g;
+    c.beginPath(); c.arc(b.x, b.y, BALL_R, 0, 7); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.9)';
+    c.beginPath(); c.arc(b.x - 1.8, b.y - 2.2, 1.1, 0, 7); c.fill();
+  }
+}
+
+/* ================================================================ 音效 */
+const Snd = {
+  ctx: null, on: true, lastTick: 0,
+  init() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    this.ctx = new AC();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = 0.5;
+    this.master.connect(this.ctx.destination);
+  },
+  tone(f, d, type, vol, slide) {
+    if (!this.on || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+    o.type = type || 'square'; o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, slide), t + d);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol || .07, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g); g.connect(this.master);
+    o.start(t); o.stop(t + d + .02);
+  },
+  tick(v) {
+    const now = performance.now();
+    if (now - this.lastTick < 26) return;
+    this.lastTick = now;
+    this.tone(1100 + Math.random() * 700, .035, 'triangle', Math.min(.05, v / 8000));
+  },
+  launch() { this.tone(220, .05, 'square', .022, 420); },
+  chucker() { this.tone(660, .08, 'square', .09, 1320); setTimeout(() => this.tone(990, .12, 'square', .07), 70); },
+  pocket() { this.tone(880, .07, 'square', .07, 1500); },
+  warp() { this.tone(400, .18, 'sine', .06, 1400); },
+  spin() { this.tone(300, .06, 'sawtooth', .035, 520); },
+  stop() { this.tone(180, .09, 'square', .06, 90); },
+  reach() {
+    for (let i = 0; i < 5; i++) setTimeout(() => this.tone(500 + i * 110, .14, 'sawtooth', .05, 700 + i * 130), i * 90);
+  },
+  jackpot() {
+    const s = [523, 659, 784, 1047, 784, 1047, 1319];
+    s.forEach((f, i) => setTimeout(() => { this.tone(f, .3, 'square', .09); this.tone(f / 2, .3, 'triangle', .05); }, i * 105));
+  },
+  rush() { [392, 523, 659, 880, 1175].forEach((f, i) => setTimeout(() => this.tone(f, .35, 'sawtooth', .07), i * 90)); },
+  open() { this.tone(300, .12, 'square', .07, 700); },
+  close() { this.tone(500, .1, 'square', .05, 200); },
+};
+hitFx = (x, y, v) => { Snd.tick(v); };
+
+/* ================================================================ UI */
+const $ = id => document.getElementById(id);
+const elBalls = $('sBalls'), elOut = $('sOut'), elJack = $('sJack');
+const elMode = $('modeName'), elModeInfo = $('modeInfo'), elModeBar = $('modeBar');
+const holdEls = Array.from(document.querySelectorAll('.hold'));
+let overlayOpen = true;
+
+function updateHUD() {
+  elBalls.textContent = G_.stock;
+  elOut.textContent = G_.out;
+  elJack.textContent = G_.jackpots + ' / ' + G_.best;
+  const from = G_.shots - 50;
+  let n = 0;
+  for (let i = G_.hitAt.length - 1; i >= 0 && G_.hitAt[i] > from; i--) n++;
+  $('powerRate').textContent = '近50发 中' + n;
+  if (G_.bonus) {
+    elModeBar.className = 'bonus';
+    elMode.textContent = '大当り中';
+    elModeInfo.textContent = `ROUND ${G_.bonus.round}/${G_.bonus.rounds} · 瞄准大开口`;
+  } else if (G_.rush) {
+    elModeBar.className = 'rush';
+    elMode.textContent = 'RUSH 中';
+    elModeInfo.textContent = '中奖率 1/8 · 出双数结束';
+  } else {
+    elModeBar.className = '';
+    elMode.textContent = '通常模式';
+    elModeInfo.textContent = '中奖率 1/32';
+  }
+}
+/* 「天入口」命中时把绿色刻度钉在当时的强度上——玩家靠这个自己找到甜点区 */
+function markPower(pw) {
+  const t = $('powerTick');
+  t.style.left = pw + '%';
+  t.classList.add('on');
+  t.classList.remove('flash');
+  void t.offsetWidth;
+  t.classList.add('flash');
+}
+
+function renderHolds() {
+  const cls = ['g', 'b', 'r', 'k'];
+  for (let i = 0; i < 4; i++) {
+    const h = G_.holds[i];
+    holdEls[i].className = 'hold' + (h ? ' ' + cls[h.color] : '');
+  }
+}
+
+let toastT = null;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('show'), 1600);
+}
+
+/* 力度 */
+function setPower(p) {
+  G_.power = clamp(Math.round(p), 0, 100);
+  $('powerNum').textContent = G_.power;
+  $('powerFill').style.width = G_.power + '%';
+  $('handleKnob').style.transform = `translate(0,-100%) rotate(${-115 + G_.power * 2.3}deg)`;
+  try { localStorage.setItem('pachi_power', G_.power); } catch (e) { }
+}
+function setFiring(on) {
+  G_.firing = on;
+  $('handle').classList.toggle('firing', on || G_.auto);
+}
+
+/* 手柄手势 */
+const handle = $('handle');
+let hp = null;
+handle.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  Snd.init();
+  handle.setPointerCapture(e.pointerId);
+  hp = { id: e.pointerId, y: e.clientY, p0: G_.power };
+  setFiring(true);
+}, { passive: false });
+handle.addEventListener('pointermove', e => {
+  if (!hp || e.pointerId !== hp.id) return;
+  e.preventDefault();
+  setPower(hp.p0 + (hp.y - e.clientY) * 0.30);
+}, { passive: false });
+const endH = e => {
+  if (!hp || (e.pointerId !== undefined && e.pointerId !== hp.id)) return;
+  hp = null; setFiring(false);
+};
+handle.addEventListener('pointerup', endH);
+handle.addEventListener('pointercancel', endH);
+handle.addEventListener('lostpointercapture', endH);
+
+/* 按钮 */
+$('btnMinus').addEventListener('click', () => setPower(G_.power - 1));
+$('btnPlus').addEventListener('click', () => setPower(G_.power + 1));
+$('btnAuto').addEventListener('click', e => {
+  Snd.init();
+  G_.auto = !G_.auto;
+  e.currentTarget.classList.toggle('on', G_.auto);
+  e.currentTarget.textContent = G_.auto ? '自动中' : '自动发射';
+  $('handle').classList.toggle('firing', G_.auto || G_.firing);
+});
+$('btnSound').addEventListener('click', e => {
+  Snd.init();
+  Snd.on = !Snd.on;
+  e.currentTarget.textContent = Snd.on ? '音效 开' : '音效 关';
+  e.currentTarget.classList.toggle('on', Snd.on);
+});
+$('btnRefill').addEventListener('click', () => {
+  G_.stock += 500; updateHUD(); toast('补充 500 球');
+});
+$('btnHelp').addEventListener('click', () => { $('overlay').classList.remove('hidden'); overlayOpen = true; });
+$('startBtn').addEventListener('click', () => {
+  $('overlay').classList.add('hidden');
+  overlayOpen = false; G_.started = true;
+  Snd.init();
+  resize();
+});
+
+/* 长按 ± 连续调节 */
+for (const [id, d] of [['btnMinus', -1], ['btnPlus', 1]]) {
+  const el = $(id); let t = null, iv = null;
+  const start = e => {
+    e.preventDefault();
+    t = setTimeout(() => { iv = setInterval(() => setPower(G_.power + d), 60); }, 350);
+  };
+  const stop = () => { clearTimeout(t); clearInterval(iv); iv = null; };
+  el.addEventListener('pointerdown', start, { passive: false });
+  el.addEventListener('pointerup', stop);
+  el.addEventListener('pointerleave', stop);
+  el.addEventListener('pointercancel', stop);
+}
+
+/* 阻止页面滚动 / 双击缩放 */
+document.addEventListener('touchmove', e => { e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('dblclick', e => e.preventDefault());
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { setFiring(false); last = 0; }
+});
+
+/* 存档 */
+function saveBest() { try { localStorage.setItem('pachi_best', G_.best); } catch (e) { } }
+try {
+  G_.best = parseInt(localStorage.getItem('pachi_best') || '0', 10) || 0;
+  const p = parseInt(localStorage.getItem('pachi_power') || '62', 10);
+  if (!isNaN(p)) G_.power = p;
+} catch (e) { }
+
+/* 启动 */
+setPower(G_.power);
+updateHUD(); renderHolds(); resize();
+requestAnimationFrame(frame);
+
+/* --------- 调试/调参用：无渲染批量模拟 --------- */
+window.PACHI = {
+  G: G_,
+  simulate(power, shots, open) {
+    const save = hitFx; hitFx = null;
+    const res = { start: 0, pocketL: 0, pocketR: 0, attack: 0, out: 0, return: 0, warpT: 0, warpL: 0, warpR: 0, stuck: 0 };
+    for (let n = 0; n < shots; n++) {
+      const v0 = launchSpeed(power);
+      let list = [{ x: LAUNCH_X, y: LAUNCH_Y, vx: v0 * 0.045, vy: -v0 * 0.999, tr: [] }];
+      let steps = 0;
+      while (list.length && steps++ < 240 * 30) {
+        for (let i = list.length - 1; i >= 0; i--) {
+          const ev = stepBall(list[i], !!open);
+          if (ev) {
+            res[ev] = (res[ev] || 0) + 1;
+            const b = list[i]; list.splice(i, 1);
+            if (ev === 'warpT' || ev === 'warpL' || ev === 'warpR') {
+              list.push({ x: 130, y: 283, vx: rr(90, 560), vy: 0, tr: [] });
+            }
+          }
+        }
+      }
+      if (list.length) res.stuck++;
+      hitFx = null;
+    }
+    hitFx = save;
+    return res;
+  },
+  trace(vx) {
+    const save = hitFx; hitFx = null;
+    const b = { x: 130, y: 283, vx, vy: 0, tr: [] };
+    const pts = []; let steps = 0, ev = null;
+    while (steps++ < 240 * 6 && !ev) {
+      ev = stepBall(b, false);
+      if (steps % 12 === 0) pts.push([Math.round(b.x), Math.round(b.y)]);
+    }
+    hitFx = save;
+    return { ev, pts: pts.slice(0, 40) };
+  },
+
+  /* 直接从舞台左端投球，统计舞台的实际去向 */
+  stage(vx, shots) {
+    const save = hitFx; hitFx = null;
+    const res = {};
+    for (let n = 0; n < shots; n++) {
+      const b = { x: 130, y: 283, vx, vy: 0, tr: [] };
+      let steps = 0, ev = null;
+      while (steps++ < 240 * 20 && !ev) ev = stepBall(b, false);
+      res[ev || 'timeout'] = (res[ev || 'timeout'] || 0) + 1;
+    }
+    hitFx = save;
+    return res;
+  },
+
+  /* 记录钢珠首次向下越过某高度时的 x（= 实际进盘落点） */
+  entryProfile(power, shots, line) {
+    line = line === undefined ? 145 : line;
+    const save = hitFx; hitFx = null;
+    const xs = []; let ret = 0;
+    for (let n = 0; n < shots; n++) {
+      const v0 = launchSpeed(power);
+      const b = { x: LAUNCH_X, y: LAUNCH_Y, vx: v0 * 0.045, vy: -v0 * 0.999, tr: [] };
+      let steps = 0;
+      while (steps++ < 240 * 12) {
+        const py = b.y;
+        const ev = stepBall(b, false);
+        if (py <= line && b.y > line && b.vy > 0) { xs.push(b.x); break; }
+        if (ev) { if (ev === 'return') ret++; break; }
+      }
+    }
+    hitFx = save;
+    xs.sort((a, b) => a - b);
+    const q = f => xs.length ? Math.round(xs[Math.floor((xs.length - 1) * f)]) : -1;
+    return { n: xs.length, ret, min: q(0), p25: q(.25), med: q(.5), p75: q(.75), max: q(1) };
+  }
+};
+</script>
+</body>
+</html>
