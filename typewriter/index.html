@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>永远爱你 · 打字机</title>
+<style>
+  :root{
+    --desk:      #cdc7b9;
+    --desk-deep: #b9b2a3;
+    --paper:     #ece5d5;
+    --paper-lo:  #ded5c1;
+    --ink:       #26221e;
+    --ink-red:   #9e3b2c;
+    --body:      #3b423b;
+    --body-lo:   #4a524a;
+    --body-dark: #262b26;
+    --chrome:    #b8b2a4;
+    --key:       #e8e2d5;
+
+    --ch:     44px;   /* 字格宽 */
+    --lh:     68px;   /* 行距 */
+    --vis:    3;      /* 纸上可见行数 */
+    --pad:    30px;   /* 纸的左右白边 */
+    --cols:   9;      /* 每行字数 —— 恰好一句 */
+    --platen: 26px;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ height:100%; }
+
+  body{
+    background: radial-gradient(120% 95% at 50% -10%, var(--desk) 0%, var(--desk-deep) 100%);
+    color: var(--ink);
+    font-family: 'Songti SC','STSong','Noto Serif CJK SC','Source Han Serif SC','Source Han Serif CN',SimSun,'宋体',serif;
+    display:flex; align-items:center; justify-content:center;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overflow:hidden;
+  }
+
+  .stage{
+    width:100%; max-width: 800px;
+    padding: 0 16px;
+    display:flex; flex-direction:column; align-items:stretch;
+  }
+
+  /* ── 标题 ───────────────────────────────── */
+  .intro{ text-align:center; user-select:none; margin-bottom: 26px; }
+  .intro h1{
+    font-size: 14px; font-weight:400;
+    letter-spacing:.62em; text-indent:.62em;
+    color: var(--ink); opacity:.40;
+  }
+  .intro p{
+    margin-top: 10px; height: 14px;
+    font-size: 11px; letter-spacing:.14em;
+    color: var(--ink); opacity:.32;
+    transition: opacity .8s ease;
+  }
+  .intro p.gone{ opacity:0; }
+
+  /* ── 字车滑道 ───────────────────────────── */
+  .lane{
+    position:relative; z-index:1;
+    width: 100vw; margin-left: calc(50% - 50vw);
+    height: calc(var(--vis) * var(--lh) + var(--platen));
+  }
+
+  /* 字车：纸 + 滚筒 + 回车杆，整体左移 */
+  .carriage{
+    position:absolute; left:50%; top:0;
+    transition: transform .085s cubic-bezier(.25,.9,.35,1);
+    will-change: transform;
+  }
+  .carriage.returning{ transition: transform .38s cubic-bezier(.14,.86,.24,1); }
+
+  .paper{
+    position:relative;
+    width: calc(var(--cols) * var(--ch) + var(--pad) * 2);
+    height: calc(var(--vis) * var(--lh));
+    overflow:hidden;
+    background: linear-gradient(180deg, var(--paper-lo) 0%, var(--paper) 18%, var(--paper) 100%);
+    box-shadow:
+      0 16px 30px -20px rgba(38,34,30,.6),
+      inset 0 -20px 22px -20px rgba(38,34,30,.20);
+    transition: transform .45s cubic-bezier(.3,.9,.3,1), opacity .45s ease;
+  }
+  .paper::after{                       /* 极淡的纸纹 */
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background: repeating-linear-gradient(93deg, rgba(38,34,30,.02) 0 1px, transparent 1px 4px);
+  }
+  .paper.out{ transform: translateY(-52%); opacity:0; }
+
+  .sheet{
+    position:absolute; left:0; top:0; width:100%;
+    padding: calc((var(--vis) - 1) * var(--lh)) var(--pad) 0;
+    transition: transform .3s cubic-bezier(.25,.9,.3,1);
+    will-change: transform;
+  }
+  .paper.jolt .sheet{ animation: jolt .05s ease-out; }
+  @keyframes jolt{
+    0%{   transform: var(--sheetY) translateY(0) }
+    45%{  transform: var(--sheetY) translateY(1px) }
+    100%{ transform: var(--sheetY) translateY(0) }
+  }
+
+  .line{ height: var(--lh); white-space:nowrap; font-size:0; }
+
+  .cell{
+    position:relative; display:inline-block; vertical-align:top;
+    width: var(--ch); height: var(--lh);
+  }
+  .glyph{
+    position:absolute; left:0; right:0; top: calc(var(--lh) * .5);
+    font-size: calc(var(--ch) * .78);
+    line-height:1; text-align:center;
+    font-weight:400; font-style:normal;
+    transform: translateY(-50%) translate(var(--dx), var(--dy)) rotate(var(--rot));
+    color: rgba(38,34,30,var(--a));
+    animation: land .07s ease-out;
+  }
+  .glyph.ghost{ text-shadow:.5px .5px 0 rgba(38,34,30,.26); }
+  @keyframes land{
+    from{ opacity:0; transform: translateY(-50%) translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(1.08) }
+    to{   opacity:1 }
+  }
+
+  /* 压纸滚筒 */
+  .platen{
+    position:relative;
+    width: calc(var(--cols) * var(--ch) + var(--pad) * 2);
+    height: var(--platen);
+    border-radius: 0 0 3px 3px;
+    background: linear-gradient(180deg, #2f352f 0%, var(--body-dark) 60%, #1e221e 100%);
+    box-shadow: 0 10px 18px -10px rgba(20,24,20,.55);
+  }
+  .knob{
+    position:absolute; top:50%; width:26px; height:26px; border-radius:50%;
+    transform: translateY(-50%);
+    background: radial-gradient(62% 62% at 36% 30%, #d8d3c7 0%, var(--chrome) 52%, #85806f 100%);
+    box-shadow: 0 2px 4px rgba(20,24,20,.5);
+  }
+  .knob.l{ left:-16px; } .knob.r{ right:-16px; }
+
+  /* 回车杆：装在字车左端，随字车一起走 */
+  .lever{
+    position:absolute; left:-66px;
+    top: calc(var(--vis) * var(--lh) + 2px);
+    width: 62px; height:4px; border-radius:3px;
+    transform-origin: 100% 50%;
+    transform: rotate(-28deg);
+    background: linear-gradient(90deg, #ddd8cc, var(--chrome) 40%, #857f6f);
+    box-shadow: 0 1px 3px rgba(20,24,20,.4);
+    transition: transform .2s cubic-bezier(.3,.9,.3,1);
+  }
+  .lever::before{
+    content:''; position:absolute; left:-3px; top:-3px;
+    width:10px; height:10px; border-radius:50%;
+    background: radial-gradient(60% 60% at 38% 32%, #e2ded3, var(--chrome) 60%, #7d7768);
+  }
+  .lever.swing{ transform: rotate(-3deg) translateX(-9px); }
+
+  /* 固定的打字点：导字叉 + 字锤 */
+  .typepoint{
+    position:absolute; left:50%; top:0; height:100%; z-index:3;
+    transform: translateX(-50%); pointer-events:none;
+    transition: transform .085s cubic-bezier(.25,.9,.35,1);
+  }
+  .typepoint.returning{ transition: transform .38s cubic-bezier(.14,.86,.24,1); }
+  .tick{
+    position:absolute; left:50%; transform:translateX(-50%);
+    top: calc(var(--vis) * var(--lh) - 5px);
+    width: calc(var(--ch) - 12px); height:1.5px;
+    background: var(--ink-red); opacity:.7; border-radius:1px;
+  }
+  .hammer{                              /* 字锤：支点在纸的下缘，锤头打到当前行 */
+    position:absolute; left:50%; margin-left:-3.5px;
+    top: calc(var(--vis) * var(--lh) - var(--lh) * .58);
+    width:7px; height: calc(var(--lh) * .58);
+    border-radius:3px 3px 1px 1px;
+    background: linear-gradient(180deg, #596157 0%, #363c36 55%, var(--body-dark) 100%);
+    transform-origin: 50% 100%;
+    transform: rotate(-88deg) scaleY(.45);
+    opacity: 0;                         /* 静止时收在字盘里，看不见 */
+    transition: transform .075s cubic-bezier(.2,.85,.3,1), opacity .06s linear;
+  }
+  .hammer.hit{ transform: rotate(0deg) scaleY(1); opacity:.92; }
+
+  /* ── 机身：固定不动，托着键盘 ──────────────── */
+  .machine{
+    position:relative; z-index:2;
+    margin-top: -9px;
+    border-radius: 16px 16px 7px 7px;
+    background: linear-gradient(180deg, var(--body-lo) 0%, var(--body) 22%, var(--body-dark) 100%);
+    box-shadow:
+      0 -1px 0 rgba(255,252,244,.10) inset,
+      0 20px 44px -24px rgba(20,24,20,.8);
+    padding: 20px 0 24px;
+  }
+
+  /* ── 键盘 ───────────────────────────────── */
+  .keyboard{
+    display:flex; flex-direction:column; align-items:center; gap:7px;
+    user-select:none;
+  }
+  .krow{ display:flex; gap:7px; align-items:center; }
+
+  .key{
+    width:35px; height:35px; border-radius:50%;
+    border:1px solid rgba(28,32,28,.55);
+    background: radial-gradient(72% 72% at 50% 30%, #f4efe5 0%, var(--key) 58%, #cfc8b8 100%);
+    color: var(--ink);
+    font-family: inherit; font-size:12.5px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    box-shadow: 0 2px 0 rgba(16,20,16,.45), 0 5px 8px -4px rgba(16,20,16,.7);
+    transition: transform .06s ease, box-shadow .06s ease;
+  }
+  .key.wide{ width:auto; padding:0 13px; border-radius:17px; font-size:11.5px; letter-spacing:.1em; }
+  .key.space{ width:240px; }
+  .key.down{
+    transform: translateY(2.5px);
+    box-shadow: 0 0 0 rgba(16,20,16,.45), 0 2px 4px -3px rgba(16,20,16,.7);
+  }
+
+  /* ── 声音开关 ────────────────────────────── */
+  .sound{
+    position:fixed; right:18px; bottom:16px;
+    width:30px; height:30px; border-radius:50%;
+    border:1px solid rgba(38,34,30,.3);
+    background:transparent; color:var(--ink);
+    font-family:inherit; font-size:12px; cursor:pointer;
+    opacity:.42; transition: opacity .25s ease;
+  }
+  .sound:hover{ opacity:.78; }
+  .sound.off{ opacity:.22; }
+
+  /* ── 窄屏 ───────────────────────────────── */
+  @media (max-width: 760px){
+    .stage{ max-width: 520px; }
+    .key{ width:29px; height:29px; font-size:11px; }
+    .krow, .keyboard{ gap:5px; }
+    .key.space{ width:150px; }
+    .key.wide{ padding:0 10px; font-size:10.5px; }
+    .machine{ padding:16px 0 20px; }
+  }
+  @media (max-width: 480px){
+    .key{ width:25px; height:25px; font-size:10px; border-width:.8px; }
+    .krow, .keyboard{ gap:4px; }
+    .key.space{ width:100px; }
+    .key.wide{ padding:0 8px; font-size:9.5px; }
+    .intro h1{ font-size:12.5px; }
+    .intro p{ font-size:10px; }
+  }
+
+  /* ── 减弱动效 ───────────────────────────── */
+  body.reduced .carriage,
+  body.reduced .carriage.returning,
+  body.reduced .sheet,
+  body.reduced .hammer,
+  body.reduced .lever,
+  body.reduced .paper{ transition:none !important; }
+  body.reduced .paper.jolt .sheet{ animation:none !important; }
+  body.reduced .glyph{ animation:none !important; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <div class="intro">
+    <h1>永远爱你</h1>
+    <p id="hint">敲任意键出字 &nbsp;·&nbsp; Enter 回车 &nbsp;·&nbsp; Backspace 退格叠印 &nbsp;·&nbsp; Esc 换纸</p>
+  </div>
+
+  <div class="lane" id="lane">
+    <div class="carriage" id="carriage">
+      <div class="paper" id="paper">
+        <div class="sheet" id="sheet"></div>
+      </div>
+      <div class="platen">
+        <span class="knob l"></span>
+        <span class="knob r"></span>
+      </div>
+      <div class="lever" id="lever"></div>
+    </div>
+
+    <div class="typepoint" id="typepoint">
+      <div class="tick"></div>
+      <div class="hammer" id="hammer"></div>
+    </div>
+  </div>
+
+  <div class="machine">
+    <div class="keyboard" id="keyboard"></div>
+  </div>
+</div>
+
+<button class="sound" id="sound" title="声音">响</button>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ══ 文本：八字回环，循环誊写 ══════════════ */
+  const TEXT = '永远爱你，永是我爱';
+
+  /* ══ 状态 ══════════════════════════════ */
+  let CH = 44, COLS = 9, LH = 68, VIS = 3, PAD = 30, BELL = 2;
+  let lines = [[]];
+  let row = 0, col = 0, cursor = 0, locked = false;
+  let soundOn = true;
+
+  const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (REDUCED) document.body.classList.add('reduced');
+
+  const root     = document.documentElement;
+  const lane      = document.getElementById('lane');
+  const typept    = document.getElementById('typepoint');
+  const carriage  = document.getElementById('carriage');
+  const paper    = document.getElementById('paper');
+  const sheet    = document.getElementById('sheet');
+  const hammer   = document.getElementById('hammer');
+  const lever    = document.getElementById('lever');
+  const hint     = document.getElementById('hint');
+  const keyboard = document.getElementById('keyboard');
+  const soundBtn = document.getElementById('sound');
+
+  /* ══ 声音：全部用 Web Audio 合成，零外部资源 ══ */
+  let AC = null, MASTER = null, NOISE = null;
+
+  function ctx(){
+    if (!AC){
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return null;
+      AC = new C();
+      MASTER = AC.createGain();
+      MASTER.gain.value = 0.9;
+      MASTER.connect(AC.destination);
+    }
+    if (AC.state === 'suspended') AC.resume();
+    return AC;
+  }
+
+  function noiseSrc(c){
+    if (!NOISE){
+      NOISE = c.createBuffer(1, Math.floor(c.sampleRate * 0.5), c.sampleRate);
+      const d = NOISE.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const s = c.createBufferSource();
+    s.buffer = NOISE;
+    return s;
+  }
+
+  /* 击键：金属字锤的噪声爆发 + 木质机身的低频闷响 */
+  function sClack(){
+    const c = ctx(); if (!c || !soundOn) return;
+    const t = c.currentTime;
+
+    const n = noiseSrc(c), bp = c.createBiquadFilter(), g = c.createGain();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1550 + Math.random() * 700;
+    bp.Q.value = 1.5;
+    g.gain.setValueAtTime(0.26, t);
+    g.gain.exponentialRampToValueAtTime(0.0008, t + 0.034);
+    n.connect(bp).connect(g).connect(MASTER);
+    n.start(t); n.stop(t + 0.05);
+
+    const o = c.createOscillator(), og = c.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(150 * (0.92 + Math.random() * 0.16), t);
+    o.frequency.exponentialRampToValueAtTime(68, t + 0.05);
+    og.gain.setValueAtTime(0.16, t);
+    og.gain.exponentialRampToValueAtTime(0.001, t + 0.062);
+    o.connect(og).connect(MASTER);
+    o.start(t); o.stop(t + 0.07);
+  }
+
+  /* 边界预警铃 */
+  function sDing(){
+    const c = ctx(); if (!c || !soundOn) return;
+    const t = c.currentTime;
+    [[2400, 0.11], [3320, 0.06]].forEach(function(p){
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine';
+      o.frequency.value = p[0] * (0.998 + Math.random() * 0.004);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(p[1], t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0004, t + 0.7);
+      o.connect(g).connect(MASTER);
+      o.start(t); o.stop(t + 0.75);
+    });
+  }
+
+  /* 回车：字车滑回的扫频噪声 + 末端撞停 */
+  function sZip(){
+    const c = ctx(); if (!c || !soundOn) return;
+    const t = c.currentTime, dur = 0.26;
+
+    const n = noiseSrc(c), bp = c.createBiquadFilter(), g = c.createGain();
+    bp.type = 'bandpass'; bp.Q.value = 0.9;
+    bp.frequency.setValueAtTime(850, t);
+    bp.frequency.exponentialRampToValueAtTime(2600, t + dur * 0.78);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.15, t + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.018, t + dur);
+    n.connect(bp).connect(g).connect(MASTER);
+    n.start(t); n.stop(t + dur);
+
+    const o = c.createOscillator(), og = c.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(122, t + dur);
+    o.frequency.exponentialRampToValueAtTime(54, t + dur + 0.09);
+    og.gain.setValueAtTime(0.2, t + dur);
+    og.gain.exponentialRampToValueAtTime(0.001, t + dur + 0.12);
+    o.connect(og).connect(MASTER);
+    o.start(t + dur); o.stop(t + dur + 0.14);
+  }
+
+  /* 字车抵住右边界的闷响 */
+  function sThud(){
+    const c = ctx(); if (!c || !soundOn) return;
+    const t = c.currentTime;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(95, t);
+    o.frequency.exponentialRampToValueAtTime(46, t + 0.08);
+    g.gain.setValueAtTime(0.18, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    o.connect(g).connect(MASTER);
+    o.start(t); o.stop(t + 0.12);
+  }
+
+  /* 退格的齿轮咔哒 */
+  function sTick(){
+    const c = ctx(); if (!c || !soundOn) return;
+    const t = c.currentTime;
+    const n = noiseSrc(c), hp = c.createBiquadFilter(), g = c.createGain();
+    hp.type = 'highpass'; hp.frequency.value = 2600;
+    g.gain.setValueAtTime(0.13, t);
+    g.gain.exponentialRampToValueAtTime(0.0006, t + 0.022);
+    n.connect(hp).connect(g).connect(MASTER);
+    n.start(t); n.stop(t + 0.03);
+  }
+
+  /* ══ 尺寸：每行恒为 9 格，正好一句 ══════════ */
+  function measure(){
+    const w = window.innerWidth;
+    if (w < 480)      { CH = 28; VIS = 3; PAD = 18; }
+    else if (w < 760) { CH = 36; VIS = 3; PAD = 24; }
+    else              { CH = 44; VIS = 3; PAD = 30; }
+    COLS = TEXT.length;   // 9
+    BELL = 2;
+    LH = Math.round(CH * 1.55);
+
+    root.style.setProperty('--ch',   CH + 'px');
+    root.style.setProperty('--lh',   LH + 'px');
+    root.style.setProperty('--vis',  VIS);
+    root.style.setProperty('--pad',  PAD + 'px');
+    root.style.setProperty('--cols', COLS);
+  }
+
+  /* ══ 渲染 ══════════════════════════════ */
+  function glyphEl(g){
+    const b = document.createElement('b');
+    b.className = 'glyph' + (g.ghost ? ' ghost' : '');
+    b.style.setProperty('--dx',  g.dx.toFixed(2) + 'px');
+    b.style.setProperty('--dy',  g.dy.toFixed(2) + 'px');
+    b.style.setProperty('--rot', g.rot.toFixed(2) + 'deg');
+    b.style.setProperty('--a',   g.a.toFixed(3));
+    b.textContent = g.ch;
+    return b;
+  }
+
+  function renderAll(){
+    const frag = document.createDocumentFragment();
+    for (let r = 0; r < lines.length; r++){
+      const ln = document.createElement('div');
+      ln.className = 'line';
+      for (let c = 0; c < lines[r].length; c++){
+        const cell = document.createElement('i');
+        cell.className = 'cell';
+        const box = lines[r][c];
+        if (box) for (let k = 0; k < box.length; k++) cell.appendChild(glyphEl(box[k]));
+        ln.appendChild(cell);
+      }
+      frag.appendChild(ln);
+    }
+    sheet.innerHTML = '';
+    sheet.appendChild(frag);
+  }
+
+  /* 只重画一个字格，避免整页重排 */
+  function renderCell(r, c){
+    const ln = sheet.children[r];
+    if (!ln){ renderAll(); return; }
+    while (ln.children.length <= c){
+      const cell = document.createElement('i');
+      cell.className = 'cell';
+      ln.appendChild(cell);
+    }
+    const cell = ln.children[c];
+    cell.innerHTML = '';
+    const box = lines[r][c];
+    if (box) for (let k = 0; k < box.length; k++) cell.appendChild(glyphEl(box[k]));
+  }
+
+  /* 打字点固定在中央，纸车左移，让当前字格对准打字点。
+     屏幕比字车行程窄时（手机），纸走到屏幕边就停住，改由打字点滑动 —— 
+     等于把镜头推近看一台比屏幕更宽的机器，打过的字始终留在纸上看得见。 */
+  function carriagePos(){
+    const W = lane.clientWidth || window.innerWidth;
+    const C = W / 2;
+    const paperW = COLS * CH + PAD * 2;
+    const inset = 8;
+    const want = -(PAD + col * CH + CH / 2);
+    let x = want;
+    if (paperW + inset * 2 <= W){
+      const minX = -(C - inset);            // 纸左缘贴住屏幕左
+      const maxX = (C - inset) - paperW;    // 纸右缘贴住屏幕右
+      x = Math.min(Math.max(want, minX), maxX);
+    }
+    return { x: x, drift: x - want };
+  }
+
+  function updateCarriage(instant){
+    const pos = carriagePos();
+    const x = pos.x;
+    const tp = 'translateX(calc(-50% + ' + pos.drift.toFixed(1) + 'px))';
+    if (instant || REDUCED){
+      const tprev = typept.style.transition;
+      typept.style.transition = 'none';
+      typept.style.transform = tp;
+      void typept.offsetWidth;
+      typept.style.transition = tprev;
+    } else {
+      typept.style.transform = tp;
+    }
+    if (instant || REDUCED){
+      const prev = carriage.style.transition;
+      carriage.style.transition = 'none';
+      carriage.style.transform = 'translateX(' + x + 'px)';
+      void carriage.offsetWidth;
+      carriage.style.transition = prev;
+    } else {
+      carriage.style.transform = 'translateX(' + x + 'px)';
+    }
+  }
+
+  function updateSheet(){
+    const y = 'translateY(' + (-row * LH) + 'px)';
+    sheet.style.setProperty('--sheetY', y);
+    sheet.style.transform = y;
+  }
+
+  /* ══ 动作 ══════════════════════════════ */
+  let hammerTimer = null, joltTimer = null, leverTimer = null;
+
+  function hammerHit(){
+    if (REDUCED) return;
+    hammer.classList.add('hit');
+    clearTimeout(hammerTimer);
+    hammerTimer = setTimeout(function(){ hammer.classList.remove('hit'); }, 58);
+  }
+
+  function jolt(){
+    if (REDUCED) return;
+    paper.classList.remove('jolt');
+    void paper.offsetWidth;
+    paper.classList.add('jolt');
+    clearTimeout(joltTimer);
+    joltTimer = setTimeout(function(){ paper.classList.remove('jolt'); }, 60);
+  }
+
+  function leverSwing(){
+    if (REDUCED) return;
+    lever.classList.add('swing');
+    clearTimeout(leverTimer);
+    leverTimer = setTimeout(function(){ lever.classList.remove('swing'); }, 260);
+  }
+
+  function firstTouch(){
+    if (hint && !hint.classList.contains('gone')) hint.classList.add('gone');
+  }
+
+  /* 落一个字：每次都带随机偏差 —— 字锤角度、色带磨损、机身震动 */
+  function strike(){
+    firstTouch();
+
+    if (locked){                       // 字车已抵右边界，非回车不可
+      sThud();
+      if (!REDUCED){
+        carriage.style.transform = 'translateX(' + (carriagePos().x + 2) + 'px)';
+        setTimeout(function(){ updateCarriage(); }, 55);
+      }
+      return;
+    }
+
+    const ch = TEXT.charAt(cursor % TEXT.length);
+    cursor++;
+
+    const light = Math.random() < 0.045;   // 敲轻了，墨色淡
+    const ghost = Math.random() < 0.02;    // 机身震动，字带重影
+    if (!lines[row]) lines[row] = [];
+    if (!lines[row][col]) lines[row][col] = [];
+    lines[row][col].push({
+      ch:  ch,
+      rot: (Math.random() * 2 - 1) * 0.6,
+      dx:  (Math.random() * 2 - 1) * 0.5,
+      dy:  (Math.random() * 2 - 1) * 0.8,
+      a:   light ? 0.46 + Math.random() * 0.1 : 0.78 + Math.random() * 0.22,
+      ghost: ghost
+    });
+
+    renderCell(row, col);
+    sClack(); hammerHit(); jolt();
+
+    col++;
+    if (col >= COLS) locked = true;                 // 抵达右边界，锁死
+    else if (col === COLS - BELL) sDing();          // 边界预警铃
+
+    updateCarriage();
+  }
+
+  /* 回车：回车杆摆动，纸走一行，字车滑回左端 */
+  function carriageReturn(){
+    firstTouch();
+    row++; col = 0; locked = false;
+    if (!lines[row]) lines[row] = [];
+
+    const ln = document.createElement('div');
+    ln.className = 'line';
+    sheet.appendChild(ln);
+
+    leverSwing(); sZip();
+
+    carriage.classList.add('returning');
+    typept.classList.add('returning');
+    updateCarriage();
+    setTimeout(function(){
+      carriage.classList.remove('returning');
+      typept.classList.remove('returning');
+    }, 400);
+    updateSheet();
+  }
+
+  /* 退格：真打字机擦不掉墨，退格只退字车 —— 再敲就叠印 */
+  function backspace(){
+    firstTouch();
+    if (col <= 0){ sThud(); return; }
+    col--; locked = false;
+    sTick();
+    updateCarriage();
+  }
+
+  /* 换新纸 */
+  function newSheet(){
+    firstTouch();
+    paper.classList.add('out');
+    sZip();
+    setTimeout(function(){
+      lines = [[]]; row = 0; col = 0; cursor = 0; locked = false;
+      renderAll();
+      updateSheet();
+      updateCarriage(true);
+      paper.classList.remove('out');
+    }, REDUCED ? 0 : 440);
+  }
+
+  /* ══ 键盘 ══════════════════════════════ */
+  const LAYOUT = [
+    { keys: ['1','2','3','4','5','6','7','8','9','0'], tail: { label:'退格', act:'back' } },
+    { keys: ['Q','W','E','R','T','Y','U','I','O','P'] },
+    { keys: ['A','S','D','F','G','H','J','K','L','；'], tail: { label:'回车', act:'ret' } },
+    { keys: ['Z','X','C','V','B','N','M','，','。','？'] }
+  ];
+
+  const keyEls = {};   // 键面 -> DOM，物理键按下时同步弹压
+
+  function buildKeyboard(){
+    LAYOUT.forEach(function(def){
+      const r = document.createElement('div');
+      r.className = 'krow';
+      def.keys.forEach(function(k){
+        const b = document.createElement('button');
+        b.className = 'key'; b.type = 'button';
+        b.textContent = k; b.dataset.act = 'type';
+        keyEls[k] = b;
+        r.appendChild(b);
+      });
+      if (def.tail){
+        const b = document.createElement('button');
+        b.className = 'key wide'; b.type = 'button';
+        b.textContent = def.tail.label; b.dataset.act = def.tail.act;
+        keyEls[def.tail.act] = b;
+        r.appendChild(b);
+      }
+      keyboard.appendChild(r);
+    });
+
+    const last = document.createElement('div');
+    last.className = 'krow';
+
+    const nb = document.createElement('button');
+    nb.className = 'key wide'; nb.type = 'button';
+    nb.textContent = '换纸'; nb.dataset.act = 'new';
+    keyEls['new'] = nb;
+
+    const sp = document.createElement('button');
+    sp.className = 'key wide space'; sp.type = 'button';
+    sp.textContent = ''; sp.dataset.act = 'type';
+    sp.setAttribute('aria-label', '空格');
+    keyEls[' '] = sp;
+
+    last.appendChild(nb);
+    last.appendChild(sp);
+    keyboard.appendChild(last);
+  }
+
+  function runAct(act){
+    if (act === 'type')      strike();
+    else if (act === 'ret')  carriageReturn();
+    else if (act === 'back') backspace();
+    else if (act === 'new')  newSheet();
+  }
+
+  function press(el){
+    if (!el) return;
+    el.classList.add('down');
+    setTimeout(function(){ el.classList.remove('down'); }, 85);
+  }
+
+  keyboard.addEventListener('pointerdown', function(e){
+    const el = e.target.closest('.key');
+    if (!el) return;
+    e.preventDefault();
+    ctx();
+    press(el);
+    runAct(el.dataset.act);
+  });
+
+  /* 物理键盘：任意可见字符键都出字 */
+  const PUNCT = { ',':'，', '.':'。', ';':'；', '/':'？' };
+
+  window.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key;
+
+    if (k === 'Enter')     { e.preventDefault(); press(keyEls['ret']);  runAct('ret');  return; }
+    if (k === 'Backspace') { e.preventDefault(); press(keyEls['back']); runAct('back'); return; }
+    if (k === 'Escape')    { e.preventDefault(); press(keyEls['new']);  runAct('new');  return; }
+    if (k === 'Tab' || k.indexOf('Arrow') === 0) return;
+    if (k.length !== 1) return;
+
+    e.preventDefault();
+    ctx();
+    let face = PUNCT[k] || k.toUpperCase();
+    press(keyEls[face] || keyEls[k]);
+    runAct('type');
+  }, { passive: false });
+
+  /* ══ 声音开关 ══════════════════════════ */
+  function paintSound(){
+    soundBtn.textContent = soundOn ? '响' : '静';
+    soundBtn.classList.toggle('off', !soundOn);
+    soundBtn.setAttribute('aria-label', soundOn ? '关闭声音' : '打开声音');
+  }
+
+  try {
+    const saved = localStorage.getItem('tw-sound');
+    if (saved !== null) soundOn = saved === '1';
+  } catch (err) { /* 隐私模式下忽略 */ }
+
+  soundBtn.addEventListener('click', function(){
+    soundOn = !soundOn;
+    paintSound();
+    try { localStorage.setItem('tw-sound', soundOn ? '1' : '0'); } catch (err) {}
+    if (soundOn) { ctx(); sTick(); }
+  });
+
+  /* ══ 起始 ══════════════════════════════ */
+  let rzTimer = null;
+  window.addEventListener('resize', function(){
+    clearTimeout(rzTimer);
+    rzTimer = setTimeout(function(){
+      measure();
+      updateSheet();
+      updateCarriage(true);
+    }, 140);
+  });
+
+  paper.addEventListener('dblclick', newSheet);
+
+  buildKeyboard();
+  paintSound();
+  measure();
+  renderAll();
+  updateSheet();
+  updateCarriage(true);
+})();
+</script>
+</body>
+</html>
