@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>费里尼电影演化路线图 · MAPPA EVOLUTIVA</title>
+<meta name="description" content="费德里科·费里尼 24 部导演作品的交互式演化路线图：横轴年份，纵轴现实与幻梦的距离。">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+
+  :root{
+    --paper:#e8e6e1;
+    --ink:#0d0d0d;
+    --red:#d4241c;
+    --grey:#8f8c86;
+    --hair:#c9c6c0;
+    --ghost:#d9d6d0;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --han:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    --ease:cubic-bezier(.2,.7,.2,1);
+  }
+
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--paper);color:var(--ink);
+    font-family:var(--mono);
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--red);color:var(--paper)}
+
+  /* ---------- 通用粗野主义元件 ---------- */
+  .rule{border-top:1px solid var(--ink)}
+  .hair{border-top:1px solid var(--hair)}
+  .lbl{
+    font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--grey);
+  }
+
+  /* ---------- 头部：破格栅 ---------- */
+  header{padding:14px 20px 0}
+  .titlerow{display:flex;align-items:flex-end;justify-content:space-between;gap:10px 32px;flex-wrap:wrap}
+  .meta{
+    font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+    display:flex;flex-wrap:wrap;gap:0 18px;color:var(--ink);
+    padding-bottom:10px;
+  }
+  .meta b{font-weight:400;color:var(--grey)}
+  h1{
+    font-family:var(--mono);
+    font-size:clamp(2.4rem,8vw,6.1rem);
+    line-height:.82;
+    letter-spacing:-.05em;
+    font-weight:700;
+    text-transform:uppercase;
+    padding-top:8px;
+  }
+  h1 span{display:block;margin-left:8vw;color:var(--red)}
+  h1 i{
+    font-style:normal;display:inline-block;
+    font-size:.24em;letter-spacing:.1em;vertical-align:super;
+    color:var(--grey);margin-left:.5em;
+  }
+  .sub{
+    font-family:var(--han);font-size:12.5px;line-height:1.7;
+    max-width:36ch;margin:0 0 9px auto;text-align:right;color:#3a3833;flex:0 1 auto;
+  }
+  .sub em{font-style:normal;border-bottom:1px solid var(--red)}
+
+  /* ---------- 仪表读数条 ---------- */
+  .readout{
+    border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);
+    padding:7px 20px;
+    display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    font-size:10.5px;letter-spacing:.04em;
+    min-height:31px;
+  }
+  @media(max-width:780px){
+    .readout{display:block;line-height:1.75;padding:6px 14px}
+    .readout>span{display:inline;margin-right:9px}
+  }
+  .readout .cursor{color:var(--red);animation:blink 1.2s steps(2) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .readout .ro-year{font-weight:700}
+  .readout .ro-it{font-weight:700;text-transform:uppercase;letter-spacing:-.01em}
+  .readout .ro-zh{font-family:var(--han);color:#3a3833}
+  .readout .ro-sep{color:var(--hair)}
+  .readout .ro-fase{color:var(--grey);text-transform:uppercase;letter-spacing:.14em}
+  .readout .ro-bar{color:var(--red);letter-spacing:-.05em}
+  .readout .ro-hint{color:var(--grey)}
+
+  /* ---------- 控制条 ---------- */
+  .controls{
+    display:flex;align-items:stretch;flex-wrap:wrap;
+    border-bottom:1px solid var(--ink);
+  }
+  .ctl-group{display:flex;align-items:stretch;border-right:1px solid var(--ink)}
+  .ctl-group:last-child{border-right:0}
+  .ctl-group.right{margin-left:auto;border-right:0;border-left:1px solid var(--ink)}
+  @media(max-width:900px){#ctl-stats{display:none}}
+  .ctl-group.grow{flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+  .ctl-group.grow::-webkit-scrollbar{display:none}
+  .ctl-tag{
+    display:flex;align-items:center;padding:0 10px;
+    font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--grey);
+    border-right:1px solid var(--hair);white-space:nowrap;
+  }
+  button{
+    font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+    background:none;border:0;border-right:1px solid var(--hair);
+    color:var(--ink);padding:9px 12px;cursor:pointer;white-space:nowrap;
+    border-radius:0;transition:background .12s var(--ease),color .12s var(--ease);
+  }
+  button:last-child{border-right:0}
+  button:hover{background:var(--ink);color:var(--paper)}
+  button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+  .chip[aria-pressed="true"]{background:var(--red);color:var(--paper)}
+  button:focus-visible{outline:2px solid var(--red);outline-offset:-2px}
+  .chip .n{opacity:.5;margin-left:.5em}
+
+  /* ---------- 舞台 ---------- */
+  .stage{display:grid;grid-template-columns:1fr;align-items:stretch}
+  @media(min-width:1080px){
+    .stage{grid-template-columns:1fr 372px}
+    .panel{border-left:1px solid var(--ink);border-top:0}
+  }
+  .chartwrap{position:relative;min-width:0;padding:0}
+  svg#chart{display:block;width:100%;height:auto;touch-action:manipulation}
+
+  /* ---------- SVG 样式 ---------- */
+  .axis-line{stroke:var(--hair);stroke-width:1;shape-rendering:crispEdges}
+  .axis-dot{stroke:var(--hair);stroke-width:1;stroke-dasharray:1 4;shape-rendering:crispEdges}
+  .phase-div{stroke:var(--ink);stroke-width:1;stroke-dasharray:3 4;opacity:.55;shape-rendering:crispEdges}
+  .tick-txt{font-family:var(--mono);font-size:9px;fill:var(--grey);letter-spacing:.1em}
+  .phase-txt{font-family:var(--mono);font-size:9px;fill:var(--ink);letter-spacing:.14em;text-transform:uppercase}
+  .phase-zh{font-family:var(--han);font-size:9.5px;fill:var(--grey)}
+  .phase-plate{fill:var(--paper);opacity:.86;shape-rendering:crispEdges;pointer-events:none}
+  .phase-ghost{font-family:var(--mono);font-size:30px;font-weight:700;fill:var(--ghost)}
+  .axis-cap{font-family:var(--mono);font-size:9px;fill:var(--grey);letter-spacing:.2em}
+
+  .traj{fill:none;stroke:var(--red);stroke-width:1.4;stroke-linejoin:miter}
+  .thread{fill:none;stroke:var(--ink);stroke-width:1;opacity:0;transition:opacity .2s var(--ease)}
+  .thread.on{opacity:.75}
+
+  .node{cursor:pointer;transition:opacity .18s var(--ease)}
+  .node .hit{fill:transparent}
+  .node .mark{fill:var(--ink);stroke:var(--ink);stroke-width:1.2;transition:fill .12s var(--ease),stroke .12s var(--ease)}
+  .node.corto .mark{fill:var(--paper)}
+  .node .ring{fill:none;stroke:var(--red);stroke-width:1;opacity:0;transition:opacity .12s var(--ease)}
+  .node:hover .ring,.node:focus-visible .ring{opacity:1}
+  .node:focus{outline:none}
+  .node:focus-visible .ring{stroke-dasharray:2 2}
+  .node.sel .mark{fill:var(--red);stroke:var(--red)}
+  .node.sel .ring{opacity:1}
+  .node.kin .ring{opacity:.45}
+  .node.dim{opacity:.2}
+  .node.hidden{opacity:0;pointer-events:none}
+
+  .flylabel{font-family:var(--mono);font-size:10px;font-weight:700;fill:var(--ink);letter-spacing:-.01em;pointer-events:none;text-transform:uppercase}
+  .flylabel.hide{display:none}
+  .flyplate{fill:var(--paper);stroke:var(--ink);stroke-width:1;shape-rendering:crispEdges;pointer-events:none}
+  .flyplate.hide{display:none}
+
+  /* ---------- 详情面板 ---------- */
+  .panel{
+    border-top:1px solid var(--ink);
+    padding:16px 20px 26px;
+    display:flex;flex-direction:column;gap:12px;
+    min-width:0;
+  }
+  .p-year{font-size:11px;letter-spacing:.2em;color:var(--red)}
+  .p-it{
+    font-size:clamp(1.5rem,3.6vw,2.15rem);line-height:.94;letter-spacing:-.035em;
+    font-weight:700;text-transform:uppercase;word-break:break-word;
+  }
+  .p-zh{font-family:var(--han);font-size:13px;color:#3a3833;letter-spacing:.02em}
+  .p-meta{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--grey)}
+  .p-scale{display:flex;align-items:center;gap:8px;font-size:9px;letter-spacing:.1em;color:var(--grey)}
+  .p-scale .track{flex:1;height:9px;border:1px solid var(--hair);position:relative}
+  .p-scale .fill{position:absolute;left:0;top:0;bottom:0;background:var(--red);transition:width .24s var(--ease)}
+  .p-block{border-top:1px solid var(--ink);padding-top:9px}
+  .p-body{font-family:var(--han);font-size:13px;line-height:1.78;margin-top:6px;color:#1a1a1a}
+  .p-crew{font-size:10px;line-height:1.75;margin-top:6px;color:#3a3833;font-family:var(--han)}
+  .p-note{
+    display:inline-block;margin-top:2px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+    border:1px solid var(--red);color:var(--red);padding:3px 6px;
+  }
+  .p-fili{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+  .p-fili button{border:1px solid var(--ink);padding:4px 7px;font-size:9px}
+  .p-empty{font-family:var(--han);font-size:12.5px;line-height:1.85;color:#3a3833}
+  .p-empty b{font-weight:400;border-bottom:1px solid var(--red)}
+  .p-nav{display:flex;gap:0;margin-top:auto;border:1px solid var(--ink)}
+  .p-nav button{flex:1;border-right:1px solid var(--ink)}
+  .p-nav button:last-child{border-right:0}
+
+  /* ---------- 索引表 ---------- */
+  .indice{display:none;border-top:1px solid var(--ink)}
+  body.view-indice .indice{display:block}
+  body.view-indice .stage{display:none}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;min-width:720px}
+  th,td{
+    text-align:left;vertical-align:top;
+    padding:8px 10px;border-bottom:1px solid var(--hair);
+    font-size:10.5px;line-height:1.6;
+  }
+  th{
+    font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--grey);
+    border-bottom:1px solid var(--ink);position:sticky;top:0;background:var(--paper);
+  }
+  tbody tr{cursor:pointer;transition:background .1s var(--ease)}
+  tbody tr:hover{background:var(--ink);color:var(--paper)}
+  tbody tr:hover .t-zh,tbody tr:hover .t-mut,tbody tr:hover .t-fase{color:var(--paper)}
+  tbody tr.sel{background:var(--red);color:var(--paper)}
+  tbody tr.sel .t-zh,tbody tr.sel .t-mut,tbody tr.sel .t-fase{color:var(--paper)}
+  .t-it{font-weight:700;text-transform:uppercase;letter-spacing:-.01em;white-space:nowrap}
+  .t-zh,.t-mut{font-family:var(--han)}
+  .t-zh{color:#3a3833;white-space:nowrap}
+  .t-mut{color:#3a3833;line-height:1.7;min-width:24ch}
+  .t-fase{color:var(--grey);white-space:nowrap}
+  .t-fili{color:var(--grey);font-size:9px;letter-spacing:.06em}
+
+  footer{
+    border-top:1px solid var(--ink);
+    padding:14px 20px 40px;
+    font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--grey);
+    display:flex;flex-wrap:wrap;gap:6px 22px;
+  }
+  footer a{color:var(--ink)}
+
+  .p-close{display:none}
+  @media(max-width:1079px){
+    .panel{
+      position:fixed;left:0;right:0;bottom:0;z-index:30;
+      background:var(--paper);border-top:1px solid var(--ink);
+      max-height:66vh;overflow-y:auto;
+      transform:translateY(102%);
+      transition:transform .26s var(--ease);
+      padding-bottom:18px;
+    }
+    body.has-sel .panel{transform:translateY(0)}
+    body:not(.has-sel) .panel{pointer-events:none}
+    .p-close{
+      display:block;position:sticky;top:0;margin:-16px -20px 0;
+      width:calc(100% + 40px);text-align:right;background:var(--paper);
+      border-bottom:1px solid var(--hair);border-right:0;
+    }
+    .p-nav{margin-top:14px}
+  }
+  @media(max-width:640px){
+    header{padding:12px 14px 0}
+    .readout,.footer,footer{padding-left:14px;padding-right:14px}
+    .panel{padding:14px 14px 24px}
+    .sub{text-align:left;margin-left:0}
+    h1 span{margin-left:6vw}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="meta">
+    <span>Federico Fellini</span>
+    <span><b>1920</b> Rimini — <b>1993</b> Roma</span>
+    <span>24 opere · 1950—1990</span>
+    <span><b>Cinecittà · Teatro 5</b></span>
+  </div>
+  <div class="titlerow">
+    <h1>Mappa<span>Evolutiva<i>1950—90</i></span></h1>
+    <p class="sub">费里尼电影演化路线图。横轴是<em>年份</em>，纵轴是他<em>离现实有多远</em>——从贴地的新现实主义，一路漂到五号棚里那片塑料海。</p>
+  </div>
+</header>
+
+<div class="readout" id="readout" aria-live="polite"></div>
+
+<nav class="controls">
+  <div class="ctl-group">
+    <button id="btn-mappa" aria-pressed="true">Mappa 图</button>
+    <button id="btn-indice" aria-pressed="false">Indice 表</button>
+  </div>
+  <div class="ctl-group">
+    <button id="btn-play">▶ Evoluzione</button>
+  </div>
+  <div class="ctl-group right" id="ctl-stats"><span class="ctl-tag">24 opere · 8 fili · scala soggettiva</span></div>
+</nav>
+
+<nav class="controls">
+  <div class="ctl-group"><span class="ctl-tag">Fili 线程 »</span></div>
+  <div class="ctl-group grow" id="chips"></div>
+  <div class="ctl-group right"><button id="btn-clear">Azzera 清空</button></div>
+</nav>
+
+<main class="stage">
+  <div class="chartwrap"><svg id="chart" role="img" aria-label="费里尼 24 部作品的演化散点轨迹图"></svg></div>
+  <aside class="panel" id="panel"></aside>
+</main>
+
+<section class="indice" id="indice">
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th>Anno</th><th>Titolo originale</th><th>中文</th><th>Fase</th><th>Sogno</th><th>Fili</th><th>Mutazione 变异</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <span>Mappa evolutiva · Fellini</span>
+  <span>纵轴为主观刻度，非学术定量</span>
+  <span>键盘 ← → 逐部 · Space 播放 · Esc 清空</span>
+  <span><a href="index.html">← 返回</a></span>
+</footer>
+
+<script>
+"use strict";
+
+/* ==================== 数据 ==================== */
+
+var THREADS = [
+  {id:"memoria",   it:"Memoria",     zh:"里米尼与记忆"},
+  {id:"circo",     it:"Circo",       zh:"马戏与游行"},
+  {id:"sacro",     it:"Sacro",       zh:"天主教与仪式"},
+  {id:"sogno",     it:"Sogno",       zh:"梦与荣格"},
+  {id:"metacinema",it:"Metacinema",  zh:"电影中的电影"},
+  {id:"teatro5",   it:"Teatro 5",    zh:"摄影棚的绝对人工"},
+  {id:"tv",        it:"Tivù",        zh:"电视与媒介批判"},
+  {id:"masina",    it:"Masina",      zh:"朱丽叶塔·马西娜"}
+];
+
+var PHASES = [
+  {n:"Ⅰ", from:1949.5, to:1958.5, it:"Ai margini del neorealismo", zh:"新现实主义的边缘", span:"1950—1957"},
+  {n:"Ⅱ", from:1958.5, to:1964.0, it:"La rottura",                 zh:"断裂",             span:"1960—1963"},
+  {n:"Ⅲ", from:1964.0, to:1969.5, it:"Colore e inconscio",         zh:"色彩与潜意识",     span:"1965—1969"},
+  {n:"Ⅳ", from:1969.5, to:1977.0, it:"Memoria e artificio",        zh:"记忆与绝对人工",   span:"1970—1976"},
+  {n:"Ⅴ", from:1977.0, to:1990.5, it:"Elegia e metacinema",        zh:"挽歌与元电影",     span:"1978—1990"}
+];
+
+var FILMS = [
+  {id:"luci",year:1950,it:"Luci del varietà",zh:"卖艺春秋",phase:1,dream:12,kind:"lungo",
+   threads:["circo","masina"],
+   mut:"起点即是后台。他从三流巡演剧团的化妆间出发——日后所有的马戏、游行与幻灭，都已在这间化妆间里排练过一遍。",
+   crew:"合导 Alberto Lattuada · 编剧 Fellini／Pinelli · 音乐 Felice Lattuada · 主演 Giulietta Masina"},
+
+  {id:"sceicco",year:1952,it:"Lo sceicco bianco",zh:"白酋长",phase:1,dream:25,kind:"lungo",
+   threads:["metacinema","masina"],
+   mut:"第一次独立执导，就把「造梦工业」本身搬上银幕：连环画偶像在沙滩上被当场拆穿，虚构与现实第一次正面对撞。",
+   crew:"故事 Michelangelo Antonioni · 编剧 Fellini／Flaiano／Pinelli · 音乐 Nino Rota（首度合作）"},
+
+  {id:"vitelloni",year:1953,it:"I vitelloni",zh:"浪荡儿",phase:1,dream:15,kind:"lungo",
+   threads:["memoria"],
+   mut:"里米尼被第一次搬进电影：小城、冬天的海、无所事事的青年。此后四十年他反复回访的记忆母题，在这里定型。",
+   crew:"编剧 Fellini／Flaiano／Pinelli · 摄影 Otello Martelli · 音乐 Nino Rota",
+   note:"威尼斯银狮奖"},
+
+  {id:"agenzia",year:1953,it:"Un'agenzia matrimoniale",zh:"婚姻介绍所",phase:1,dream:8,kind:"corto",
+   threads:["metacinema"],
+   mut:"以伪纪录片的形式混进新现实主义集锦，却让那位记者在自己编造的采访里迷了路——纪录的外壳，第一次被他从内部掏空。",
+   crew:"集锦片《城市之恋》段落 · 编剧 Fellini／Pinelli · 摄影 Gianni Di Venanzo"},
+
+  {id:"strada",year:1954,it:"La strada",zh:"大路",phase:1,dream:35,kind:"lungo",
+   threads:["circo","sacro","masina"],
+   mut:"他离开新现实主义的社会账本，转向寓言与灵魂：流浪艺人的三人行成了一则圣徒传——连一颗石子都有它的用处。",
+   crew:"编剧 Fellini／Flaiano／Pinelli · 摄影 Otello Martelli · 音乐 Nino Rota · 主演 Masina／Anthony Quinn",
+   note:"奥斯卡最佳外语片"},
+
+  {id:"bidone",year:1955,it:"Il bidone",zh:"骗子",phase:1,dream:20,kind:"lungo",
+   threads:["sacro","masina"],
+   mut:"假神父行骗，真死亡降临。他把宗教仪式降格为骗局的道具，第一次让救赎在冷硬的荒地上彻底落空。",
+   crew:"编剧 Fellini／Flaiano／Pinelli · 摄影 Otello Martelli · 音乐 Nino Rota · 主演 Broderick Crawford"},
+
+  {id:"cabiria",year:1957,it:"Le notti di Cabiria",zh:"卡比利亚之夜",phase:1,dream:30,kind:"lungo",
+   threads:["circo","sacro","masina"],
+   mut:"新现实主义时期的终点：朝圣、催眠术与深夜的游行队伍，让现实开始容纳幻觉；结尾那个转向镜头，正式把观众拉进了共谋。",
+   crew:"编剧 Fellini／Flaiano／Pinelli，方言对白 Pier Paolo Pasolini · 摄影 Aldo Tonti／Otello Martelli · 音乐 Nino Rota",
+   note:"奥斯卡最佳外语片"},
+
+  {id:"dolcevita",year:1960,it:"La dolce vita",zh:"甜蜜的生活",phase:2,dream:45,kind:"lungo",
+   threads:["sacro","sogno"],
+   mut:"情节被整体放弃，换成七天七夜的段落串联。他发明了一种以漫游代替叙事的现代语法，顺手造出了 paparazzo 这个词。",
+   crew:"编剧 Fellini／Flaiano／Pinelli／Rondi · 摄影 Otello Martelli · 音乐 Nino Rota · 主演 Marcello Mastroianni／Anita Ekberg",
+   note:"戛纳金棕榈"},
+
+  {id:"antonio",year:1962,it:"Le tentazioni del Dottor Antonio",zh:"安东尼奥博士的诱惑",phase:2,dream:65,kind:"corto",
+   threads:["sogno","sacro"],
+   mut:"第一次用彩色：广告牌上的巨大女人活了过来，走进道德卫士的噩梦。幻象自此获得压倒现实的体积。",
+   crew:"集锦片《三艳嬉春》段落 · 编剧 Fellini／Flaiano／Rondi · 摄影 Otello Martelli · 音乐 Nino Rota · 主演 Anita Ekberg"},
+
+  {id:"ottoemezzo",year:1963,it:"8½",zh:"八部半",phase:2,dream:75,kind:"lungo",
+   threads:["memoria","circo","sogno","metacinema"],
+   mut:"叙事彻底让位于意识流，回忆、幻想与现实被剪在同一层上。电影第一次以「拍不出电影」为题材，并以一场马戏团游行收场。",
+   crew:"编剧 Fellini／Flaiano／Pinelli／Rondi · 摄影 Gianni Di Venanzo · 美术服装 Piero Gherardi · 音乐 Nino Rota",
+   note:"奥斯卡最佳外语片"},
+
+  {id:"giulietta",year:1965,it:"Giulietta degli spiriti",zh:"朱丽叶与魔鬼",phase:3,dream:85,kind:"lungo",
+   threads:["sogno","masina"],
+   mut:"首部彩色长片：荣格式的潜意识被直接染成颜色，家庭主妇的幻视与现实同等饱和。色彩从此不再写实，而是一种心理事实。",
+   crew:"编剧 Fellini／Flaiano／Pinelli／Rondi · 摄影 Gianni Di Venanzo · 美术服装 Piero Gherardi · 音乐 Nino Rota · 主演 Masina"},
+
+  {id:"toby",year:1968,it:"Toby Dammit",zh:"该死的托比",phase:3,dream:90,kind:"corto",
+   threads:["sogno","metacinema","tv"],
+   mut:"把爱伦·坡拍成一场电视颁奖礼式的地狱：霓虹、突进的变焦、酗酒明星的主观视点——他离恐怖片与媒介批判最近的一次。",
+   crew:"集锦片《勾魂摄魄》段落 · 编剧 Fellini／Bernardino Zapponi · 摄影 Giuseppe Rotunno · 音乐 Nino Rota · 主演 Terence Stamp"},
+
+  {id:"notebook",year:1969,it:"A Director's Notebook",zh:"导演笔记",phase:3,dream:55,kind:"corto",
+   threads:["metacinema","teatro5"],
+   mut:"为 NBC 拍的伪纪录片：他扮演他自己，带摄影机走进废弃的片场与试镜现场。「关于拍摄的拍摄」自此成为一种独立体裁。",
+   crew:"电视片 · 编剧 Fellini／Zapponi · 摄影 Pasqualino De Santis"},
+
+  {id:"satyricon",year:1969,it:"Fellini Satyricon",zh:"爱情神话",phase:3,dream:95,kind:"lungo",
+   threads:["sacro","teatro5","sogno"],
+   mut:"彻底切断与当代的脐带：古罗马被当成一颗外星球重建，人物没有心理，叙事带着缺口。他宣布电影可以是一具刚出土的、断裂的壁画。",
+   crew:"编剧 Fellini／Zapponi · 摄影 Giuseppe Rotunno · 美术服装 Danilo Donati · 音乐 Nino Rota"},
+
+  {id:"clowns",year:1970,it:"I clowns",zh:"小丑",phase:4,dream:60,kind:"corto",
+   threads:["circo","metacinema","tv"],
+   mut:"以电视纪录片的形式给马戏团办一场葬礼：摄制组自己入镜，追问一个已经死掉的行业。纪录、回忆与虚构三者不再区分。",
+   crew:"电视片 · 编剧 Fellini／Zapponi · 摄影 Dario Di Palma · 音乐 Nino Rota"},
+
+  {id:"roma",year:1972,it:"Roma",zh:"罗马风情画",phase:4,dream:70,kind:"lungo",
+   threads:["memoria","sacro","teatro5","metacinema"],
+   mut:"城市不再是背景而是主角：地铁挖出的壁画一见空气就消失，教士时装秀在烛光里游行。罗马成了一具任他解剖的活体。",
+   crew:"编剧 Fellini／Zapponi · 摄影 Giuseppe Rotunno · 音乐 Nino Rota"},
+
+  {id:"amarcord",year:1973,it:"Amarcord",zh:"阿玛柯德",phase:4,dream:65,kind:"lungo",
+   threads:["memoria","circo","sacro"],
+   mut:"记忆被承认为集体的、不可靠的：小城一年四季的荒诞排成游行队列，法西斯与青春期共用同一套滑稽戏。",
+   crew:"编剧 Fellini／Tonino Guerra · 摄影 Giuseppe Rotunno · 美术服装 Danilo Donati · 音乐 Nino Rota",
+   note:"奥斯卡最佳外语片"},
+
+  {id:"casanova",year:1976,it:"Il Casanova",zh:"卡萨诺瓦",phase:4,dream:98,kind:"lungo",
+   threads:["sogno","teatro5","sacro"],
+   mut:"人工性的极点：海是一块抖动的黑色塑料布，威尼斯整座建在五号棚里，主角最后与发条玩偶共舞。他把厌恶拍成了一场完美而毫无生机的机械芭蕾。",
+   crew:"编剧 Fellini／Zapponi · 摄影 Giuseppe Rotunno · 美术服装 Danilo Donati · 音乐 Nino Rota · 主演 Donald Sutherland",
+   note:"奥斯卡最佳服装设计"},
+
+  {id:"prova",year:1978,it:"Prova d'orchestra",zh:"乐队排演",phase:5,dream:50,kind:"corto",
+   threads:["tv","metacinema"],
+   mut:"一间排练厅、一支乐队、一场暴动。他把电影缩到寓言的尺寸，直接对着七十年代的意大利政治说话——也是罗塔的最后一部配乐。",
+   crew:"电视电影 · 编剧 Fellini／Brunello Rondi · 摄影 Giuseppe Rotunno · 音乐 Nino Rota（绝笔）"},
+
+  {id:"citta",year:1980,it:"La città delle donne",zh:"女人城",phase:5,dream:88,kind:"lungo",
+   threads:["sogno"],
+   mut:"整部片就是一场梦：从火车上的一次凝视直落进女性主义的嘉年华。他把《八部半》的幻想机制拉长成一段不醒的、140 分钟的单一梦境。",
+   crew:"编剧 Fellini／Zapponi／Rondi · 摄影 Giuseppe Rotunno · 音乐 Luis Bacalov · 主演 Marcello Mastroianni"},
+
+  {id:"nave",year:1983,it:"E la nave va",zh:"扬帆",phase:5,dream:85,kind:"lungo",
+   threads:["teatro5","metacinema"],
+   mut:"结尾摄影机后撤，露出摇晃的塑料海和整座摄影棚。他不再隐藏骗局，而是把「揭穿骗局」本身当成了结局。",
+   crew:"编剧 Fellini／Tonino Guerra · 摄影 Giuseppe Rotunno · 音乐 Gianfranco Plenizio"},
+
+  {id:"ginger",year:1986,it:"Ginger e Fred",zh:"舞国",phase:5,dream:55,kind:"lungo",
+   threads:["circo","tv","masina"],
+   mut:"马西娜与马斯楚安尼在电视综艺的后台重逢。他把矛头对准电视：广告切碎一切，模仿者取代了原作，连回忆也要排队上镜。",
+   crew:"编剧 Fellini／Guerra／Pinelli · 摄影 Rotunno／Ennio Guarnieri · 音乐 Nicola Piovani · 主演 Masina／Mastroianni"},
+
+  {id:"intervista",year:1987,it:"Intervista",zh:"访谈录",phase:5,dream:72,kind:"lungo",
+   threads:["memoria","metacinema","teatro5"],
+   mut:"日本电视台来采访他拍《美国》，于是他拍下了拍摄本身：五号棚、旧片重放、老演员当场看见自己变老。一生的自我引用在此闭合。",
+   crew:"编剧 Fellini／Gianfranco Angelucci · 摄影 Tonino Delli Colli · 音乐 Nicola Piovani",
+   note:"戛纳四十周年特别奖"},
+
+  {id:"voce",year:1990,it:"La voce della luna",zh:"月吟",phase:5,dream:80,kind:"lungo",
+   threads:["sogno","memoria","tv"],
+   mut:"最后一部：疯人、井底的声音、被电视吞掉的广场。他放弃了讲述，只留下倾听的姿势——「如果大家都安静一点，也许我们能听懂些什么。」",
+   crew:"编剧 Fellini／Pinelli／Ermanno Cavazzoni · 摄影 Tonino Delli Colli · 音乐 Nicola Piovani · 主演 Roberto Benigni／Paolo Villaggio"}
+];
+
+/* 同年多片：沿时间轴微量错开，避免节点重叠 */
+(function(){
+  var by = {};
+  FILMS.forEach(function(f){ (by[f.year] = by[f.year] || []).push(f); });
+  Object.keys(by).forEach(function(y){
+    var g = by[y];
+    g.forEach(function(f,i){ f.frac = g.length > 1 ? (i - (g.length-1)/2) * 0.36 : 0; });
+  });
+})();
+
+var THREAD_DASH = ["none","5 3","1 3","9 3","2 2","7 2 1 2","3 5","11 4"];
+
+/* ==================== 状态 ==================== */
+
+var SVGNS = "http://www.w3.org/2000/svg";
+var Y0 = 1949.5, Y1 = 1990.5, YSPAN = Y1 - Y0;
+
+var state = {
+  sel:null, hover:null, filters:[], view:"mappa",
+  reveal:1, playing:false, raf:null, playStart:0, playDur:22000
+};
+
+var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+var svg      = document.getElementById("chart");
+var wrap     = document.querySelector(".chartwrap");
+var panel    = document.getElementById("panel");
+var readout  = document.getElementById("readout");
+var chipsBox = document.getElementById("chips");
+var tbody    = document.getElementById("tbody");
+
+var geom = {vertical:false, nodes:{}, cum:[], total:0};
+
+function byId(id){ for(var i=0;i<FILMS.length;i++) if(FILMS[i].id===id) return FILMS[i]; return null; }
+function idx(id){ for(var i=0;i<FILMS.length;i++) if(FILMS[i].id===id) return i; return -1; }
+function thread(id){ for(var i=0;i<THREADS.length;i++) if(THREADS[i].id===id) return THREADS[i]; return null; }
+function threadIdx(id){ for(var i=0;i<THREADS.length;i++) if(THREADS[i].id===id) return i; return 0; }
+function phase(n){ return PHASES[n-1]; }
+function el(tag,attrs){
+  var n = document.createElementNS(SVGNS,tag);
+  if(attrs) for(var k in attrs) n.setAttribute(k, attrs[k]);
+  return n;
+}
+
+/* ==================== 绘制 ==================== */
+
+function layout(){
+  var vertical = window.innerWidth < 780;
+  var W = Math.max(300, wrap.clientWidth);
+  var H;
+  if(vertical){
+    H = FILMS.length * 40 + 90;
+  }else{
+    var top = wrap.getBoundingClientRect().top + (window.scrollY || 0);
+    H = Math.max(330, Math.min(640, window.innerHeight - top - 16));
+  }
+  var pad = vertical
+    ? {l:54, r:26, t:36, b:30}
+    : {l:60, r:26, t:36, b:34};
+  var iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+
+  geom.vertical = vertical;
+  geom.W = W; geom.H = H; geom.pad = pad; geom.iw = iw; geom.ih = ih;
+
+  geom.pos = function(f){
+    var t = (f.year + (f.frac||0) - Y0) / YSPAN;
+    var d = f.dream / 100;
+    return vertical
+      ? {x: pad.l + d * iw,          y: pad.t + t * ih}
+      : {x: pad.l + t * iw,          y: pad.t + (1 - d) * ih};
+  };
+  geom.yearPos = function(y){
+    var t = (y - Y0) / YSPAN;
+    return vertical ? pad.t + t * ih : pad.l + t * iw;
+  };
+}
+
+function render(){
+  layout();
+  var v = geom.vertical, pad = geom.pad, W = geom.W, H = geom.H;
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  svg.setAttribute("width",W);
+  svg.setAttribute("height",H);
+
+  var gBg = el("g"), gTh = el("g"), gTraj = el("g"), gPh = el("g"), gNodes = el("g"), gFly = el("g");
+
+  /* --- 分期带 --- */
+  PHASES.forEach(function(p,i){
+    var a = geom.yearPos(p.from), b = geom.yearPos(p.to);
+    if(i > 0){
+      gBg.appendChild(el("line", v
+        ? {x1:pad.l-14, y1:a, x2:W-pad.r, y2:a, "class":"phase-div"}
+        : {x1:a, y1:pad.t-16, x2:a, y2:H-pad.b, "class":"phase-div"}));
+    }
+    var ghost = el("text",{"class":"phase-ghost"});
+    ghost.textContent = p.n;
+    var t1 = el("text",{"class":"phase-txt"});
+    t1.textContent = p.n + " " + p.it;
+    var t2 = el("text",{"class":"phase-zh"});
+    t2.textContent = p.zh + " " + p.span;
+    if(v){
+      ghost.setAttribute("x", -999); ghost.setAttribute("y", -999);
+      t1.setAttribute("x", pad.l); t1.setAttribute("y", a + 12);
+      t2.setAttribute("x", pad.l); t2.setAttribute("y", a + 24);
+    }else{
+      ghost.setAttribute("x", a + 5); ghost.setAttribute("y", H - pad.b - 6);
+      t1.setAttribute("x", a + 5); t1.setAttribute("y", pad.t - 20);
+      t2.setAttribute("x", a + 5); t2.setAttribute("y", pad.t - 8);
+      var w1 = (p.n + " " + p.it).length * 6.9 + 12;
+      var w2 = (p.zh + " " + p.span).length * 8.4 + 12;
+      if(b - a < w1) t1.textContent = p.n + " " + p.zh;
+      if(b - a < w2) t2.textContent = p.span;
+      if(b - a < 62){ t1.textContent = p.n; t2.textContent = ""; }
+    }
+    gBg.appendChild(ghost);
+    var s1 = t1.textContent, s2 = t2.textContent;
+    if(s1 || s2){
+      var pw = Math.max(s1.length, s2.length) * 6.9 + 10;
+      var px = parseFloat(t1.getAttribute("x")) - 4;
+      var py = parseFloat(t1.getAttribute("y")) - 10;
+      gPh.appendChild(el("rect",{"class":"phase-plate", x:px, y:py,
+        width:pw, height:(s2 ? 25 : 14)}));
+    }
+    gPh.appendChild(t1); gPh.appendChild(t2);
+  });
+
+  /* --- 网格与轴 --- */
+  [0,25,50,75,100].forEach(function(d){
+    var c = v ? pad.l + (d/100)*geom.iw : pad.t + (1-d/100)*geom.ih;
+    gBg.appendChild(el("line", v
+      ? {x1:c, y1:pad.t, x2:c, y2:H-pad.b, "class":"axis-dot"}
+      : {x1:pad.l, y1:c, x2:W-pad.r, y2:c, "class":"axis-dot"}));
+  });
+
+  var ticks = [1950,1955,1960,1965,1970,1975,1980,1985,1990];
+  ticks.forEach(function(y){
+    var c = geom.yearPos(y);
+    var t = el("text",{"class":"tick-txt"});
+    t.textContent = String(y).slice(2);
+    if(v){
+      t.setAttribute("x", 8); t.setAttribute("y", c + 3);
+    }else{
+      t.setAttribute("x", c); t.setAttribute("y", H - pad.b + 15);
+      t.setAttribute("text-anchor","middle");
+      t.textContent = y;
+    }
+    gBg.appendChild(t);
+  });
+
+  var capA = el("text",{"class":"axis-cap"}), capB = el("text",{"class":"axis-cap"});
+  capA.textContent = "REALE 现实"; capB.textContent = "SOGNO 幻梦";
+  if(v){
+    capA.setAttribute("x", pad.l); capA.setAttribute("y", pad.t - 12);
+    capB.setAttribute("x", W - pad.r); capB.setAttribute("y", pad.t - 12);
+    capB.setAttribute("text-anchor","end");
+  }else{
+    capA.setAttribute("transform","translate(14,"+(H-pad.b)+") rotate(-90)");
+    capB.setAttribute("transform","translate(14,"+(pad.t+66)+") rotate(-90)");
+    capB.setAttribute("text-anchor","end");
+  }
+  gBg.appendChild(capA); gBg.appendChild(capB);
+
+  /* --- 主题线程弧线 --- */
+  THREADS.forEach(function(th,ti){
+    var pts = FILMS.filter(function(f){ return f.threads.indexOf(th.id) >= 0; }).map(geom.pos);
+    if(pts.length < 2) return;
+    var d = "M " + pts[0].x.toFixed(1) + " " + pts[0].y.toFixed(1);
+    for(var i=1;i<pts.length;i++){
+      var a = pts[i-1], b = pts[i];
+      var mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
+      var dx = b.x-a.x, dy = b.y-a.y;
+      var len = Math.sqrt(dx*dx+dy*dy) || 1;
+      var k = (ti % 2 ? -1 : 1) * Math.min(46, len*0.17);
+      d += " Q " + (mx - dy/len*k).toFixed(1) + " " + (my + dx/len*k).toFixed(1) +
+           " " + b.x.toFixed(1) + " " + b.y.toFixed(1);
+    }
+    var p = el("path",{d:d,"class":"thread","data-thread":th.id});
+    p.setAttribute("stroke-dasharray", THREAD_DASH[ti] === "none" ? "" : THREAD_DASH[ti]);
+    gTh.appendChild(p);
+  });
+
+  /* --- 演化轨迹 --- */
+  var dTraj = "", cum = [0], total = 0, prev = null;
+  FILMS.forEach(function(f,i){
+    var p = geom.pos(f);
+    if(i === 0){ dTraj = "M " + p.x.toFixed(1) + " " + p.y.toFixed(1); }
+    else{
+      dTraj += " L " + p.x.toFixed(1) + " " + p.y.toFixed(1);
+      total += Math.sqrt(Math.pow(p.x-prev.x,2) + Math.pow(p.y-prev.y,2));
+      cum.push(total);
+    }
+    prev = p;
+  });
+  geom.cum = cum; geom.total = total;
+  var traj = el("path",{d:dTraj,"class":"traj",id:"traj"});
+  gTraj.appendChild(traj);
+  geom.traj = traj;
+
+  /* --- 节点 --- */
+  geom.nodes = {};
+  FILMS.forEach(function(f){
+    var p = geom.pos(f);
+    var g = el("g",{
+      "class":"node" + (f.kind === "corto" ? " corto" : ""),
+      "data-id":f.id, tabindex:"0", role:"button",
+      "aria-label": f.year + " " + f.it + " " + f.zh
+    });
+    g.appendChild(el("rect",{"class":"hit",x:p.x-14,y:p.y-14,width:28,height:28}));
+    g.appendChild(el("rect",{"class":"ring",x:p.x-9.5,y:p.y-9.5,width:19,height:19}));
+    var s = f.kind === "corto" ? 8 : 9;
+    g.appendChild(el("rect",{"class":"mark",x:p.x-s/2,y:p.y-s/2,width:s,height:s}));
+    gNodes.appendChild(g);
+    geom.nodes[f.id] = {g:g, p:p};
+  });
+
+  /* --- 浮动标签 --- */
+  var plate = el("rect",{"class":"flyplate hide",id:"flyplate"});
+  var flab  = el("text",{"class":"flylabel hide",id:"flylabel"});
+  gFly.appendChild(plate); gFly.appendChild(flab);
+  geom.plate = plate; geom.flab = flab;
+
+  svg.appendChild(gBg); svg.appendChild(gTh); svg.appendChild(gTraj);
+  svg.appendChild(gPh); svg.appendChild(gNodes); svg.appendChild(gFly);
+
+  bindNodes();
+  paint();
+}
+
+/* ==================== 交互绘制 ==================== */
+
+function kinOf(id){
+  var f = byId(id); if(!f) return {};
+  var m = {};
+  FILMS.forEach(function(g){
+    if(g.id === id) return;
+    for(var i=0;i<f.threads.length;i++) if(g.threads.indexOf(f.threads[i]) >= 0){ m[g.id] = 1; return; }
+  });
+  return m;
+}
+
+function paint(){
+  var sel = state.sel, hov = state.hover, filt = state.filters;
+  var focus = sel || hov;
+  var kin = focus ? kinOf(focus) : {};
+
+  /* 轨迹描线 */
+  if(geom.traj){
+    var L = geom.total || 1;
+    geom.traj.setAttribute("stroke-dasharray", L + " " + L);
+    geom.traj.setAttribute("stroke-dashoffset", (L * (1 - state.reveal)).toFixed(1));
+    geom.traj.style.opacity = filt.length ? 0.16 : 1;
+  }
+
+  /* 节点 */
+  FILMS.forEach(function(f,i){
+    var n = geom.nodes[f.id]; if(!n) return;
+    var g = n.g;
+    var revealed = state.reveal >= 1 || (geom.cum[i] / (geom.total || 1)) <= state.reveal + 0.0001;
+    var inFilter = !filt.length || filt.some(function(t){ return f.threads.indexOf(t) >= 0; });
+    g.classList.toggle("hidden", !revealed);
+    g.classList.toggle("sel", f.id === sel);
+    g.classList.toggle("kin", !!kin[f.id]);
+    g.classList.toggle("dim", !inFilter && f.id !== sel);
+  });
+
+  /* 线程线 */
+  var showThreads = {};
+  filt.forEach(function(t){ showThreads[t] = 1; });
+  if(!filt.length && focus){ byId(focus).threads.forEach(function(t){ showThreads[t] = 1; }); }
+  Array.prototype.forEach.call(svg.querySelectorAll(".thread"), function(p){
+    p.classList.toggle("on", state.reveal >= 1 && !!showThreads[p.getAttribute("data-thread")]);
+  });
+
+  /* 浮动标签 */
+  var lf = focus ? byId(focus) : null;
+  if(lf && state.reveal >= 1){
+    var p = geom.nodes[lf.id].p;
+    var txt = lf.it.toUpperCase() + "  " + lf.year;
+    geom.flab.textContent = txt;
+    var w = txt.length * 6.1 + 14, h = 17;
+    var x = p.x + 14, y = p.y - 15;
+    if(x + w > geom.W - 4) x = p.x - 14 - w;
+    if(y < 2) y = p.y + 12;
+    geom.plate.setAttribute("x", x); geom.plate.setAttribute("y", y);
+    geom.plate.setAttribute("width", w); geom.plate.setAttribute("height", h);
+    geom.flab.setAttribute("x", x + 7); geom.flab.setAttribute("y", y + 12);
+    geom.plate.classList.remove("hide"); geom.flab.classList.remove("hide");
+  }else{
+    geom.plate.classList.add("hide"); geom.flab.classList.add("hide");
+  }
+
+  drawReadout();
+  drawPanel();
+  Array.prototype.forEach.call(tbody.children, function(tr){
+    tr.classList.toggle("sel", tr.getAttribute("data-id") === sel);
+  });
+  Array.prototype.forEach.call(chipsBox.querySelectorAll(".chip"), function(b){
+    b.setAttribute("aria-pressed", filt.indexOf(b.getAttribute("data-thread")) >= 0 ? "true" : "false");
+  });
+}
+
+function bar(n){
+  var full = Math.round(n / 10);
+  return new Array(full+1).join("█") + new Array(11-full).join("░");
+}
+
+function drawReadout(){
+  var f = state.sel ? byId(state.sel) : (state.hover ? byId(state.hover) : null);
+  if(!f){
+    readout.innerHTML =
+      '<span class="cursor">▮</span>' +
+      '<span class="ro-hint">悬停或点击任一节点 · ← → 逐部 · SPACE 播放演化 · 点击线程 chip 筛选母题</span>';
+    return;
+  }
+  var ph = phase(f.phase);
+  readout.innerHTML =
+    '<span class="cursor">▮</span>' +
+    '<span class="ro-year">' + f.year + '</span>' +
+    '<span class="ro-it">' + f.it + '</span>' +
+    '<span class="ro-zh">' + f.zh + '</span>' +
+    '<span class="ro-sep">/</span>' +
+    '<span class="ro-fase">Fase ' + ph.n + ' ' + ph.zh + '</span>' +
+    '<span class="ro-sep">/</span>' +
+    '<span class="ro-fase">Sogno</span>' +
+    '<span class="ro-bar">' + bar(f.dream) + '</span>' +
+    '<span class="ro-year">' + f.dream + '</span>' +
+    '<span class="ro-sep">/</span>' +
+    '<span class="ro-fase">' + (f.kind === "corto" ? "corto · 短片／电视" : "lungometraggio · 长片") + '</span>';
+}
+
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function drawPanel(){
+  var f = state.sel ? byId(state.sel) : null;
+  if(!f){
+    panel.innerHTML =
+      '<div class="lbl">Come leggere 如何阅读</div>' +
+      '<p class="p-empty">这不是时间轴，是一张<b>漂移图</b>。<br><br>' +
+      '横轴走 1950 → 1990；纵轴是他离现实有多远：底部是纪录式的<b>现实</b>，顶部是五号棚里造出来的<b>幻梦</b>。' +
+      '那条红线按拍摄顺序把 24 部作品串起来——它向上爬的斜率，就是费里尼的演化速度。<br><br>' +
+      '实心方块是长片，空心方块是短片段或电视片。<br>' +
+      '点开任意一部，读它的<b>变异</b>：这一部让他的电影变了什么。</p>' +
+      '<div class="p-block"><div class="lbl">Fili 八条母题线程</div>' +
+      '<div class="p-body" style="font-size:12px">' +
+      THREADS.map(function(t){ return t.it + " " + t.zh; }).join(" · ") +
+      '</div></div>';
+    return;
+  }
+  var ph = phase(f.phase);
+  panel.innerHTML =
+    '<button class="p-close" data-close="1">Chiudi 关闭 ✕</button>' +
+    '<div>' +
+      '<div class="p-year">' + f.year + ' · Fase ' + ph.n + '</div>' +
+      '<h2 class="p-it">' + esc(f.it) + '</h2>' +
+      '<div class="p-zh">《' + f.zh + '》' + (f.kind === "corto" ? " · 短片／电视" : "") + '</div>' +
+    '</div>' +
+    '<div class="p-meta">' + ph.it + ' — ' + ph.zh + ' ' + ph.span + '</div>' +
+    '<div class="p-scale"><span>Reale</span><span class="track"><span class="fill" style="width:' + f.dream + '%"></span></span><span>Sogno ' + f.dream + '</span></div>' +
+    (f.note ? '<div><span class="p-note">' + f.note + '</span></div>' : '') +
+    '<div class="p-block"><div class="lbl">Mutazione 变异</div><p class="p-body">' + f.mut + '</p></div>' +
+    '<div class="p-block"><div class="lbl">Fili 线程</div><div class="p-fili">' +
+      f.threads.map(function(t){
+        var th = thread(t);
+        return '<button class="chip" data-thread="' + t + '" aria-pressed="' +
+               (state.filters.indexOf(t) >= 0) + '">' + th.it + ' ' + th.zh + '</button>';
+      }).join("") +
+    '</div></div>' +
+    '<div class="p-block"><div class="lbl">Troupe 班底</div><p class="p-crew">' + f.crew + '</p></div>' +
+    '<div class="p-nav">' +
+      '<button data-step="-1">← Prec</button>' +
+      '<button data-step="1">Succ →</button>' +
+    '</div>';
+}
+
+/* ==================== 事件 ==================== */
+
+function select(id, scroll){
+  state.sel = id;
+  document.body.classList.toggle("has-sel", !!id);
+  if(id){
+    try{ history.replaceState(null,"","#"+id); }catch(e){}
+    if(scroll && state.view === "indice"){
+      var tr = tbody.querySelector('tr[data-id="'+id+'"]');
+      if(tr) tr.scrollIntoView({block:"nearest"});
+    }
+    /* 窄屏：底部抽屉会盖住节点，把选中的节点滚到上半屏 */
+    if(state.view === "mappa" && geom.vertical && geom.nodes[id]){
+      var top = svg.getBoundingClientRect().top + (window.scrollY || 0);
+      var want = top + geom.nodes[id].p.y - window.innerHeight * 0.22;
+      window.scrollTo({top: Math.max(0, want), behavior: reduced ? "auto" : "smooth"});
+    }
+  }else{
+    try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
+  }
+  paint();
+}
+
+function step(d){
+  var i = state.sel ? idx(state.sel) : -1;
+  i = (i + d + FILMS.length) % FILMS.length;
+  if(!state.sel) i = d > 0 ? 0 : FILMS.length - 1;
+  select(FILMS[i].id, true);
+  var n = geom.nodes[FILMS[i].id];
+  if(n) n.g.focus({preventScroll:true});
+}
+
+function bindNodes(){
+  Array.prototype.forEach.call(svg.querySelectorAll(".node"), function(g){
+    var id = g.getAttribute("data-id");
+    g.addEventListener("mouseenter", function(){ state.hover = id; paint(); });
+    g.addEventListener("mouseleave", function(){ if(state.hover === id){ state.hover = null; paint(); } });
+    g.addEventListener("focus", function(){ state.hover = id; paint(); });
+    g.addEventListener("blur", function(){ if(state.hover === id){ state.hover = null; paint(); } });
+    g.addEventListener("click", function(){ stopPlay(); select(id); });
+    g.addEventListener("keydown", function(e){
+      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); stopPlay(); select(id); }
+    });
+  });
+}
+
+function toggleFilter(t){
+  var i = state.filters.indexOf(t);
+  if(i >= 0) state.filters.splice(i,1); else state.filters.push(t);
+  paint();
+}
+
+panel.addEventListener("click", function(e){
+  var b = e.target.closest("button"); if(!b) return;
+  if(b.hasAttribute("data-close")) select(null);
+  else if(b.hasAttribute("data-step")) step(parseInt(b.getAttribute("data-step"),10));
+  else if(b.hasAttribute("data-thread")){ stopPlay(); toggleFilter(b.getAttribute("data-thread")); }
+});
+
+chipsBox.addEventListener("click", function(e){
+  var b = e.target.closest("button[data-thread]"); if(!b) return;
+  stopPlay(); toggleFilter(b.getAttribute("data-thread"));
+});
+
+document.getElementById("btn-clear").addEventListener("click", function(){
+  state.filters = []; select(null);
+});
+
+document.getElementById("btn-mappa").addEventListener("click", function(){ setView("mappa"); });
+document.getElementById("btn-indice").addEventListener("click", function(){ setView("indice"); });
+
+function setView(v){
+  state.view = v;
+  document.body.classList.toggle("view-indice", v === "indice");
+  document.getElementById("btn-mappa").setAttribute("aria-pressed", v === "mappa");
+  document.getElementById("btn-indice").setAttribute("aria-pressed", v === "indice");
+  if(v === "mappa"){ stopPlay(); render(); }
+}
+
+document.addEventListener("keydown", function(e){
+  if(/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if(e.key === "ArrowRight"){ e.preventDefault(); stopPlay(); step(1); }
+  else if(e.key === "ArrowLeft"){ e.preventDefault(); stopPlay(); step(-1); }
+  else if(e.key === "Escape"){ state.filters = []; select(null); }
+  else if(e.key === " " && e.target === document.body){ e.preventDefault(); togglePlay(); }
+});
+
+/* ==================== 播放 ==================== */
+
+var btnPlay = document.getElementById("btn-play");
+
+function togglePlay(){ state.playing ? stopPlay() : startPlay(state.playDur); }
+
+function startPlay(dur){
+  if(reduced){ state.reveal = 1; paint(); return; }
+  if(state.view !== "mappa") setView("mappa");
+  state.filters = []; state.sel = null; state.hover = null;
+  state.playing = true; state.reveal = 0; state.playStart = 0;
+  btnPlay.textContent = "❚❚ Pausa";
+  btnPlay.setAttribute("aria-pressed","true");
+  var tick = function(ts){
+    if(!state.playing) return;
+    if(!state.playStart) state.playStart = ts;
+    var t = (ts - state.playStart) / dur;
+    state.reveal = Math.min(1, t);
+    var last = null;
+    for(var i=0;i<FILMS.length;i++){
+      if(geom.cum[i] / (geom.total || 1) <= state.reveal) last = FILMS[i].id;
+    }
+    state.hover = last;
+    paint();
+    if(state.reveal < 1) state.raf = requestAnimationFrame(tick);
+    else stopPlay();
+  };
+  state.raf = requestAnimationFrame(tick);
+}
+
+function stopPlay(){
+  if(state.raf) cancelAnimationFrame(state.raf);
+  state.raf = null;
+  if(state.playing){ state.hover = null; }
+  state.playing = false;
+  state.reveal = 1;
+  btnPlay.textContent = "▶ Evoluzione";
+  btnPlay.setAttribute("aria-pressed","false");
+  paint();
+}
+
+btnPlay.addEventListener("click", togglePlay);
+
+svg.addEventListener("click", function(e){
+  if(!e.target.closest(".node")){ stopPlay(); select(null); }
+});
+
+/* ==================== 静态构建 ==================== */
+
+THREADS.forEach(function(t){
+  var n = FILMS.filter(function(f){ return f.threads.indexOf(t.id) >= 0; }).length;
+  var b = document.createElement("button");
+  b.className = "chip";
+  b.setAttribute("data-thread", t.id);
+  b.setAttribute("aria-pressed","false");
+  b.innerHTML = t.it + " " + t.zh + '<span class="n">' + n + '</span>';
+  chipsBox.appendChild(b);
+});
+
+FILMS.forEach(function(f){
+  var ph = phase(f.phase);
+  var tr = document.createElement("tr");
+  tr.setAttribute("data-id", f.id);
+  tr.innerHTML =
+    '<td>' + f.year + '</td>' +
+    '<td class="t-it">' + esc(f.it) + (f.kind === "corto" ? " ▫" : "") + '</td>' +
+    '<td class="t-zh">' + f.zh + '</td>' +
+    '<td class="t-fase">' + ph.n + ' ' + ph.zh + '</td>' +
+    '<td>' + f.dream + '</td>' +
+    '<td class="t-fili">' + f.threads.map(function(t){ return thread(t).it; }).join(" · ") + '</td>' +
+    '<td class="t-mut">' + f.mut + '</td>';
+  tr.addEventListener("click", function(){ select(f.id); });
+  tbody.appendChild(tr);
+});
+
+/* ==================== 启动 ==================== */
+
+var rt = null;
+window.addEventListener("resize", function(){
+  clearTimeout(rt);
+  rt = setTimeout(function(){ if(state.view === "mappa"){ stopPlay(); render(); } }, 160);
+});
+
+render();
+
+var hash = location.hash.replace("#","");
+if(hash && byId(hash)){
+  select(hash);
+}else if(!reduced){
+  startPlay(9500);
+}
+</script>
+
+</body>
+</html>
