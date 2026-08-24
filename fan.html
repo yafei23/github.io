@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>手持风扇 MJ-01 · 心静自然凉</title>
+<meta name="description" content="一台极简手持小风扇的交互页面：点击圆钮开机调节风量，风吹皮肤，静吹心。">
+<meta name="theme-color" content="#f2f0ec">
+<style>
+  :root {
+    --bg:      #f2f0ec;
+    --paper:   #faf9f7;
+    --paper-2: #eeebe4;
+    --ink:     #3a3733;
+    --ink-2:   #6b665e;
+    --muted:   #9a948a;
+    --line:    #dcd8d0;
+    --line-2:  #e7e3db;
+    --blade:   #cbc5ba;
+    --accent:  #7b1e23;
+    --shadow:  rgba(58,55,51,.10);
+    --cool:    #6f7d80;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:      #1a1917;
+      --paper:   #232220;
+      --paper-2: #2b2a26;
+      --ink:     #e9e5dd;
+      --ink-2:   #b3ada3;
+      --muted:   #857f75;
+      --line:    #37342f;
+      --line-2:  #302e2a;
+      --blade:   #4c4941;
+      --accent:  #c2726b;
+      --shadow:  rgba(0,0,0,.35);
+      --cool:    #8ea0a3;
+    }
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  html, body { height:100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+                 "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    justify-content: center;
+    padding: 0 20px;
+    transition: background-color 1.2s ease, color 1.2s ease;
+    overflow-x: hidden;
+  }
+
+  body.zen { --bg:#ececeb; --paper:#f7f7f6; --paper-2:#e8e9e8; }
+  @media (prefers-color-scheme: dark) {
+    body.zen { --bg:#16181a; --paper:#1f2224; --paper-2:#262a2c; }
+  }
+
+  .app {
+    width: 100%;
+    max-width: 460px;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 22px 0 30px;
+  }
+
+  /* ---------- 顶栏 ---------- */
+  .bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 18px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--ink-2);
+  }
+
+  .mark {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid var(--accent);
+    display: inline-block;
+    position: relative;
+  }
+  .mark::after {
+    content:""; position:absolute; inset:4px;
+    border-radius:50%;
+    background: var(--accent);
+    opacity:.18;
+  }
+
+  .batt { display:flex; align-items:center; gap:8px; }
+
+  .battBar {
+    width: 34px; height: 13px;
+    border: 1.2px solid var(--line);
+    border-radius: 3px;
+    position: relative;
+    padding: 2px;
+  }
+  .battBar::after {
+    content:""; position:absolute;
+    right:-4px; top:3.5px;
+    width:2.5px; height:4px;
+    background: var(--line);
+    border-radius:0 2px 2px 0;
+  }
+  .battBar i {
+    display:block; height:100%;
+    background: var(--ink-2);
+    border-radius: 1px;
+    transition: width .6s linear, background-color .6s ease;
+  }
+  .battBar.low i { background: var(--accent); }
+
+  .battTxt {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    min-width: 58px;
+    text-align: right;
+  }
+
+  /* ---------- 读数 ---------- */
+  .readout { text-align:center; padding: 6px 0 4px; }
+
+  .temp {
+    font-size: 60px;
+    font-weight: 200;
+    letter-spacing: -1px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    transition: color 1s ease;
+  }
+  .temp .unit { font-size: 20px; letter-spacing: 0; margin-left: 3px; color: var(--muted); }
+
+  body.zen .temp { color: var(--cool); }
+
+  .tempLabel {
+    margin-top: 10px;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--muted);
+  }
+
+  .deltas {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .deltas div { display:flex; align-items:baseline; gap:5px; }
+  .deltas b { font-weight: 400; font-variant-numeric: tabular-nums; font-size: 14px; }
+  .deltas em { font-style: normal; font-size: 10px; letter-spacing: 2px; color: var(--muted); }
+  .deltas .sep { width:1px; height:12px; background: var(--line); }
+
+  /* ---------- 风扇 ---------- */
+  .fanWrap {
+    position: relative;
+    margin: 6px 0 0;
+    display: flex;
+    justify-content: center;
+  }
+
+  .breath {
+    position: absolute;
+    top: 130px; left: 50%;
+    width: 360px; height: 360px;
+    margin: -180px 0 0 -180px;
+    border-radius: 50%;
+    border: 1px solid var(--cool);
+    opacity: 0;
+    transform: scale(.62);
+    pointer-events: none;
+    transition: opacity .9s ease;
+  }
+  .breath::after {
+    content: "";
+    position: absolute;
+    inset: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--cool);
+    opacity: .5;
+  }
+  body.zen .breath { opacity: .42; }
+
+  svg.fan { width: 300px; height: 424px; display:block; overflow: visible; }
+
+  #btnPower { cursor: pointer; outline: none; }
+  #btnPower .btnFace { transition: fill .25s ease; }
+  #btnPower:hover .btnFace { fill: var(--paper-2); }
+  #btnPower:focus-visible .btnRing {
+    stroke: var(--accent);
+    stroke-width: 2;
+  }
+  #btnPower.press .btnGroup { transform: translateY(1.2px) scale(.97); }
+  #btnPower .btnGroup {
+    transform-origin: 150px 300px;
+    transition: transform .12s ease;
+  }
+
+  .led { transition: fill .35s ease, opacity .35s ease; }
+
+  /* ---------- 状态 ---------- */
+  .status {
+    margin-top: 4px;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--ink-2);
+    height: 20px;
+    text-align: center;
+  }
+  .status .tag {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1px 7px;
+    margin-left: 7px;
+  }
+
+  .breathText {
+    margin-top: 8px;
+    height: 16px;
+    font-size: 11px;
+    letter-spacing: 6px;
+    color: var(--cool);
+    opacity: 0;
+    transition: opacity .8s ease;
+    text-align: center;
+  }
+  body.zen .breathText { opacity: .85; }
+
+  /* ---------- 控制 ---------- */
+  .controls {
+    margin-top: 22px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .chip {
+    font: inherit;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--ink-2);
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 9px 18px;
+    cursor: pointer;
+    transition: background-color .3s ease, color .3s ease, border-color .3s ease;
+  }
+  .chip:hover { border-color: var(--muted); }
+  .chip[aria-pressed="true"] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--bg);
+  }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .hint {
+    margin-top: 20px;
+    font-size: 10.5px;
+    line-height: 1.9;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-align: center;
+    max-width: 300px;
+    transition: opacity .8s ease;
+  }
+  body.zen .hint { opacity: .35; }
+
+  footer {
+    margin-top: auto;
+    padding-top: 26px;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .link {
+    font: inherit;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0 0 1px;
+    margin-left: 10px;
+    letter-spacing: 2px;
+  }
+  .link:hover { color: var(--ink-2); border-color: var(--muted); }
+
+  canvas#air {
+    position: fixed;
+    inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  @media (max-height: 840px) {
+    .temp { font-size: 48px; }
+    svg.fan { width: 258px; height: 366px; }
+    .breath { top: 112px; width: 310px; height: 310px; margin:-155px 0 0 -155px; }
+  }
+
+  @media (max-height: 720px) {
+    .app { padding: 14px 0 18px; }
+    .temp { font-size: 40px; }
+    .tempLabel { margin-top: 6px; }
+    .deltas { margin-top: 10px; }
+    svg.fan { width: 224px; height: 318px; }
+    .breath { top: 97px; width: 270px; height: 270px; margin:-135px 0 0 -135px; }
+    .controls { margin-top: 14px; }
+    .hint { margin-top: 12px; font-size: 10px; }
+    footer { padding-top: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="bar">
+    <div class="brand"><span class="mark"></span>手持风扇 MJ-01</div>
+    <div class="batt">
+      <div class="battBar" id="battBar"><i id="battFill" style="width:100%"></i></div>
+      <span class="battTxt" id="battTxt">100%</span>
+    </div>
+  </header>
+
+  <section class="readout">
+    <div class="temp"><span id="tempVal">30.6</span><span class="unit">°C</span></div>
+    <p class="tempLabel">体 感 温 度</p>
+    <div class="deltas">
+      <div><b id="dWind">−0.0</b><em>风</em></div>
+      <div class="sep"></div>
+      <div><b id="dMind">−0.0</b><em>心</em></div>
+    </div>
+  </section>
+
+  <div class="fanWrap">
+    <div class="breath" id="breathRing"></div>
+
+    <svg class="fan" viewBox="0 0 300 424" aria-hidden="true">
+      <defs>
+        <linearGradient id="gHandle" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0"   stop-color="var(--paper)"/>
+          <stop offset=".55" stop-color="var(--paper-2)"/>
+          <stop offset="1"   stop-color="var(--line-2)"/>
+        </linearGradient>
+        <radialGradient id="gHead" cx=".38" cy=".32" r=".85">
+          <stop offset="0" stop-color="var(--paper)"/>
+          <stop offset="1" stop-color="var(--paper-2)"/>
+        </radialGradient>
+        <clipPath id="clipHead"><circle cx="150" cy="130" r="96"/></clipPath>
+      </defs>
+
+      <!-- 底座投影 -->
+      <ellipse cx="150" cy="408" rx="52" ry="7" fill="var(--shadow)"/>
+
+      <!-- 手柄 -->
+      <rect x="140" y="222" width="20" height="46" rx="6" fill="var(--paper-2)" stroke="var(--line)" stroke-width="1.2"/>
+      <rect x="116" y="248" width="68" height="150" rx="28"
+            fill="url(#gHandle)" stroke="var(--line)" stroke-width="1.4"/>
+      <rect x="116" y="248" width="68" height="150" rx="28" fill="none"
+            stroke="var(--paper)" stroke-width=".8" opacity=".7" transform="translate(1.2,1.2) scale(.996)"/>
+
+      <!-- 挂绳孔 -->
+      <circle cx="150" cy="381" r="5.5" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+
+      <!-- 档位指示灯 -->
+      <circle class="led" data-led="1" cx="134" cy="338" r="3.4" fill="var(--line)"/>
+      <circle class="led" data-led="2" cx="150" cy="338" r="3.4" fill="var(--line)"/>
+      <circle class="led" data-led="3" cx="166" cy="338" r="3.4" fill="var(--line)"/>
+
+      <!-- 电源键 -->
+      <g id="btnPower" role="button" tabindex="0"
+         aria-label="电源键：点击开机并循环调节风量，长按关机">
+        <g class="btnGroup">
+          <circle cx="150" cy="300" r="19" fill="var(--shadow)" opacity=".5"/>
+          <circle class="btnFace" cx="150" cy="300" r="18" fill="var(--paper)"/>
+          <circle class="btnRing" cx="150" cy="300" r="18" fill="none" stroke="var(--line)" stroke-width="1.3"/>
+          <!-- 电源符号 -->
+          <path id="powerIcon" d="M150 291.5 L150 299.5" stroke="var(--ink-2)" stroke-width="1.6" stroke-linecap="round"/>
+          <path id="powerArc" d="M143.6 294.2 A8.6 8.6 0 1 0 156.4 294.2"
+                fill="none" stroke="var(--ink-2)" stroke-width="1.6" stroke-linecap="round"/>
+          <circle id="btnGlow" cx="150" cy="300" r="18" fill="none"
+                  stroke="var(--accent)" stroke-width="1.3" opacity="0"/>
+        </g>
+      </g>
+
+      <!-- 扇头 -->
+      <g>
+        <circle cx="150" cy="130" r="106" fill="var(--line-2)"/>
+        <circle cx="150" cy="130" r="100" fill="url(#gHead)"/>
+
+        <g clip-path="url(#clipHead)">
+          <!-- 扇叶 -->
+          <g id="blades">
+            <g id="bladeSet">
+              <path class="blade" d="M0 0 C 20 -18 58 -46 76 -26 C 90 -10 44 20 0 0 Z"/>
+              <path class="blade" d="M0 0 C 20 -18 58 -46 76 -26 C 90 -10 44 20 0 0 Z" transform="rotate(72)"/>
+              <path class="blade" d="M0 0 C 20 -18 58 -46 76 -26 C 90 -10 44 20 0 0 Z" transform="rotate(144)"/>
+              <path class="blade" d="M0 0 C 20 -18 58 -46 76 -26 C 90 -10 44 20 0 0 Z" transform="rotate(216)"/>
+              <path class="blade" d="M0 0 C 20 -18 58 -46 76 -26 C 90 -10 44 20 0 0 Z" transform="rotate(288)"/>
+            </g>
+          </g>
+          <!-- 转动残影 -->
+          <circle id="blur" cx="150" cy="130" r="82" fill="var(--blade)" opacity="0"/>
+          <!-- 轴心 -->
+          <circle cx="150" cy="130" r="15" fill="var(--paper-2)" stroke="var(--line)" stroke-width="1.2"/>
+          <circle cx="150" cy="130" r="5"  fill="var(--muted)" opacity=".55"/>
+        </g>
+
+        <!-- 网罩 -->
+        <g stroke="var(--ink)" fill="none" opacity=".16" stroke-width="1.1">
+          <circle cx="150" cy="130" r="26"/>
+          <circle cx="150" cy="130" r="42"/>
+          <circle cx="150" cy="130" r="58"/>
+          <circle cx="150" cy="130" r="74"/>
+          <circle cx="150" cy="130" r="90"/>
+          <g id="spokes"></g>
+        </g>
+        <circle cx="150" cy="130" r="100" fill="none" stroke="var(--line)" stroke-width="1.4"/>
+        <circle cx="150" cy="130" r="96"  fill="none" stroke="var(--paper)" stroke-width="2.5" opacity=".55"/>
+      </g>
+    </svg>
+  </div>
+
+  <p class="status" id="status">关机</p>
+  <p class="breathText" id="breathText">吸 气</p>
+
+  <div class="controls">
+    <button class="chip" id="btnNatural" aria-pressed="false">自然风</button>
+    <button class="chip" id="btnZen" aria-pressed="false">心静</button>
+    <button class="chip" id="btnSound" aria-pressed="false">声音</button>
+  </div>
+
+  <p class="hint">
+    点按扇柄上的圆钮开机，再点依次切换 微风 · 舒风 · 疾风；长按关机。<br>
+    键盘：空格 开关机／调档，↑ ↓ 调风量，Z 进入心静。
+  </p>
+
+  <footer>风吹皮肤，静吹心<button class="link" id="recharge">充电</button></footer>
+</div>
+
+<canvas id="air"></canvas>
+
+<script>
+(function () {
+  'use strict';
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ----------------------------------------------------------
+   * 状态
+   * -------------------------------------------------------- */
+  var LEVEL_NAME = ['关机', '微风', '舒风', '疾风'];
+  var LEVEL_SPIN = [0, 1.5, 2.9, 4.5];        // 转/秒
+  var LEVEL_DRAIN = [0, 0.015, 0.031, 0.056]; // 电量 %/秒
+  var AMBIENT = 30.6;                          // 室温
+  var MAX_WIND_COOL = 4.0;                     // 风最多带走 4.0°C
+  var MAX_MIND_COOL = 1.9;                     // 心静最多带走 1.9°C
+
+  var state = {
+    level: 0,
+    natural: false,
+    zen: false,
+    zenSince: 0,
+    battery: 100,
+    sound: false,
+    dead: false
+  };
+
+  var spin = 0;        // 当前角速度（转/秒）
+  var angle = 0;       // 当前角度
+  var mindCool = 0;    // 已积累的“心凉”
+  var shownTemp = AMBIENT;
+  var breath = 0;      // 0..1 呼吸曲线
+  var breathIn = true;
+
+  /* ----------------------------------------------------------
+   * DOM
+   * -------------------------------------------------------- */
+  var $ = function (id) { return document.getElementById(id); };
+  var elBlades = $('blades'), elBlur = $('blur'), elGlow = $('btnGlow');
+  var elStatus = $('status'), elTemp = $('tempVal');
+  var elWind = $('dWind'), elMind = $('dMind');
+  var elBattFill = $('battFill'), elBattTxt = $('battTxt'), elBattBar = $('battBar');
+  var elBreathRing = $('breathRing'), elBreathText = $('breathText');
+  var leds = document.querySelectorAll('.led');
+  var btnPower = $('btnPower');
+
+  // 网罩辐条
+  (function () {
+    var g = $('spokes'), ns = 'http://www.w3.org/2000/svg', html = '';
+    for (var i = 0; i < 12; i++) {
+      var a = i * Math.PI / 6;
+      var l = document.createElementNS(ns, 'line');
+      l.setAttribute('x1', (150 + Math.cos(a) * 17).toFixed(1));
+      l.setAttribute('y1', (130 + Math.sin(a) * 17).toFixed(1));
+      l.setAttribute('x2', (150 + Math.cos(a) * 94).toFixed(1));
+      l.setAttribute('y2', (130 + Math.sin(a) * 94).toFixed(1));
+      g.appendChild(l);
+    }
+  })();
+
+  $('bladeSet').setAttribute('transform', 'translate(150,130)');
+
+  document.querySelectorAll('.blade').forEach(function (b) {
+    b.setAttribute('fill', 'var(--blade)');
+    b.setAttribute('opacity', '.9');
+  });
+
+  /* ----------------------------------------------------------
+   * 控制
+   * -------------------------------------------------------- */
+  function setLevel(n) {
+    if (state.dead && n > 0) return;
+    state.level = n;
+    if (n > 0) state.dead = false;
+    render();
+  }
+
+  function cycle() {
+    if (state.dead) return;
+    setLevel((state.level + 1) % 4);
+  }
+
+  function powerOff() { setLevel(0); }
+
+  function toggleZen() {
+    state.zen = !state.zen;
+    if (state.zen) state.zenSince = performance.now();
+    document.body.classList.toggle('zen', state.zen);
+    $('btnZen').setAttribute('aria-pressed', String(state.zen));
+    render();
+  }
+
+  function toggleNatural() {
+    state.natural = !state.natural;
+    $('btnNatural').setAttribute('aria-pressed', String(state.natural));
+    render();
+  }
+
+  // 电源键：点击循环，长按关机
+  var pressTimer = null, longPressed = false;
+
+  btnPower.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    longPressed = false;
+    btnPower.classList.add('press');
+    pressTimer = setTimeout(function () {
+      longPressed = true;
+      powerOff();
+      pulse();
+    }, 650);
+  });
+
+  function releasePower() {
+    clearTimeout(pressTimer);
+    btnPower.classList.remove('press');
+  }
+
+  btnPower.addEventListener('pointerup', function () {
+    releasePower();
+    if (!longPressed) { cycle(); pulse(); }
+  });
+  btnPower.addEventListener('pointerleave', releasePower);
+  btnPower.addEventListener('pointercancel', releasePower);
+
+  btnPower.addEventListener('keydown', function (e) {
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cycle(); pulse(); }
+  });
+
+  function pulse() {
+    elGlow.setAttribute('opacity', '.85');
+    setTimeout(function () { elGlow.setAttribute('opacity', '0'); }, 260);
+  }
+
+  $('btnNatural').addEventListener('click', toggleNatural);
+  $('btnZen').addEventListener('click', toggleZen);
+  $('btnSound').addEventListener('click', toggleSound);
+
+  $('recharge').addEventListener('click', function () {
+    state.battery = 100;
+    state.dead = false;
+    render();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    var t = e.target;
+    // 电源键与下方按钮各自处理空格／回车，这里不再重复响应
+    var ownsSpace = (t === btnPower) || (t && t.tagName === 'BUTTON');
+
+    if (e.key === ' ') {
+      if (ownsSpace) return;
+      e.preventDefault(); cycle(); pulse();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault(); setLevel(Math.min(3, state.level + 1)); pulse();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault(); setLevel(Math.max(0, state.level - 1)); pulse();
+    } else if (e.key === 'z' || e.key === 'Z') {
+      toggleZen();
+    }
+  });
+
+  /* ----------------------------------------------------------
+   * 声音：合成风声
+   * -------------------------------------------------------- */
+  var audio = null;
+
+  function buildAudio() {
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    var ctx = new Ctx();
+    var len = ctx.sampleRate * 2;
+    var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    var d = buf.getChannelData(0), last = 0;
+    for (var i = 0; i < len; i++) {           // 棕噪声，更接近风声
+      var w = Math.random() * 2 - 1;
+      last = (last + 0.02 * w) / 1.02;
+      d[i] = last * 3.2;
+    }
+    var src = ctx.createBufferSource();
+    src.buffer = buf; src.loop = true;
+
+    var lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 700;
+
+    var bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 420; bp.Q.value = 0.7;
+
+    var gain = ctx.createGain();
+    gain.gain.value = 0;
+
+    src.connect(lp); lp.connect(bp); bp.connect(gain); gain.connect(ctx.destination);
+    src.start();
+    return { ctx: ctx, gain: gain, lp: lp };
+  }
+
+  function toggleSound() {
+    state.sound = !state.sound;
+    $('btnSound').setAttribute('aria-pressed', String(state.sound));
+    if (state.sound) {
+      if (!audio) audio = buildAudio();
+      if (audio && audio.ctx.state === 'suspended') audio.ctx.resume();
+    }
+    render();
+  }
+
+  /* ----------------------------------------------------------
+   * 气流粒子
+   * -------------------------------------------------------- */
+  var cv = $('air'), cx2d = cv.getContext('2d');
+  var W = 0, H = 0, dpr = 1;
+  var head = { x: 0, y: 0, r: 100 };
+  var streams = [], motes = [];
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    cx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+    measure();
+    seedMotes();
+  }
+
+  function measure() {
+    var svg = document.querySelector('svg.fan');
+    if (!svg) return;
+    var r = svg.getBoundingClientRect();
+    // 扇头圆心在 viewBox 中的位置 (150,130)，半径 100
+    var k = r.width / 300;
+    head.x = r.left + 150 * k;
+    head.y = r.top + 130 * k;
+    head.r = 100 * k;
+  }
+
+  window.addEventListener('resize', resize);
+  window.addEventListener('scroll', measure, { passive: true });
+
+  function seedMotes() {
+    motes.length = 0;
+    if (reduceMotion) return;
+    var n = Math.round(W * H / 26000);
+    for (var i = 0; i < n; i++) {
+      motes.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: 0.6 + Math.random() * 1.2,
+        vx: (Math.random() - 0.5) * 6,
+        vy: -3 - Math.random() * 6,
+        a: 0.10 + Math.random() * 0.14
+      });
+    }
+  }
+
+  function spawnStream() {
+    var t = (Math.random() - 0.5) * 1.7;          // 横向位置 −0.85..0.85
+    return {
+      x: head.x + t * head.r * 0.9,
+      y: head.y - head.r * 0.94,
+      vy: -(110 + Math.random() * 110),
+      drift: t * 30 + (Math.random() - 0.5) * 14, // 出风呈锥形散开
+      len: 9 + Math.random() * 17,
+      life: 0,
+      max: 1.0 + Math.random() * 1.0,
+      phase: Math.random() * 6.28
+    };
+  }
+
+  function drawAir(dt, ratio) {
+    cx2d.clearRect(0, 0, W, H);
+
+    var inkDark = getComputedStyle(document.body).getPropertyValue('--muted').trim();
+
+    // 环境浮尘
+    for (var i = 0; i < motes.length; i++) {
+      var m = motes[i];
+      var push = 0;
+      var dx = m.x - head.x;
+      if (ratio > 0 && m.y < head.y && Math.abs(dx) < head.r * 2.4) {
+        push = ratio * (1 - Math.abs(dx) / (head.r * 2.4)) * 90;
+      }
+      m.x += (m.vx + dx * 0.02 * ratio) * dt;
+      m.y += (m.vy - push) * dt;
+      if (m.y < -10) { m.y = H + 10; m.x = Math.random() * W; }
+      if (m.x < -10) m.x = W + 10;
+      if (m.x > W + 10) m.x = -10;
+      cx2d.beginPath();
+      cx2d.arc(m.x, m.y, m.r, 0, 6.283);
+      cx2d.fillStyle = inkDark;
+      cx2d.globalAlpha = m.a;
+      cx2d.fill();
+    }
+
+    // 出风气流
+    if (!reduceMotion && ratio > 0.02) {
+      var want = Math.round(ratio * 26);
+      var budget = Math.min(3, Math.max(0, want - streams.length));
+      for (var s = 0; s < budget; s++) streams.push(spawnStream());
+    }
+
+    cx2d.lineCap = 'round';
+    cx2d.strokeStyle = inkDark;
+    var SEG = 4;
+    for (var j = streams.length - 1; j >= 0; j--) {
+      var p = streams[j];
+      p.life += dt;
+      var speed = 0.35 + ratio * 1.25;
+      p.y += p.vy * speed * dt;
+      p.x += (p.drift + Math.sin(p.life * 2.0 + p.phase) * 10) * dt;
+      var k = p.life / p.max;
+      if (k >= 1 || p.y < -60) { streams.splice(j, 1); continue; }
+
+      // 头亮尾淡的拖尾，读起来像一缕气流而不是雨丝
+      var head0 = Math.sin(k * Math.PI) * 0.26 * (0.4 + ratio * 0.6);
+      var tail = p.len * (0.7 + ratio * 0.9);
+      for (var s = 0; s < SEG; s++) {
+        var f0 = s / SEG, f1 = (s + 1) / SEG;
+        cx2d.globalAlpha = head0 * (1 - f0);
+        cx2d.lineWidth = 1.2 * (1 - f0 * 0.65);
+        cx2d.beginPath();
+        cx2d.moveTo(p.x + Math.sin((p.life - f0 * 0.2) * 2.0 + p.phase) * 4, p.y + tail * f0);
+        cx2d.lineTo(p.x + Math.sin((p.life - f1 * 0.2) * 2.0 + p.phase) * 4, p.y + tail * f1);
+        cx2d.stroke();
+      }
+    }
+    cx2d.globalAlpha = 1;
+  }
+
+  /* ----------------------------------------------------------
+   * 界面刷新（非每帧）
+   * -------------------------------------------------------- */
+  function render() {
+    var tags = '';
+    if (state.natural) tags += '<span class="tag">自然风</span>';
+    if (state.zen) tags += '<span class="tag">心静</span>';
+    if (state.sound) tags += '<span class="tag">风声</span>';
+
+    var name = state.dead ? '电量耗尽 · 请充电' : LEVEL_NAME[state.level];
+    if (state.level > 0 && !state.dead) name = state.level + ' 档 · ' + LEVEL_NAME[state.level];
+    elStatus.innerHTML = name + tags;
+
+    for (var i = 0; i < leds.length; i++) {
+      var on = (i + 1) <= state.level;
+      leds[i].setAttribute('fill', on ? 'var(--accent)' : 'var(--line)');
+      leds[i].setAttribute('opacity', on ? '1' : '.9');
+    }
+  }
+
+  function renderBattery() {
+    var b = Math.max(0, state.battery);
+    elBattFill.style.width = b.toFixed(1) + '%';
+    elBattBar.classList.toggle('low', b <= 20);
+    var rate = LEVEL_DRAIN[state.level] * (state.zen ? 0.7 : 1);
+    var txt = Math.ceil(b) + '%';
+    if (rate > 0 && b > 0) txt += ' · ' + Math.max(1, Math.round(b / rate / 60)) + ' 分';
+    elBattTxt.textContent = txt;
+  }
+
+  /* ----------------------------------------------------------
+   * 主循环
+   * -------------------------------------------------------- */
+  var last = performance.now(), battAcc = 0;
+
+  function frame(now) {
+    var dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    var t = now / 1000;
+
+    // 呼吸曲线：吸 4 秒，呼 6 秒
+    var cyc = t % 10;
+    breathIn = cyc < 4;
+    breath = breathIn
+      ? 0.5 - 0.5 * Math.cos(Math.PI * (cyc / 4))
+      : 0.5 + 0.5 * Math.cos(Math.PI * ((cyc - 4) / 6));
+
+    // 目标转速
+    var target = LEVEL_SPIN[state.level];
+    if (state.natural) target *= 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(t * 0.9));
+    if (state.zen)     target *= 0.35 + 0.65 * breath;
+
+    var tau = target > spin ? 0.55 : 1.4;      // 起转快，惯性滑行慢
+    spin += (target - spin) * (1 - Math.exp(-dt / tau));
+    if (spin < 0.004) spin = 0;
+
+    angle = (angle + spin * 360 * dt) % 360;
+    elBlades.setAttribute('transform', 'rotate(' + angle.toFixed(2) + ' 150 130)');
+
+    var ratio = Math.min(spin / LEVEL_SPIN[3], 1);
+    elBlades.setAttribute('opacity', (1 - 0.55 * ratio).toFixed(3));
+    elBlur.setAttribute('opacity', (0.30 * ratio).toFixed(3));
+
+    // 体感温度
+    var windCool = MAX_WIND_COOL * Math.pow(ratio, 0.78);
+    var mindTarget = state.zen ? MAX_MIND_COOL : 0;
+    mindCool += (mindTarget - mindCool) * (1 - Math.exp(-dt / (state.zen ? 11 : 5)));
+    var real = AMBIENT - windCool - mindCool;
+    shownTemp += (real - shownTemp) * (1 - Math.exp(-dt / 0.9));
+
+    elTemp.textContent = shownTemp.toFixed(1);
+    elWind.textContent = '−' + windCool.toFixed(1);
+    elMind.textContent = '−' + mindCool.toFixed(1);
+
+    // 呼吸引导
+    if (state.zen) {
+      elBreathRing.style.transform = 'scale(' + (0.62 + breath * 0.38).toFixed(3) + ')';
+      elBreathText.textContent = breathIn ? '吸 气' : '呼 气';
+    }
+
+    // 电量
+    if (state.level > 0 && !state.dead) {
+      var rate = LEVEL_DRAIN[state.level] * (state.zen ? 0.7 : 1);
+      state.battery -= rate * dt;
+      if (state.battery <= 0) {
+        state.battery = 0;
+        state.dead = true;
+        state.level = 0;
+        render();
+      }
+    }
+    battAcc += dt;
+    if (battAcc > 0.5) { battAcc = 0; renderBattery(); }
+
+    // 风声
+    if (audio) {
+      var g = state.sound ? 0.055 + ratio * 0.16 : 0;
+      audio.gain.gain.setTargetAtTime(g, audio.ctx.currentTime, 0.25);
+      audio.lp.frequency.setTargetAtTime(420 + ratio * 1500, audio.ctx.currentTime, 0.3);
+    }
+
+    drawAir(dt, ratio);
+    requestAnimationFrame(frame);
+  }
+
+  /* 初始化 */
+  resize();
+  render();
+  renderBattery();
+  setInterval(measure, 800);
+  requestAnimationFrame(function (t) { last = t; frame(t); });
+})();
+</script>
+</body>
+</html>
