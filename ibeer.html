@@ -1,0 +1,1921 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="一杯">
+<meta name="theme-color" content="#0a0b12">
+<meta name="format-detection" content="telephone=no">
+<meta name="description" content="vibe coding 时代的 iBeer：倾斜手机，把屏幕里的那杯喝掉。">
+<title>一杯 · iBeer 2026</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    height:100%;width:100%;overflow:hidden;position:fixed;
+    background:#07080f;
+    font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Noto Sans SC',sans-serif;
+    color:#e9edf8;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+    overscroll-behavior:none;touch-action:none;
+  }
+
+  #app{
+    position:fixed;inset:0;display:flex;flex-direction:column;
+    padding-top:env(safe-area-inset-top);
+    padding-bottom:env(safe-area-inset-bottom);
+    padding-left:env(safe-area-inset-left);
+    padding-right:env(safe-area-inset-right);
+  }
+
+  /* ---------------- 通用玻璃拟态 ---------------- */
+  .glassy{
+    background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.035));
+    border:1px solid rgba(255,255,255,.13);
+    border-radius:14px;
+    -webkit-backdrop-filter:blur(14px) saturate(1.3);
+    backdrop-filter:blur(14px) saturate(1.3);
+  }
+
+  /* ---------------- 顶栏 ---------------- */
+  #topbar{
+    flex:0 0 auto;display:flex;align-items:center;gap:9px;
+    padding:9px 13px 4px;
+  }
+  #meter{
+    flex:1 1 auto;min-width:0;padding:6px 11px 7px;
+  }
+  #meter .row1{
+    display:flex;align-items:baseline;gap:7px;
+  }
+  #meter .name{
+    font-size:12.5px;font-weight:700;letter-spacing:.5px;color:#eef2ff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  #meter .ml{
+    font-size:11px;color:#8d97b8;font-variant-numeric:tabular-nums;
+    font-feature-settings:"tnum";margin-left:auto;white-space:nowrap;
+  }
+  #bar{
+    margin-top:5px;height:4px;border-radius:3px;overflow:hidden;
+    background:rgba(255,255,255,.10);
+  }
+  #barFill{
+    height:100%;width:100%;border-radius:3px;
+    background:linear-gradient(90deg,#f0a81e,#ffd45e);
+    transition:background .45s ease;
+  }
+  .iconbtn{
+    flex:0 0 auto;width:38px;height:38px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;line-height:1;cursor:pointer;color:#cfd6ee;
+    transition:transform .12s ease,opacity .15s ease;
+  }
+  .iconbtn:active{transform:scale(.92);}
+  .iconbtn.off{opacity:.42;}
+
+  /* ---------------- 舞台 ---------------- */
+  #stage{flex:1 1 auto;position:relative;min-height:0;}
+  #glass{position:absolute;inset:0;width:100%;height:100%;display:block;}
+
+  #hint{
+    position:absolute;left:0;right:0;bottom:6px;
+    text-align:center;font-size:11.5px;letter-spacing:1.2px;
+    color:#79839f;pointer-events:none;
+    transition:opacity .3s ease;
+    padding:0 24px;line-height:1.5;
+  }
+
+  #toast{
+    position:absolute;left:50%;top:12px;transform:translate(-50%,-14px);
+    padding:7px 15px;border-radius:999px;font-size:12px;letter-spacing:.6px;
+    white-space:nowrap;pointer-events:none;opacity:0;
+    transition:opacity .22s ease,transform .22s ease;
+    background:rgba(14,16,28,.78);border:1px solid rgba(255,255,255,.14);
+    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  }
+  #toast.on{opacity:1;transform:translate(-50%,0);}
+
+  /* ---------------- 底部饮品切换 ---------------- */
+  #dock{
+    flex:0 0 auto;padding:6px 10px 11px;
+    display:flex;gap:7px;justify-content:center;
+  }
+  .pill{
+    flex:1 1 0;min-width:0;max-width:112px;
+    padding:7px 4px 8px;border-radius:15px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    transition:transform .13s ease,border-color .2s ease,background .25s ease;
+  }
+  .pill:active{transform:scale(.94);}
+  .pill .emo{font-size:19px;line-height:1;filter:saturate(1.15);}
+  .pill .lb{
+    font-size:10px;letter-spacing:.4px;color:#8d97b8;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+  }
+  .pill.on{border-color:rgba(255,255,255,.34);}
+  .pill.on .lb{color:#eef2ff;font-weight:700;}
+
+  /* ---------------- 首屏 / 弹层 ---------------- */
+  .veil{
+    position:fixed;inset:0;z-index:40;
+    display:flex;align-items:center;justify-content:center;
+    padding:26px;
+    background:radial-gradient(120% 80% at 50% 42%,rgba(12,14,26,.80),rgba(5,6,12,.95));
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    transition:opacity .32s ease;
+  }
+  .veil.hide{opacity:0;pointer-events:none;}
+
+  .card{
+    width:100%;max-width:340px;padding:24px 22px 20px;border-radius:22px;
+    text-align:center;
+  }
+  .card h1{
+    font-size:25px;font-weight:800;letter-spacing:2px;margin-bottom:5px;
+    background:linear-gradient(94deg,#ffd45e,#f0a81e 55%,#e0854a);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .card .sub{font-size:11.5px;color:#79839f;letter-spacing:1.4px;margin-bottom:17px;}
+  .card p{font-size:12.5px;color:#a9b3cd;line-height:1.85;text-align:left;}
+  .card p em{color:#ffd45e;font-style:normal;font-weight:700;}
+
+  .cta{
+    display:block;width:100%;margin-top:19px;padding:13px 0;
+    border-radius:15px;border:none;cursor:pointer;
+    font-size:14.5px;font-weight:800;letter-spacing:3px;color:#20160a;
+    font-family:inherit;
+    background:linear-gradient(180deg,#ffd45e,#f0a81e);
+    box-shadow:0 6px 22px rgba(240,168,30,.30);
+    transition:transform .12s ease;
+  }
+  .cta:active{transform:scale(.97);}
+  .ghost{
+    display:block;width:100%;margin-top:9px;padding:10px 0;
+    border-radius:14px;cursor:pointer;font-family:inherit;
+    font-size:12.5px;letter-spacing:1.4px;color:#a9b3cd;
+    background:transparent;border:1px solid rgba(255,255,255,.15);
+    transition:transform .12s ease;
+  }
+  .ghost:active{transform:scale(.97);}
+
+  /* 战绩卡 */
+  #scoreCard .verdict{
+    margin-top:15px;padding:11px 13px;border-radius:13px;text-align:left;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);
+    font-size:12.5px;line-height:1.7;color:#dfe5f5;
+  }
+  #scoreCard .verdict .who{
+    display:block;font-size:9.5px;letter-spacing:2px;color:#6f7ba0;margin-bottom:4px;
+  }
+  .grid{
+    display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:16px;
+  }
+  .cell{
+    padding:9px 10px;border-radius:12px;text-align:left;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
+  }
+  .cell .k{display:block;font-size:9.5px;letter-spacing:1.6px;color:#6f7ba0;margin-bottom:2px;}
+  .cell .v{
+    font-size:19px;font-weight:800;line-height:1.15;color:#ffd45e;
+    font-variant-numeric:tabular-nums;font-feature-settings:"tnum";
+  }
+  .cell .v small{font-size:10px;font-weight:600;color:#8d97b8;margin-left:2px;letter-spacing:0;}
+
+  @media (max-height:620px){
+    .card{padding:18px 18px 15px;}
+    .card h1{font-size:21px;}
+    .card p{line-height:1.65;font-size:12px;}
+    .grid{margin-top:11px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div id="topbar">
+    <div id="meter" class="glassy">
+      <div class="row1">
+        <span class="name" id="drinkName">精酿啤酒</span>
+        <span class="ml" id="mlText">500 / 500 ml</span>
+      </div>
+      <div id="bar"><div id="barFill"></div></div>
+    </div>
+    <div class="iconbtn glassy" id="btnSound" title="声音">🔊</div>
+    <div class="iconbtn glassy" id="btnScore" title="今日战绩">📊</div>
+  </div>
+
+  <div id="stage">
+    <canvas id="glass"></canvas>
+    <div id="toast"></div>
+    <div id="hint">把手机后仰，杯口朝自己</div>
+  </div>
+
+  <div id="dock"></div>
+
+</div>
+
+<!-- 首屏：iOS 需要在同一个手势里申请陀螺仪权限 -->
+<div class="veil" id="gate">
+  <div class="card glassy">
+    <h1>一杯</h1>
+    <div class="sub">iBeer · 2026 REDUX</div>
+    <p>
+      2008 年，<em>iBeer</em> 让手机第一次有了物理直觉——<br>
+      倾斜它，酒液真的会晃。<br><br>
+      现在它不用下载了，一个网址就是一杯。<br>
+      <em>后仰手机</em>，杯口朝向自己，就能喝到；<br>
+      歪着倒，会洒。
+    </p>
+    <button class="cta" id="btnStart">倒 一 杯</button>
+    <button class="ghost" id="btnNoSensor">没有陀螺仪？用手指拖</button>
+  </div>
+</div>
+
+<!-- 战绩卡 -->
+<div class="veil hide" id="scoreCard">
+  <div class="card glassy">
+    <h1 id="scoreTitle">空了</h1>
+    <div class="sub" id="scoreSub">今 日 战 绩</div>
+    <div class="grid">
+      <div class="cell"><span class="k">今日喝了</span><span class="v" id="sCups">0<small>杯</small></span></div>
+      <div class="cell"><span class="k">总量</span><span class="v" id="sMl">0<small>ml</small></span></div>
+      <div class="cell"><span class="k">干杯</span><span class="v" id="sCheers">0<small>次</small></span></div>
+      <div class="cell"><span class="k">洒了</span><span class="v" id="sSpill">0<small>ml</small></span></div>
+    </div>
+    <div class="verdict"><span class="who">AI 侍 酒 师</span><span id="sVerdict">—</span></div>
+    <button class="cta" id="btnAgain">再 来 一 杯</button>
+    <button class="ghost" id="btnClose">截图分享 · 关掉</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* =======================================================================
+   ①  常量与小工具
+   ======================================================================= */
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp  = (a, b, t) => a + (b - a) * t;
+const rr    = (a, b) => a + Math.random() * (b - a);
+const D2R   = Math.PI / 180;
+const TAU   = Math.PI * 2;
+const DPR   = Math.min(window.devicePixelRatio || 1, 3);
+
+const $ = (id) => document.getElementById(id);
+
+/* =======================================================================
+   ②  饮品配置
+   杯型 profile：t=0 在杯口，t=1 在杯底，值 = 半宽比例（单调递减 → 锥形）
+   ======================================================================= */
+const PROFILES = {
+  pint:     [[0,1.00],[0.20,0.952],[0.55,0.900],[0.82,0.868],[1,0.852]],
+  boba:     [[0,1.00],[0.34,0.902],[0.70,0.818],[1,0.760]],
+  tumbler:  [[0,1.00],[0.50,0.966],[1,0.938]],
+  highball: [[0,1.00],[0.55,0.958],[1,0.930]]
+};
+
+const DRINKS = [
+  { id:'beer', name:'精酿啤酒', emo:'🍺', ml:500, glass:'pint', aspect:2.02,
+    hi:'#ffd970', lo:'#b8630a', edge:'#ffeaa8', alpha:0.94, accent:'#f0a81e',
+    foamCol:'#fdf6e3', foamPx:26, foamGain:1.00, foamDecay:0.10, foamRest:0.62,
+    bubRate:30, bubR:[1.0,3.0], bubSpd:56,
+    visc:0.16, fizz:0.40, pearls:0, ice:0, cond:1,
+    sip:'gulp', done:'burp', bg:['#2a1c06','#0a0810'] },
+
+  { id:'boba', name:'珍珠奶茶', emo:'🧋', ml:700, glass:'boba', aspect:1.74,
+    hi:'#f0d6b4', lo:'#9d6b40', edge:'#f7e8d5', alpha:1.00, accent:'#c89a6b',
+    foamCol:'#f9f0e4', foamPx:12, foamGain:0.46, foamDecay:0.30, foamRest:0.42,
+    bubRate:3, bubR:[0.8,1.7], bubSpd:22,
+    visc:0.72, fizz:0.00, pearls:26, ice:0, cond:0,
+    sip:'slurp', done:'slurpEnd', bg:['#2b1d10','#0a0810'] },
+
+  { id:'coldbrew', name:'冰美式', emo:'🧊', ml:400, glass:'tumbler', aspect:1.32,
+    hi:'#5a3218', lo:'#120806', edge:'#8a5a33', alpha:1.00, accent:'#8a5a33',
+    foamCol:'#c9a273', foamPx:12, foamGain:0.34, foamDecay:0.45, foamRest:0.14,
+    bubRate:5, bubR:[0.7,1.5], bubSpd:26,
+    visc:0.24, fizz:0.06, pearls:0, ice:5, cond:1,
+    sip:'gulp', done:'ahh', bg:['#1d1408','#080710'] },
+
+  { id:'soda', name:'气泡水', emo:'💦', ml:330, glass:'highball', aspect:2.62,
+    hi:'#e6fdff', lo:'#79cfe2', edge:'#f2feff', alpha:0.58, accent:'#7fd6e6',
+    foamCol:'#eafcff', foamPx:9, foamGain:0.30, foamDecay:1.45, foamRest:0.00,
+    bubRate:90, bubR:[0.5,1.7], bubSpd:78,
+    visc:0.05, fizz:1.00, pearls:0, ice:3, cond:1,
+    sip:'gulp', done:'ahh', bg:['#07242b','#07080f'] }
+];
+
+/* =======================================================================
+   ③  几何：杯子多边形、半平面裁剪、液面求解
+   杯子保证为凸多边形 —— 这样任意一条直线最多切两刀，
+   solveLevel / 波面渲染才能假定"恰好两个交点且在环上相邻"。
+   ======================================================================= */
+
+/* 杯壁半宽（smoothstep 插值，让杯壁有弧度而不是折线） */
+function hwAt(prof, t) {
+  for (let i = 1; i < prof.length; i++) {
+    if (t <= prof[i][0] || i === prof.length - 1) {
+      const a = prof[i - 1], b = prof[i];
+      let u = clamp((t - a[0]) / (b[0] - a[0]), 0, 1);
+      u = u * u * (3 - 2 * u);
+      return a[1] + (b[1] - a[1]) * u;
+    }
+  }
+  return prof[prof.length - 1][1];
+}
+
+/* 去掉造成凹角的顶点，直到多边形为凸。
+   屏幕坐标 y 向下，环的走向可能是顺时针也可能是逆时针，
+   所以先用签名面积定出"凸"该是哪个符号，再据此剔点。 */
+function dropReflex(pts) {
+  let sa = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i], b = pts[(i + 1) % pts.length];
+    sa += a[0] * b[1] - b[0] * a[1];
+  }
+  const sign = sa >= 0 ? 1 : -1;
+  let changed = true;
+  while (changed && pts.length > 8) {
+    changed = false;
+    for (let i = 1; i < pts.length - 1; i++) {     // 杯口两角（首尾）永远保留
+      const a = pts[i - 1], b = pts[i], c = pts[i + 1];
+      const cr = (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]);
+      if (cr * sign < -1e-7) { pts.splice(i, 1); changed = true; break; }
+    }
+  }
+  return pts;
+}
+
+/* 生成杯子：环起点 = 杯口左，环终点 = 杯口右，闭合边即杯口 */
+function buildGlass(profId, cx, top, halfW, H) {
+  const prof = PROFILES[profId];
+  const pts = [];
+  const R = Math.min(halfW * 0.34, H * 0.14);        // 杯底圆角
+  const tBot = clamp(1 - R / H, 0.5, 0.99);
+  const hwB = hwAt(prof, 1);
+  const by = top + H;
+
+  for (let i = 0; i <= 18; i++) {                     // 左壁：杯口 → 圆角起点
+    const t = tBot * i / 18;
+    pts.push([cx - halfW * hwAt(prof, t), top + H * t]);
+  }
+  const qb = (p0, p1, p2, n) => {                     // 二次贝塞尔采样（圆角）
+    for (let i = 1; i <= n; i++) {
+      const t = i / n, m = 1 - t;
+      pts.push([m * m * p0[0] + 2 * m * t * p1[0] + t * t * p2[0],
+                m * m * p0[1] + 2 * m * t * p1[1] + t * t * p2[1]]);
+    }
+  };
+  const bl = [cx - halfW * hwB, by], br = [cx + halfW * hwB, by];
+  qb(pts[pts.length - 1], bl, [bl[0] + R, by], 7);    // 左下圆角
+  pts.push([br[0] - R, by]);                          // 杯底
+  const rTop = [cx + halfW * hwAt(prof, tBot), top + H * tBot];
+  qb([br[0] - R, by], br, rTop, 7);                   // 右下圆角
+  for (let i = 17; i >= 0; i--) {                     // 右壁：圆角 → 杯口
+    const t = tBot * i / 18;
+    pts.push([cx + halfW * hwAt(prof, t), top + H * t]);
+  }
+
+  dropReflex(pts);
+  const flat = new Float64Array(pts.length * 2);
+  for (let i = 0; i < pts.length; i++) { flat[i * 2] = pts[i][0]; flat[i * 2 + 1] = pts[i][1]; }
+  return { p: flat, n: pts.length };
+}
+
+function polyArea(p, n) {
+  let a = 0;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    a += p[i * 2] * p[j * 2 + 1] - p[j * 2] * p[i * 2 + 1];
+  }
+  return Math.abs(a) * 0.5;
+}
+
+/* poly ∩ {p·g >= c} 的面积，零分配（二分内循环用） */
+function clipAreaBelow(p, n, gx, gy, c) {
+  let area = 0, cnt = 0, fx = 0, fy = 0, px = 0, py = 0;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const ax = p[i * 2], ay = p[i * 2 + 1], bx = p[j * 2], by = p[j * 2 + 1];
+    const da = ax * gx + ay * gy - c, db = bx * gx + by * gy - c;
+    if (da >= 0) {
+      if (cnt === 0) { fx = ax; fy = ay; } else { area += px * ay - ax * py; }
+      px = ax; py = ay; cnt++;
+    }
+    if ((da >= 0) !== (db >= 0)) {
+      const t = da / (da - db), ix = ax + (bx - ax) * t, iy = ay + (by - ay) * t;
+      if (cnt === 0) { fx = ix; fy = iy; } else { area += px * iy - ix * py; }
+      px = ix; py = iy; cnt++;
+    }
+  }
+  if (cnt < 3) return 0;
+  area += px * fy - fx * py;
+  return Math.abs(area) * 0.5;
+}
+
+/* 完整裁剪；结果写入 SUB，cutStart = 切边起点在环上的下标 */
+const SUB = new Float64Array(400);
+let subN = 0, cutStart = -1;
+function clipBelow(p, n, gx, gy, c) {
+  subN = 0; cutStart = -1;
+  let i1 = -1, i2 = -1;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const ax = p[i * 2], ay = p[i * 2 + 1], bx = p[j * 2], by = p[j * 2 + 1];
+    const da = ax * gx + ay * gy - c, db = bx * gx + by * gy - c;
+    if (da >= 0) { SUB[subN * 2] = ax; SUB[subN * 2 + 1] = ay; subN++; }
+    if ((da >= 0) !== (db >= 0)) {
+      const t = da / (da - db);
+      SUB[subN * 2] = ax + (bx - ax) * t;
+      SUB[subN * 2 + 1] = ay + (by - ay) * t;
+      if (i1 < 0) i1 = subN; else if (i2 < 0) i2 = subN;
+      subN++;
+    }
+  }
+  // 凸多边形：两个交点在环上相邻，切边即 out[cutStart] → out[cutStart+1]
+  if (i1 >= 0 && i2 >= 0) cutStart = (i2 === i1 + 1) ? i1 : i2;
+  return subN;
+}
+
+/* 给定目标面积，二分求液面常数 c（面积对 c 单调递减） */
+function solveLevel(p, n, gx, gy, targetArea) {
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < n; i++) {
+    const d = p[i * 2] * gx + p[i * 2 + 1] * gy;
+    if (d < lo) lo = d;
+    if (d > hi) hi = d;
+  }
+  let a = lo - 1, b = hi + 1;
+  for (let k = 0; k < 22; k++) {
+    const m = (a + b) * 0.5;
+    if (clipAreaBelow(p, n, gx, gy, m) > targetArea) a = m; else b = m;
+  }
+  return (a + b) * 0.5;
+}
+
+function pointInPoly(p, n, x, y) {
+  let inside = false;
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const xi = p[i * 2], yi = p[i * 2 + 1], xj = p[j * 2], yj = p[j * 2 + 1];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/* 把点推回多边形内部（粒子约束用）；返回是否移动过 */
+const _cp = { x: 0, y: 0 };
+function closestOnPoly(p, n, x, y) {
+  let bd = Infinity;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const ax = p[i * 2], ay = p[i * 2 + 1];
+    const ex = p[j * 2] - ax, ey = p[j * 2 + 1] - ay;
+    const L2 = ex * ex + ey * ey || 1;
+    const t = clamp(((x - ax) * ex + (y - ay) * ey) / L2, 0, 1);
+    const qx = ax + ex * t, qy = ay + ey * t;
+    const d = (qx - x) * (qx - x) + (qy - y) * (qy - y);
+    if (d < bd) { bd = d; _cp.x = qx; _cp.y = qy; }
+  }
+  return Math.sqrt(bd);
+}
+
+/* =======================================================================
+   ④  世界状态
+   ======================================================================= */
+const cv = $('glass'), ctx = cv.getContext('2d');
+
+let W = 0, H = 0;                    // 舞台尺寸（CSS px）
+let GP = null, GN = 0;               // 杯子多边形
+let glassArea = 1, cxG = 0, topG = 0, halfW = 1, hG = 1, rimR = 1;
+const FILL = 0.86;                   // 倒满时留出杯口余量，让泡沫头有地方待
+let projHi = 1, uLo = 0, uHi = 1;
+
+let drink = DRINKS[0];
+let vol = 0;                         // 当前液体体积（ml）
+let level = 0;                       // 液面常数 c
+let foam = 0;                        // 泡沫量 0..1
+
+let gx = 0, gy = 1;                  // 平滑后的屏幕重力单位向量
+let tgx = 0, tgy = 1;                // 目标
+let beta = 90, gamma = 0;            // 倾角（陀螺仪或指针拖拽）
+let haveSensor = false;
+
+let state = 'gate';                  // gate | pour | play | empty
+let pourT = 0, sipAccum = 0, spillAccum = 0;
+let drinkStart = 0, muted = false;
+
+/* =======================================================================
+   ⑤  波面（沿液面的一维弹簧链）
+   参数化到与重力垂直的 u 轴上，液面高低变化时不会重新拉伸参数
+   ======================================================================= */
+const NW = 112;
+const wh = new Float32Array(NW), wv = new Float32Array(NW);
+
+const uOf = (x, y) => -x * gy + y * gx;
+const sxOf = (u, pr) => -u * gy + pr * gx;      // (u, proj) → 屏幕 x
+const syOf = (u, pr) =>  u * gx + pr * gy;      // (u, proj) → 屏幕 y
+
+function stepWaves(steps) {
+  const k = lerp(0.30, 0.115, drink.visc);
+  const dmp = lerp(0.9775, 0.902, drink.visc);
+  const cap = halfW * 0.26;
+  for (let s = 0; s < steps; s++) {
+    for (let i = 0; i < NW; i++) {
+      const l = wh[i > 0 ? i - 1 : 0], r = wh[i < NW - 1 ? i + 1 : NW - 1];
+      wv[i] = (wv[i] + (l + r - 2 * wh[i]) * k) * dmp;
+    }
+    for (let i = 0; i < NW; i++) wh[i] = clamp(wh[i] + wv[i], -cap, cap);
+  }
+}
+
+/* 在归一化位置 at（0..1）注入一个冲量 */
+function splash(at, amp, width) {
+  const c = clamp(at, 0, 1) * (NW - 1);
+  const w = Math.max(1.2, width * NW);
+  for (let i = 0; i < NW; i++) {
+    const d = Math.abs(i - c) / w;
+    if (d < 1) { const f = (1 - d) * (1 - d); wv[i] += amp * f; }
+  }
+}
+
+/* =======================================================================
+   ⑥  粒子：气泡 / 珍珠 / 冰块 / 洒出的液滴
+   ======================================================================= */
+const bubbles = [], pearls = [], ices = [], drops = [];
+let bubDebt = 0;
+
+/* 把物体约束在杯子内（用最近边法线推回并反弹） */
+function confine(o, r, rest) {
+  const inside = pointInPoly(GP, GN, o.x, o.y);
+  const d = closestOnPoly(GP, GN, o.x, o.y);
+  if (!inside || d < r) {
+    let nx, ny;
+    if (!inside) { nx = _cp.x - o.x; ny = _cp.y - o.y; }
+    else { nx = o.x - _cp.x; ny = o.y - _cp.y; }
+    const L = Math.hypot(nx, ny) || 1;
+    nx /= L; ny /= L;
+    o.x = _cp.x + nx * r; o.y = _cp.y + ny * r;
+    const vn = o.vx * nx + o.vy * ny;
+    if (vn < 0) { o.vx -= (1 + rest) * vn * nx; o.vy -= (1 + rest) * vn * ny; }
+  }
+}
+
+/* 在液体内部随机取一点（试几次；取不到就放弃这颗气泡） */
+function randInLiquid(out) {
+  for (let k = 0; k < 6; k++) {
+    const u = rr(uLo, uHi);
+    const pr = rr(level, projHi);
+    const x = sxOf(u, pr), y = syOf(u, pr);
+    if (pointInPoly(GP, GN, x, y)) { out.x = x; out.y = y; return true; }
+  }
+  return false;
+}
+
+const _pt = { x: 0, y: 0 };
+function stepBubbles(dt) {
+  const frac = vol / drink.ml;
+  bubDebt += drink.bubRate * dt * (0.25 + 0.75 * frac) * (state === 'pour' ? 2.4 : 1);
+  while (bubDebt >= 1) {
+    bubDebt -= 1;
+    if (bubbles.length < 220 && frac > 0.02 && randInLiquid(_pt)) {
+      const r = rr(drink.bubR[0], drink.bubR[1]) * (halfW / 90);
+      bubbles.push({ x: _pt.x, y: _pt.y, r, ph: rr(0, TAU), sp: rr(0.7, 1.35) });
+    }
+  }
+  const scale = halfW / 90;
+  for (let i = bubbles.length - 1; i >= 0; i--) {
+    const b = bubbles[i];
+    b.ph += dt * 7;
+    const rise = drink.bubSpd * scale * b.sp * (0.55 + b.r / (2.2 * scale)) * dt;
+    b.x += -gx * rise + (-gy) * Math.sin(b.ph) * 9 * scale * dt;
+    b.y += -gy * rise + (gx) * Math.sin(b.ph) * 9 * scale * dt;
+    // 冒出液面 → 破掉，补一点点泡沫和涟漪
+    if (b.x * gx + b.y * gy < level || !pointInPoly(GP, GN, b.x, b.y)) {
+      bubbles.splice(i, 1);
+      foam = Math.min(1, foam + 0.0016 * drink.foamGain);
+      if (Math.random() < 0.13) {
+        splash((uOf(b.x, b.y) - uLo) / (uHi - uLo || 1), 0.05 * b.r, 0.03);
+      }
+    }
+  }
+}
+
+function resetPearls() {
+  pearls.length = 0;
+  const r = halfW * 0.088;
+  for (let i = 0; i < drink.pearls; i++) {
+    pearls.push({
+      x: cxG + rr(-halfW * 0.55, halfW * 0.55),
+      y: topG + hG * rr(0.72, 0.95),
+      vx: 0, vy: 0, r: r * rr(0.86, 1.12), sp: rr(0, TAU)
+    });
+  }
+}
+
+function stepPearls(dt) {
+  if (!pearls.length) return;
+  const Gs = halfW * 26;
+  for (const p of pearls) {
+    p.vx += gx * Gs * dt; p.vy += gy * Gs * dt;
+    const damp = Math.pow(0.06, dt);           // 奶茶阻尼大，珍珠不会乱弹
+    p.vx *= damp; p.vy *= damp;
+    p.x += p.vx * dt; p.y += p.vy * dt;
+  }
+  for (let it = 0; it < 3; it++) {             // 相互分离
+    for (let i = 0; i < pearls.length; i++) {
+      const a = pearls[i];
+      for (let j = i + 1; j < pearls.length; j++) {
+        const b = pearls[j];
+        let dx = b.x - a.x, dy = b.y - a.y;
+        const need = a.r + b.r;
+        let d2 = dx * dx + dy * dy;
+        if (d2 < need * need && d2 > 1e-6) {
+          const d = Math.sqrt(d2), push = (need - d) * 0.5;
+          dx /= d; dy /= d;
+          a.x -= dx * push; a.y -= dy * push;
+          b.x += dx * push; b.y += dy * push;
+        }
+      }
+    }
+    for (const p of pearls) confine(p, p.r, 0.12);
+  }
+}
+
+function resetIce() {
+  ices.length = 0;
+  for (let i = 0; i < drink.ice; i++) {
+    const r = halfW * rr(0.19, 0.27);
+    const pts = [];
+    const n = 5 + (Math.random() * 2 | 0);
+    for (let k = 0; k < n; k++) {
+      const a = k / n * TAU + rr(-0.2, 0.2);
+      const rad = r * rr(0.74, 1.0);
+      pts.push([Math.cos(a) * rad, Math.sin(a) * rad]);
+    }
+    ices.push({
+      x: cxG + rr(-halfW * 0.55, halfW * 0.55),
+      y: topG + hG * rr(0.2, 0.62),
+      vx: rr(-8, 8), vy: 0, r, pts, ang: rr(0, TAU), av: rr(-0.5, 0.5),
+      buoy: rr(0.82, 1.30)          // 每块沉浮深度不同，免得排成整齐一排
+    });
+  }
+}
+
+function stepIce(dt) {
+  if (!ices.length) return;
+  const Gs = halfW * 22;
+  for (const c of ices) {
+    const depth = (c.x * gx + c.y * gy) - level;         // >0 表示在液面之下
+    const sub = clamp(depth / (c.r * 1.6) + 0.5, 0, 1.6);
+    const buoy = sub * Gs * 1.55 * c.buoy;
+    c.vx += (gx * Gs - gx * buoy) * dt;
+    c.vy += (gy * Gs - gy * buoy) * dt;
+    const damp = Math.pow(sub > 0.02 ? 0.02 : 0.4, dt);  // 水里阻尼大
+    c.vx *= damp; c.vy *= damp;
+    c.x += c.vx * dt; c.y += c.vy * dt;
+    c.ang += c.av * dt;
+    c.av *= Math.pow(0.5, dt);
+    confine(c, c.r * 0.82, 0.25);
+  }
+  for (let it = 0; it < 2; it++) {
+    for (let i = 0; i < ices.length; i++) {
+      const a = ices[i];
+      for (let j = i + 1; j < ices.length; j++) {
+        const b = ices[j];
+        let dx = b.x - a.x, dy = b.y - a.y;
+        const need = (a.r + b.r) * 0.82;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < need * need && d2 > 1e-6) {
+          const d = Math.sqrt(d2), push = (need - d) * 0.5;
+          dx /= d; dy /= d;
+          a.x -= dx * push; a.y -= dy * push;
+          b.x += dx * push; b.y += dy * push;
+        }
+      }
+    }
+  }
+}
+
+function stepDrops(dt) {
+  for (let i = drops.length - 1; i >= 0; i--) {
+    const d = drops[i];
+    d.vx += gx * 1800 * dt; d.vy += gy * 1800 * dt;
+    d.x += d.vx * dt; d.y += d.vy * dt;
+    d.life -= dt;
+    if (d.life <= 0 || d.y > H + 40 || d.x < -40 || d.x > W + 40) drops.splice(i, 1);
+  }
+}
+
+/* =======================================================================
+   ⑦  重力输入：陀螺仪 / 指针拖拽（同一套模型）
+   ======================================================================= */
+
+/* 设备坐标下的三维重力（DeviceOrientation 的 Z-X'-Y'' 内旋顺序，alpha 不影响重力）：
+       GX =  cos(β)·sin(γ)      设备 X = 屏幕右
+       GY = -sin(β)             设备 Y = 屏幕上
+       GZ = -cos(β)·cos(γ)      设备 Z = 屏幕外（朝向使用者）
+   竖直握持 (β=90) → (0,-1,0)：重力沿屏幕向下、完全在平面内 → 液面看上去是一条线。
+   后仰 (β→0，屏幕转为朝上) → GZ→-1：重力越来越指向屏幕里侧，
+   杯口于是朝自己倾倒——这就是"喝"。这个出平面分量正是上一版缺失的东西：
+   只看平面内投影的话，β=20 和 β=90 的重力方向完全一样，永远喝不到。   */
+const VIEW_TILT = 0.17;   // 视角略高于杯口：即使完全竖直，液面也是一个扁椭圆
+const VIEW_MAX  = 0.30;   // 正面视角能看到的液面敞开程度上限；再大就变成悬在杯中的圆盘了
+let gzOut = 0;      // |GZ|：出平面强度 0..1，决定杯口椭圆张开多少
+let gzView = VIEW_TILT;   // 渲染用（带下限）
+let gzN = 0;        // 带符号的出平面分量，换算到"平面内已归一化"的尺度上
+let betaRef = 90;   // 校准基准：把使用者自然的握持角当作竖直
+let roll = 0, recline = 0;   // 桌面控制：平面内侧倾 / 后仰（弧度）
+
+/* 两条输入路径最终都归结成同一个屏幕坐标系下的三维重力
+   （x 右、y 下、z 朝向使用者）。                                    */
+function tiltToGravity() {
+  let GXs, GYs, GZs;
+  if (haveSensor) {
+    const b = (beta + (90 - betaRef)) * D2R, c = gamma * D2R;
+    GXs = Math.cos(b) * Math.sin(c);
+    GYs = Math.sin(b);
+    GZs = -Math.cos(b) * Math.cos(c);
+  } else {
+    // 桌面没有欧拉角的万向锁问题，直接用侧倾/后仰两个角
+    const cr = Math.cos(recline);
+    GXs = Math.sin(roll) * cr;
+    GYs = Math.cos(roll) * cr;
+    GZs = -Math.sin(recline);
+  }
+
+  let x = GXs, y = GYs;
+  const m = Math.hypot(x, y);
+  gzOut = Math.min(1, Math.abs(GZs));
+  gzView = clamp(gzOut, VIEW_TILT, VIEW_MAX);
+  gzN = clamp(GZs / Math.max(m, 0.07), -12, 12);
+
+  if (m < 0.02) return;                  // 完全水平：平面内方向无定义，保持上一帧
+  x /= m; y /= m;
+  if (haveSensor) {
+    // 横屏时把重力转到当前屏幕坐标系（真机若方向相反，把 SIGN 取反即可）
+    const SIGN = 1;
+    const deg = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    if (deg) {
+      const a = deg * D2R * SIGN, ca = Math.cos(a), sa = Math.sin(a);
+      const nx = x * ca + y * sa, ny = -x * sa + y * ca;
+      x = nx; y = ny;
+    }
+  }
+  tgx = x; tgy = y;
+}
+
+/* 把使用者当前的握持角记为"竖直"，免得正常拿着手机酒就一直在洒 */
+function calibrate() {
+  if (haveSensor) betaRef = clamp(beta, 45, 115);
+}
+
+/* 平滑 —— 这一步就是液体"惯性感"的来源；转动量直接变成晃动冲量 */
+function smoothGravity(dt) {
+  const t = 1 - Math.pow(0.0005, dt);
+  const px = gx, py = gy;
+  gx = lerp(gx, tgx, t); gy = lerp(gy, tgy, t);
+  const m = Math.hypot(gx, gy) || 1;
+  gx /= m; gy /= m;
+  const turn = px * gy - py * gx;                    // 本帧转过的角度（弧度近似）
+  if (Math.abs(turn) > 1e-5) {
+    const amp = turn * halfW * lerp(9.0, 3.4, drink.visc);
+    for (let i = 0; i < NW; i++) wv[i] += amp * (i / (NW - 1) - 0.5);
+  }
+}
+
+function onOrient(e) {
+  if (e.beta === null && e.gamma === null) return;
+  haveSensor = true;
+  beta = e.beta || 0;
+  gamma = e.gamma || 0;
+}
+
+let shakeLast = 0, shakeCd = 0;
+function onMotion(e) {
+  const a = e.accelerationIncludingGravity;
+  if (!a) return;
+  const m = Math.hypot(a.x || 0, a.y || 0, a.z || 0);
+  const d = Math.abs(m - shakeLast);
+  shakeLast = m;
+  if (d > 11 && shakeCd <= 0) { shakeCd = 0.9; cheers(); }
+}
+
+/* 桌面 / 无陀螺仪：拖动画布 = 转手机 */
+function bindPointer() {
+  let down = false, lx = 0, ly = 0;
+  const stage = $('stage');
+  stage.addEventListener('pointerdown', (e) => {
+    down = true; lx = e.clientX; ly = e.clientY;
+    stage.setPointerCapture(e.pointerId);
+    const r = cv.getBoundingClientRect();
+    splash((uOf(e.clientX - r.left, e.clientY - r.top) - uLo) / (uHi - uLo || 1), halfW * 0.09, 0.11);
+    ensureAudio();
+  });
+  stage.addEventListener('pointermove', (e) => {
+    if (!down) return;
+    const dx = e.clientX - lx, dy = e.clientY - ly;
+    lx = e.clientX; ly = e.clientY;
+    if (haveSensor) return;                 // 有陀螺仪就不抢控制权
+    roll = clamp(roll + dx * 0.0062, -1.45, 1.45);
+    recline = clamp(recline + dy * 0.0062, -0.45, 1.85);
+  });
+  const up = () => { down = false; };
+  stage.addEventListener('pointerup', up);
+  stage.addEventListener('pointercancel', up);
+  window.addEventListener('keydown', (e) => {
+    if (haveSensor) return;
+    const s = (e.shiftKey ? 9 : 3) * D2R;
+    if (e.key === 'ArrowDown') recline = clamp(recline + s, -0.45, 1.85);
+    else if (e.key === 'ArrowUp') recline = clamp(recline - s, -0.45, 1.85);
+    else if (e.key === 'ArrowLeft') roll = clamp(roll - s, -1.45, 1.45);
+    else if (e.key === 'ArrowRight') roll = clamp(roll + s, -1.45, 1.45);
+    else if (e.key === ' ') { e.preventDefault(); cheers(); }
+    else return;
+    e.preventDefault();
+  });
+}
+
+/* =======================================================================
+   ⑧  流量：溢出即喝下 —— 一条规则同时定义了"喝"和"洒"
+   ======================================================================= */
+let gulpCd = 0;
+
+function stepFlow(dt) {
+  if (state === 'pour') {
+    const rate = drink.ml / 1.55;
+    vol = Math.min(drink.ml, vol + rate * dt);
+    foam = Math.min(1, foam + dt * 1.5 * drink.foamGain);
+    splash(0.5 + Math.sin(pourT * 9) * 0.06, halfW * 0.05, 0.14);
+    if (vol >= drink.ml - 0.5) { state = 'play'; pourLoop(0); drinkStart = performance.now(); }
+    return;
+  }
+  if (state !== 'play' || vol <= 0) return;
+
+  // 杯口是一个三维的圆：绕杯轴半径 rimR，在 XZ 平面上。
+  // 它最深的一点是 cx·gx + top·gy + rimR·√(gx² + gz²) —— 平面内那一项只是
+  // gz=0 的特例。侧倾靠 gx 压低杯口（洒），后仰靠 gz 压低杯口（喝）。
+  const lipDeep = cxG * gx + topG * gy + rimR * Math.hypot(gx, gzN);
+  const over = lipDeep - level;                     // >0：杯口有一段沉在液面之下
+
+  let amount = 0;
+  if (over > 0) {
+    const q = clamp(over / (halfW * 0.85), 0, 1.5);
+    // 上限：整杯最快也要 1.15 秒才能流完，否则一甩就空，咕咚声和画面都来不及
+    const rate = Math.min(drink.ml / 1.15,
+                          drink.ml * 2.4 * Math.pow(q, 1.5) * lerp(1, 0.5, drink.visc));
+    amount = Math.min(vol, rate * dt);
+  }
+
+  // 最后一口：圆柱形杯子按几何要倒到接近水平才真的空得掉（真杯子也是这样），
+  // 但流量到这里已经趋于平衡、over 归零，杯底会永远留一小层。
+  // "喝完打嗝"这个回报不该逼人把手机翻过来，所以只要确实在明显后仰地喝
+  // （tan≈1.6，约 58°）且只剩一点，就让最后这口跟着走完。
+  if (vol - amount < drink.ml * 0.12 && -gzN > 1.6)
+    amount = Math.min(vol, amount + drink.ml * 0.6 * dt);
+
+  if (amount <= 0) return;
+  vol -= amount;
+
+  const ax = GP[0], ay = GP[1], bx = GP[(GN - 1) * 2], by = GP[(GN - 1) * 2 + 1];
+  const pa = ax * gx + ay * gy, pb = bx * gx + by * gy;
+  const lipX = pa > pb ? ax : bx, lipY = pa > pb ? ay : by;
+  // 屏幕转为朝上（GZ<0）且出平面倾斜压过侧倾 → 杯口正对着自己 → 喝到了；
+  // 侧倾主导、或屏幕朝下往外倒 → 洒。
+  const drinking = (-gzN > Math.abs(gx) * 0.8 && -gzN > 0.04) || gy < -0.25;
+  if (drinking) {
+    sipAccum += amount;
+    gulpCd -= dt;
+    if (gulpCd <= 0) { sfxGulp(); vib(22); gulpCd = rr(0.24, 0.40); }
+  } else {
+    spillAccum += amount;
+    if (drops.length < 90 && Math.random() < amount * 2.2) {
+      drops.push({ x: lipX, y: lipY, vx: gx * 60 + rr(-40, 40), vy: gy * 60 + rr(-40, 40),
+                   r: rr(1.6, 4.2), life: rr(0.5, 1.1) });
+    }
+    gulpCd -= dt;
+    if (gulpCd <= 0) { sfxSpill(); gulpCd = rr(0.18, 0.3); }
+  }
+  const at = Math.abs(gx) < 0.09 ? 0.5 : (uOf(lipX, lipY) - uLo) / (uHi - uLo || 1);
+  splash(at, -amount * 0.9, 0.3);
+  foam = Math.min(1, foam + amount * 0.0018 * drink.foamGain);
+
+  if (vol <= drink.ml * 0.006) { vol = 0; goEmpty(); }
+}
+
+/* =======================================================================
+   ⑨  音频：Web Audio 全程序化合成，零音频文件
+   ======================================================================= */
+let AC = null, master = null, noiseBuf = null;
+let pourNode = null, pourG = null, fizzNode = null, fizzG = null;
+
+function ensureAudio() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  const C = window.AudioContext || window.webkitAudioContext;
+  if (!C) return;
+  AC = new C();
+  master = AC.createGain();
+  master.gain.value = muted ? 0 : 0.8;
+  master.connect(AC.destination);
+  noiseBuf = AC.createBuffer(1, Math.floor(AC.sampleRate * 2), AC.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+}
+
+function tone(type, f0, f1, dur, gain, when) {
+  if (!AC) return;
+  const t = AC.currentTime + (when || 0);
+  const o = AC.createOscillator(); o.type = type;
+  o.frequency.setValueAtTime(f0, t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(gain, t + Math.min(0.012, dur * 0.2));
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(master);
+  o.start(t); o.stop(t + dur + 0.03);
+  return o;
+}
+
+function noiseBurst(freq, Q, dur, gain, when, type) {
+  if (!AC) return;
+  const t = AC.currentTime + (when || 0);
+  const s = AC.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
+  const f = AC.createBiquadFilter(); f.type = type || 'bandpass';
+  f.frequency.setValueAtTime(freq, t); f.Q.value = Q;
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(gain, t + Math.min(0.02, dur * 0.3));
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(g); g.connect(master);
+  s.start(t); s.stop(t + dur + 0.03);
+  return f;
+}
+
+/* 气泡"啵"：正弦频率指数上扫，是所有液体音效的基本粒子 */
+const sfxBubble = (f0, mul, dur, gain, when) => tone('sine', f0, f0 * mul, dur, gain, when);
+
+function sfxGulp() {
+  if (!AC) return;
+  if (drink.sip === 'slurp') { sfxSlurp(); return; }
+  const b = rr(140, 250);
+  sfxBubble(b, rr(2.2, 3.6), rr(0.10, 0.17), 0.30, 0);
+  sfxBubble(b * rr(0.75, 1.15), rr(1.9, 3.0), 0.09, 0.20, rr(0.04, 0.09));
+  noiseBurst(rr(330, 540), 3.5, 0.15, 0.085, 0);
+}
+
+function sfxSlurp() {
+  if (!AC) return;
+  noiseBurst(rr(600, 900), 6, 0.22, 0.10, 0);
+  tone('sawtooth', rr(180, 240), rr(420, 560), 0.2, 0.05, 0);
+}
+
+function sfxSpill() {
+  if (!AC) return;
+  noiseBurst(rr(900, 1500), 1.4, 0.2, 0.07, 0, 'highpass');
+  sfxBubble(rr(300, 500), 0.5, 0.12, 0.06, 0);
+}
+
+function sfxBurp() {
+  if (!AC) return;
+  const t = AC.currentTime, dur = rr(0.5, 0.8);
+  const o = AC.createOscillator(); o.type = 'sawtooth';
+  o.frequency.setValueAtTime(rr(108, 138), t);
+  o.frequency.exponentialRampToValueAtTime(rr(52, 70), t + dur);
+  const lfo = AC.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = rr(16, 27);
+  const lg = AC.createGain(); lg.gain.value = rr(16, 30);
+  lfo.connect(lg); lg.connect(o.frequency);
+  const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 5;
+  lp.frequency.setValueAtTime(1100, t);
+  lp.frequency.exponentialRampToValueAtTime(320, t + dur);
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(0.42, t + 0.05);
+  g.gain.setValueAtTime(0.42, t + dur * 0.6);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(lp); lp.connect(g); g.connect(master);
+  o.start(t); o.stop(t + dur + 0.05);
+  lfo.start(t); lfo.stop(t + dur + 0.05);
+  noiseBurst(260, 1.2, dur * 0.9, 0.05, 0);
+}
+
+function sfxAhh() {
+  if (!AC) return;
+  noiseBurst(rr(700, 1000), 1.0, 0.5, 0.05, 0, 'highpass');
+  tone('sine', rr(220, 280), rr(150, 190), 0.45, 0.05, 0);
+}
+
+function sfxSlurpEnd() {
+  if (!AC) return;
+  for (let i = 0; i < 5; i++) noiseBurst(rr(900, 1800), 8, 0.1, 0.09, i * 0.075);
+}
+
+function sfxClink() {
+  if (!AC) return;
+  [2380, 3670, 5120, 6890].forEach((f, i) =>
+    tone('sine', f * rr(0.97, 1.03), f * 0.985, 0.5 - i * 0.08, 0.13 / (i + 1), 0));
+  noiseBurst(4200, 2, 0.06, 0.05, 0, 'highpass');
+}
+
+/* 持续音：倒酒 / 气泡嘶嘶 */
+function pourLoop(on) {
+  if (!AC) return;
+  if (on && !pourNode) {
+    pourNode = AC.createBufferSource(); pourNode.buffer = noiseBuf; pourNode.loop = true;
+    const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 0.8;
+    pourG = AC.createGain(); pourG.gain.value = 0.0001;
+    pourNode.connect(f); f.connect(pourG); pourG.connect(master);
+    pourNode.start();
+  }
+  if (!on && pourNode) {
+    try { pourNode.stop(); } catch (e) {}
+    pourNode = null; pourG = null;
+  }
+}
+
+function fizzLoop(on) {
+  if (!AC) return;
+  if (on && !fizzNode) {
+    fizzNode = AC.createBufferSource(); fizzNode.buffer = noiseBuf; fizzNode.loop = true;
+    const f = AC.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 5200;
+    fizzG = AC.createGain(); fizzG.gain.value = 0.0001;
+    fizzNode.connect(f); f.connect(fizzG); fizzG.connect(master);
+    fizzNode.start();
+  }
+  if (!on && fizzNode) {
+    try { fizzNode.stop(); } catch (e) {}
+    fizzNode = null; fizzG = null;
+  }
+}
+
+const vib = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
+
+/* =======================================================================
+   ⑩  渲染
+   ======================================================================= */
+let bgCv = null, fgCv = null, noisePat = null;
+let clingY = 0;
+
+function glassPath(c) {
+  c.beginPath();
+  c.moveTo(GP[0], GP[1]);
+  for (let i = 1; i < GN; i++) c.lineTo(GP[i * 2], GP[i * 2 + 1]);
+  c.closePath();
+}
+
+function makeNoise() {
+  const n = document.createElement('canvas');
+  n.width = n.height = 90;
+  const c = n.getContext('2d');
+  const img = c.createImageData(90, 90);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const v = 118 + (Math.random() * 74 | 0);
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+    img.data[i + 3] = 15;
+  }
+  c.putImageData(img, 0, 0);
+  noisePat = ctx.createPattern(n, 'repeat');
+}
+
+/* 背景：深色底 + 两团取自饮品配色的柔光 + 细噪点 */
+function buildBackdrop() {
+  bgCv = document.createElement('canvas');
+  bgCv.width = Math.max(1, W * DPR | 0); bgCv.height = Math.max(1, H * DPR | 0);
+  const c = bgCv.getContext('2d');
+  c.scale(DPR, DPR);
+  const base = c.createLinearGradient(0, 0, 0, H);
+  base.addColorStop(0, drink.bg[0]);
+  base.addColorStop(1, drink.bg[1]);
+  c.fillStyle = base; c.fillRect(0, 0, W, H);
+
+  const blob = (x, y, r, col, a) => {
+    const g = c.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
+    c.globalAlpha = a; c.fillStyle = g; c.fillRect(0, 0, W, H); c.globalAlpha = 1;
+  };
+  blob(W * 0.22, H * 0.20, Math.max(W, H) * 0.62, drink.accent, 0.20);
+  blob(W * 0.86, H * 0.80, Math.max(W, H) * 0.55, drink.hi, 0.11);
+  // 地面反光
+  const fl = c.createLinearGradient(0, H * 0.72, 0, H);
+  fl.addColorStop(0, 'rgba(0,0,0,0)');
+  fl.addColorStop(1, 'rgba(0,0,0,.45)');
+  c.fillStyle = fl; c.fillRect(0, H * 0.72, W, H * 0.28);
+  if (noisePat) { c.fillStyle = noisePat; c.fillRect(0, 0, W, H); }
+}
+
+/* 玻璃前层（高光 / 杯口 / 杯底 / 冷凝水）—— 不随重力变化，预渲染一次 */
+function buildGlassFront() {
+  fgCv = document.createElement('canvas');
+  fgCv.width = Math.max(1, W * DPR | 0); fgCv.height = Math.max(1, H * DPR | 0);
+  const c = fgCv.getContext('2d');
+  c.scale(DPR, DPR);
+  const rimW = halfW * hwAt(PROFILES[drink.glass], 0);
+  const rimE = Math.max(6, halfW * 0.17);
+
+  // 杯壁厚度：外描边 + 内描边
+  c.lineJoin = 'round';
+  glassPath(c);
+  c.strokeStyle = 'rgba(255,255,255,.30)'; c.lineWidth = 2.2; c.stroke();
+  glassPath(c);
+  c.strokeStyle = 'rgba(255,255,255,.09)'; c.lineWidth = 7; c.stroke();
+
+  // 杯口椭圆（固定在杯子坐标系，不跟重力转）
+  c.beginPath();
+  c.ellipse(cxG, topG, rimW, rimE, 0, 0, TAU);
+  c.strokeStyle = 'rgba(255,255,255,.42)'; c.lineWidth = 2; c.stroke();
+  c.beginPath();
+  c.ellipse(cxG, topG, rimW - 3.5, rimE - 2.2, 0, 0, TAU);
+  c.strokeStyle = 'rgba(255,255,255,.16)'; c.lineWidth = 1.2; c.stroke();
+
+  c.save();
+  glassPath(c); c.clip();
+
+  // 左侧长高光
+  const lg = c.createLinearGradient(cxG - halfW, 0, cxG - halfW * 0.35, 0);
+  lg.addColorStop(0, 'rgba(255,255,255,0)');
+  lg.addColorStop(0.45, 'rgba(255,255,255,.20)');
+  lg.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = lg;
+  c.fillRect(cxG - halfW, topG + hG * 0.05, halfW * 0.7, hG * 0.92);
+
+  // 右侧窄高光
+  const rg = c.createLinearGradient(cxG + halfW * 0.55, 0, cxG + halfW, 0);
+  rg.addColorStop(0, 'rgba(255,255,255,0)');
+  rg.addColorStop(0.6, 'rgba(255,255,255,.13)');
+  rg.addColorStop(1, 'rgba(255,255,255,.02)');
+  c.fillStyle = rg;
+  c.fillRect(cxG + halfW * 0.55, topG + hG * 0.08, halfW * 0.45, hG * 0.86);
+
+  // 杯底厚玻璃
+  const bg2 = c.createLinearGradient(0, topG + hG * 0.90, 0, topG + hG);
+  bg2.addColorStop(0, 'rgba(255,255,255,0)');
+  bg2.addColorStop(1, 'rgba(255,255,255,.16)');
+  c.fillStyle = bg2;
+  c.fillRect(cxG - halfW, topG + hG * 0.90, halfW * 2, hG * 0.10);
+  c.restore();
+
+  // 外壁冷凝水
+  if (drink.cond) {
+    for (let i = 0; i < 90; i++) {
+      const t = rr(0.06, 0.97);
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const w = halfW * hwAt(PROFILES[drink.glass], t);
+      const x = cxG + side * w * rr(0.12, 0.97);
+      const y = topG + hG * t;
+      const r = rr(0.7, 2.6);
+      c.beginPath(); c.arc(x, y, r, 0, TAU);
+      c.fillStyle = 'rgba(255,255,255,' + rr(0.05, 0.16).toFixed(3) + ')';
+      c.fill();
+      if (r > 1.7) {
+        c.beginPath(); c.arc(x - r * 0.3, y - r * 0.3, r * 0.34, 0, TAU);
+        c.fillStyle = 'rgba(255,255,255,.30)'; c.fill();
+      }
+    }
+  }
+}
+
+/* 沿液面采样一个点（含波高），写入 _pt */
+function surfPt(u, out) {
+  let i = (u - uLo) / (uHi - uLo || 1) * (NW - 1);
+  i = clamp(i, 0, NW - 1);
+  const i0 = i | 0, i1 = Math.min(NW - 1, i0 + 1), f = i - i0;
+  const h = wh[i0] * (1 - f) + wh[i1] * f;
+  const pr = level - h;
+  out.x = sxOf(u, pr); out.y = syOf(u, pr);
+  return h;
+}
+
+/* 液面折线的 u 区间（向两侧多延伸一点，靠 clip 切齐杯壁） */
+let uA = 0, uB = 0, hasSurface = false;
+function surfaceRange() {
+  hasSurface = false;
+  if (cutStart < 0 || subN < 3) return;
+  const e = (cutStart + 1) % subN;
+  uA = uOf(SUB[cutStart * 2], SUB[cutStart * 2 + 1]);
+  uB = uOf(SUB[e * 2], SUB[e * 2 + 1]);
+  const dir = uB >= uA ? 1 : -1;
+  const ext = halfW * 0.14;
+  uA -= dir * ext; uB += dir * ext;
+  hasSurface = true;
+}
+
+const SEG = 54;
+function traceSurface(c, move) {
+  const p = { x: 0, y: 0 };
+  for (let i = 0; i <= SEG; i++) {
+    surfPt(uA + (uB - uA) * (i / SEG), p);
+    if (i === 0 && move) c.moveTo(p.x, p.y); else c.lineTo(p.x, p.y);
+  }
+}
+
+function drawLiquid(c) {
+  if (vol <= 0 || !hasSurface) return;
+  const e = (cutStart + 1) % subN;
+  c.beginPath();
+  traceSurface(c, true);
+  for (let k = 1; k < subN; k++) {
+    const i = (e + k) % subN;
+    c.lineTo(SUB[i * 2], SUB[i * 2 + 1]);
+  }
+  c.closePath();
+
+  const g = c.createLinearGradient(gx * level, gy * level, gx * projHi, gy * projHi);
+  g.addColorStop(0, drink.hi);
+  g.addColorStop(0.5, mix(drink.hi, drink.lo, 0.45));
+  g.addColorStop(1, drink.lo);
+  c.globalAlpha = drink.alpha;
+  c.fillStyle = g;
+  c.fill();
+  c.globalAlpha = 1;
+
+  // 液面下方一条亮边，让表面有张力
+  c.save();
+  c.beginPath(); traceSurface(c, true);
+  c.strokeStyle = 'rgba(255,255,255,.28)';
+  c.lineWidth = 1.6;
+  c.stroke();
+  c.restore();
+}
+
+/* 液面的"顶面"：液面是垂直于重力的平面，正面看去它是一个椭圆——
+   重力完全在屏幕平面内时椭圆最扁，手机后仰时 |GZ| 变大、椭圆张开，
+   于是你开始看进杯子里。offset 沿 -g 抬高，用来把泡沫的顶面放到泡沫层之上。 */
+function drawCap(c, offset, foamy) {
+  if (vol <= 0 || !hasSurface || cutStart < 0) return;
+  const e = (cutStart + 1) % subN;
+  const ax = SUB[cutStart * 2], ay = SUB[cutStart * 2 + 1];
+  const bx = SUB[e * 2], by = SUB[e * 2 + 1];
+  const a = Math.hypot(bx - ax, by - ay) * 0.5;
+  if (a < 3) return;
+  const mx = (ax + bx) * 0.5 - gx * offset, my = (ay + by) * 0.5 - gy * offset;
+  const ang = Math.atan2(by - ay, bx - ax);
+  // 长轴 = 液面弦的一半（这样椭圆正好抵住两侧杯壁）；
+  // 短轴取决于杯子在视线方向上的深度，也就是该高度的杯子半径——
+  // 而不是弦长：杯子一斜，弦会变长，用弦算短轴就会胀成一大块斜板。
+  const tLoc = clamp((my - topG) / (hG || 1), 0, 1);
+  const rLoc = halfW * hwAt(PROFILES[drink.glass], tLoc);
+  const b2 = Math.max(0.8, Math.min(a, rLoc) * gzView);
+
+  c.save();
+  c.translate(mx, my); c.rotate(ang);
+  c.beginPath(); c.ellipse(0, 0, a, b2, 0, 0, TAU);
+  if (foamy) {
+    const g = c.createRadialGradient(0, -b2 * 0.3, b2 * 0.1, 0, 0, a);
+    g.addColorStop(0, mix(drink.foamCol, '#ffffff', 0.5));
+    g.addColorStop(1, drink.foamCol);
+    c.fillStyle = g;
+    c.globalAlpha = clamp(0.6 + foam * 0.4, 0, 0.97);
+    c.fill();
+    c.globalAlpha = 1;
+    const n = 20 + (a * 0.24 | 0);
+    for (let i = 0; i < n; i++) {                 // 俯视看到的泡沫气孔
+      const t = Math.random() * TAU, rad = Math.sqrt(Math.random()) * 0.93;
+      const r = rr(0.8, 3.0) * (halfW / 105);
+      c.beginPath();
+      c.ellipse(Math.cos(t) * a * rad, Math.sin(t) * b2 * rad, r, r * gzView / VIEW_TILT * 0.3 + r * 0.2, 0, 0, TAU);
+      c.fillStyle = 'rgba(210,196,168,' + rr(0.10, 0.30).toFixed(3) + ')';
+      c.fill();
+    }
+  } else {
+    const g = c.createLinearGradient(0, -b2, 0, b2);
+    g.addColorStop(0, drink.lo);
+    g.addColorStop(1, drink.edge);
+    c.globalAlpha = clamp(drink.alpha, 0.4, 1);
+    c.fillStyle = g; c.fill();
+    c.globalAlpha = 1;
+    c.beginPath();
+    c.ellipse(-a * 0.24, -b2 * 0.2, a * 0.44, b2 * 0.42, 0, 0, TAU);
+    c.fillStyle = 'rgba(255,255,255,.13)'; c.fill();
+  }
+  c.beginPath(); c.ellipse(0, 0, a, b2, 0, 0, TAU);
+  c.strokeStyle = foamy ? 'rgba(255,255,255,.30)' : 'rgba(255,255,255,.24)';
+  c.lineWidth = 1.2; c.stroke();
+  c.restore();
+}
+
+const foamPx = () => drink.foamPx * (halfW / 105) * foam;
+
+/* 泡沫层的"侧面"：从液面沿 -g 抬起一层，中间厚两端薄，再叠一点低频起伏 */
+function drawFoam(c, t) {
+  const fh = foamPx();
+  if (vol <= 0 || !hasSurface || fh < 0.8) return;
+  const p = { x: 0, y: 0 };
+  c.beginPath();
+  traceSurface(c, true);
+  for (let i = SEG; i >= 0; i--) {
+    const k = i / SEG;
+    surfPt(uA + (uB - uA) * k, p);
+    const prof = 0.55 + 0.45 * Math.sin(Math.PI * clamp((k - 0.06) / 0.88, 0, 1));
+    const wob = 1 + 0.16 * Math.sin(k * 6.1 + t * 1.3) + 0.09 * Math.sin(k * 13.7 - t * 0.9);
+    const d = fh * prof * wob;
+    c.lineTo(p.x - gx * d, p.y - gy * d);
+  }
+  c.closePath();
+  const g = c.createLinearGradient(gx * level, gy * level,
+                                   gx * (level - fh * 1.6), gy * (level - fh * 1.6));
+  g.addColorStop(0, hexA(drink.foamCol, 0.88));
+  g.addColorStop(1, drink.foamCol);
+  c.fillStyle = g;
+  c.globalAlpha = clamp(0.6 + foam * 0.4, 0, 0.97);
+  c.fill();
+  c.globalAlpha = 1;
+
+  const n = Math.min(60, 16 + (fh * 1.8 | 0));
+  for (let i = 0; i < n; i++) {
+    surfPt(uA + (uB - uA) * Math.random(), p);
+    const d = Math.random() * fh * 0.8;
+    const r = rr(0.6, 2.2) * (halfW / 105);
+    c.beginPath(); c.arc(p.x - gx * d, p.y - gy * d, r, 0, TAU);
+    c.fillStyle = 'rgba(255,255,255,' + rr(0.08, 0.26).toFixed(3) + ')';
+    c.fill();
+  }
+}
+
+function drawCling(c) {
+  const topY = topG + hG;
+  let cur = topY;
+  for (let i = 0; i < subN; i++) if (SUB[i * 2 + 1] < cur) cur = SUB[i * 2 + 1];
+  if (vol > 0 && cur < clingY) clingY = cur;
+  if (clingY >= topY - 1) return;
+  const band = cur - clingY;
+  if (band < 3) return;
+  const g = c.createLinearGradient(0, clingY, 0, cur);
+  g.addColorStop(0, 'rgba(255,255,255,0)');
+  g.addColorStop(1, 'rgba(255,255,255,.09)');
+  c.fillStyle = g;
+  c.fillRect(cxG - halfW, clingY, halfW * 2, band);
+}
+
+function drawBubbles(c) {
+  const s = halfW / 90;
+  for (const b of bubbles) {
+    c.beginPath(); c.arc(b.x, b.y, b.r, 0, TAU);
+    c.fillStyle = 'rgba(255,255,255,.30)'; c.fill();
+    if (b.r > 1.4 * s) {
+      c.beginPath(); c.arc(b.x - b.r * 0.28, b.y - b.r * 0.28, b.r * 0.36, 0, TAU);
+      c.fillStyle = 'rgba(255,255,255,.55)'; c.fill();
+    }
+  }
+}
+
+function drawPearls(c) {
+  for (const p of pearls) {
+    const g = c.createRadialGradient(p.x - p.r * 0.35, p.y - p.r * 0.4, p.r * 0.1, p.x, p.y, p.r);
+    g.addColorStop(0, '#5a4436');
+    g.addColorStop(0.55, '#2a1a12');
+    g.addColorStop(1, '#100905');
+    c.beginPath(); c.arc(p.x, p.y, p.r, 0, TAU);
+    c.fillStyle = g; c.fill();
+    c.beginPath(); c.arc(p.x - p.r * 0.34, p.y - p.r * 0.38, p.r * 0.26, 0, TAU);
+    c.fillStyle = 'rgba(255,255,255,.30)'; c.fill();
+  }
+}
+
+function drawIce(c) {
+  for (const k of ices) {
+    c.save();
+    c.translate(k.x, k.y); c.rotate(k.ang);
+    c.beginPath();
+    c.moveTo(k.pts[0][0], k.pts[0][1]);
+    for (let i = 1; i < k.pts.length; i++) c.lineTo(k.pts[i][0], k.pts[i][1]);
+    c.closePath();
+    c.fillStyle = 'rgba(226,246,255,.30)'; c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 1.2; c.stroke();
+    c.beginPath();
+    c.moveTo(k.pts[0][0] * 0.42, k.pts[0][1] * 0.42);
+    for (let i = 1; i < k.pts.length; i++) c.lineTo(k.pts[i][0] * 0.42, k.pts[i][1] * 0.42);
+    c.closePath();
+    c.fillStyle = 'rgba(255,255,255,.20)'; c.fill();
+    c.restore();
+  }
+}
+
+function drawStream(c, t) {
+  if (state !== 'pour') return;
+  // 液柱从画面顶端落到当前液面，而不是固定高度
+  let yEnd = topG + hG * 0.94;
+  if (hasSurface && cutStart >= 0) {
+    const e = (cutStart + 1) % subN;
+    yEnd = ((SUB[cutStart * 2 + 1] + SUB[e * 2 + 1]) * 0.5);
+  }
+  yEnd = clamp(yEnd, topG + 6, topG + hG - 4);
+  const w = halfW * 0.10;
+  const x = cxG + Math.sin(t * 3.1) * halfW * 0.045;
+  const wob = (y) => Math.sin(y * 0.055 + t * 11) * 2.0;
+  c.beginPath();
+  for (let y = 0; y <= yEnd; y += 12) c.lineTo(x - w + wob(y), y);
+  c.lineTo(x - w * 0.8 + wob(yEnd), yEnd);
+  for (let y = yEnd; y >= 0; y -= 12) c.lineTo(x + w + wob(y), y);
+  c.closePath();
+  const g = c.createLinearGradient(0, 0, 0, yEnd);
+  g.addColorStop(0, drink.edge);
+  g.addColorStop(1, drink.hi);
+  c.globalAlpha = 0.9; c.fillStyle = g; c.fill(); c.globalAlpha = 1;
+  // 落点飞溅
+  for (let i = 0; i < 3; i++) {
+    c.beginPath();
+    c.arc(x + rr(-w * 2.4, w * 2.4), yEnd + rr(-4, 4), rr(1, 2.8), 0, TAU);
+    c.fillStyle = hexA(drink.foamCol, rr(0.2, 0.55));
+    c.fill();
+  }
+}
+
+function drawDrops(c) {
+  for (const d of drops) {
+    c.globalAlpha = clamp(d.life * 1.4, 0, 1) * 0.85;
+    c.beginPath(); c.ellipse(d.x, d.y, d.r * 0.72, d.r, Math.atan2(d.vy, d.vx) - Math.PI / 2, 0, TAU);
+    c.fillStyle = drink.edge; c.fill();
+    c.globalAlpha = 1;
+  }
+}
+
+function draw(t) {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  if (bgCv) ctx.drawImage(bgCv, 0, 0, W, H);
+
+  // 杯子落影
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cxG, topG + hG + 10, halfW * 1.15, 13, 0, 0, TAU);
+  ctx.fillStyle = 'rgba(0,0,0,.42)'; ctx.fill();
+  ctx.restore();
+
+  // 杯内
+  ctx.save();
+  glassPath(ctx); ctx.clip();
+  const iw = ctx.createLinearGradient(0, topG, 0, topG + hG);
+  iw.addColorStop(0, 'rgba(255,255,255,.075)');      // 靠近杯口的内壁受光
+  iw.addColorStop(0.35, 'rgba(255,255,255,.028)');
+  iw.addColorStop(1, 'rgba(0,0,0,.20)');
+  ctx.fillStyle = iw;
+  ctx.fillRect(cxG - halfW, topG, halfW * 2, hG);
+  const iw2 = ctx.createLinearGradient(cxG - halfW, 0, cxG + halfW, 0);
+  iw2.addColorStop(0, 'rgba(0,0,0,.22)');            // 两侧内壁转折处压暗，筒感
+  iw2.addColorStop(0.28, 'rgba(0,0,0,0)');
+  iw2.addColorStop(0.74, 'rgba(0,0,0,0)');
+  iw2.addColorStop(1, 'rgba(0,0,0,.26)');
+  ctx.fillStyle = iw2;
+  ctx.fillRect(cxG - halfW, topG, halfW * 2, hG);
+  drawCling(ctx);
+  drawLiquid(ctx);
+  if (pearls.length) drawPearls(ctx);
+  drawBubbles(ctx);
+  const fh = foamPx();
+  const foamy = fh > 1.2;
+  if (foamy) drawFoam(ctx, t);
+  drawCap(ctx, foamy ? fh * 0.72 : 0, foamy);
+  if (ices.length) drawIce(ctx);          // 浮冰露出液面，画在顶面之后
+  drawStream(ctx, t);
+  ctx.restore();
+
+  if (fgCv) ctx.drawImage(fgCv, 0, 0, W, H);
+  drawDrops(ctx);
+}
+
+/* =======================================================================
+   ⑪  战绩 & AI 侍酒师（纯本地词库，不调任何 API）
+   ======================================================================= */
+const LS_KEY = 'ibeer2026';
+const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+const freshStats = () => ({ date: todayStr(), cups: 0, ml: 0, cheers: 0, spill: 0, byDrink: {} });
+
+let stats = (() => {
+  try {
+    const s = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (!s || s.date !== todayStr()) return freshStats();
+    return Object.assign(freshStats(), s);
+  } catch (e) { return freshStats(); }
+})();
+const saveStats = () => { try { localStorage.setItem(LS_KEY, JSON.stringify(stats)); } catch (e) {} };
+
+const SOMM = {
+  chug: ['计时 {sec} 秒清空。这不叫品，这叫卸货。',
+         '{sec} 秒。你确定你尝到味道了吗，还是只是完成了一次液体转移。',
+         '喝得比我加载得还快。下一杯建议配一块表。',
+         '香气在第 {sec} 秒还没散开，你已经放下杯子了。可惜。'],
+  slow: ['{sec} 秒，喝得很有耐心。也可能只是忘了。',
+         '这个节奏，泡沫都比你先放弃。',
+         '慢是对的。虽然我怀疑你是在看手机而不是在喝。',
+         '{sec} 秒一杯，很养生。我们这行管这叫"不敢干杯"。'],
+  spill: ['洒了 {spill} ml。手抖，还是心虚？',
+          '地板今天也喝了 {spill} ml，它比你能喝。',
+          '{spill} ml 泼在了物理引擎之外。我替它谢谢你。',
+          '倒是倒出去了，就是方向不太对。'],
+  many:  ['今天第 {cups} 杯。屏幕不会醉，你会。',
+          '{cups} 杯下肚——虚拟的，但你的手腕是真的酸了。',
+          '第 {cups} 杯。这个曲线再往上，我要开始劝了。',
+          '{cups} 杯。2008 年那个 iBeer 也没被这么用过。'],
+  cheer: ['干杯 {cheers} 次。一个人举杯，情绪价值拉满。',
+          '碰了 {cheers} 次杯。对面那位是不存在的，但气氛是真的。',
+          '{cheers} 次干杯，一次都没碰到别人。这很 2026。'],
+  ok:    ['干净利落，泡沫收得也好。及格。',
+          '标准的一杯。挑不出毛病，也不值得写进笔记。',
+          '角度、节奏、余量都对。你可能真的练过。',
+          '这一杯没有故事。有时候没有故事就是最好的评价。'],
+  drink: {
+    beer:     ['泡沫层塌得比预期快，说明你晃得太狠。',
+               '啤酒是唯一一种越冷越诚实的饮料。这杯够冷。'],
+    boba:     ['珍珠还剩一半在杯底。这是奶茶最经典的悲剧。',
+               '你把珍珠全滚到了一个角落。物理没问题，礼仪有问题。'],
+    coldbrew: ['冰块还在浮，说明你喝得不够快，或者够克制。',
+               '美式喝完是不打嗝的。你刚才那声我就当没听见。'],
+    soda:     ['气泡在你喝完前就跑了一半。碳酸不等人。',
+               '零糖零脂零卡零酒精零快乐。但确实解渴。']
+  }
+};
+
+function verdictFor(sec) {
+  const pick = (a) => a[Math.random() * a.length | 0];
+  let pool;
+  if (spillAccum > drink.ml * 0.08) pool = SOMM.spill;
+  else if (sec < 4.5) pool = SOMM.chug;
+  else if (sec > 26) pool = SOMM.slow;
+  else if (stats.cups >= 4 && Math.random() < 0.6) pool = SOMM.many;
+  else if (stats.cheers >= 3 && Math.random() < 0.5) pool = SOMM.cheer;
+  else pool = SOMM.ok;
+  let line = pick(pool);
+  if (Math.random() < 0.42 && SOMM.drink[drink.id]) line += ' ' + pick(SOMM.drink[drink.id]);
+  return line
+    .replace('{sec}', sec.toFixed(1))
+    .replace('{spill}', Math.round(spillAccum))
+    .replace('{cups}', stats.cups)
+    .replace('{cheers}', stats.cheers);
+}
+
+/* =======================================================================
+   ⑫  状态机 & HUD
+   ======================================================================= */
+let toastT = 0;
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('on');
+  toastT = 1.7;
+}
+
+function pour(d) {
+  const changed = d !== drink;
+  drink = d;
+  if (changed) { layoutGlass(); buildBackdrop(); buildGlassFront(); }
+  vol = 0; foam = 0; clingY = topG + hG;
+  bubbles.length = 0; drops.length = 0;
+  wh.fill(0); wv.fill(0);
+  resetPearls(); resetIce();
+  sipAccum = 0; spillAccum = 0;
+  state = 'pour'; pourT = 0;
+  if (!haveSensor) { roll = 0; recline = 0; }
+  calibrate();
+  ensureAudio(); pourLoop(1);
+  $('scoreCard').classList.add('hide');
+  updateDock();
+  updateHUD(true);
+}
+
+function goEmpty() {
+  if (state === 'empty') return;
+  state = 'empty';
+  pourLoop(0);
+  const sec = Math.max(0.1, (performance.now() - drinkStart) / 1000);
+  stats.cups += 1;
+  stats.ml += Math.round(sipAccum);
+  stats.spill += Math.round(spillAccum);
+  stats.byDrink[drink.id] = (stats.byDrink[drink.id] || 0) + 1;
+  saveStats();
+
+  if (drink.done === 'burp') { sfxBurp(); vib([40, 60, 130]); }
+  else if (drink.done === 'slurpEnd') { sfxSlurpEnd(); vib([20, 40, 20, 40, 20]); }
+  else { sfxAhh(); vib([30, 50]); }
+
+  $('scoreTitle').textContent = spillAccum > drink.ml * 0.3 ? '洒了大半' : '空 了';
+  $('scoreSub').textContent = drink.name + ' · ' + sec.toFixed(1) + ' 秒';
+  $('sVerdict').textContent = verdictFor(sec);
+  showScore();
+}
+
+function showScore() {
+  $('sCups').innerHTML = stats.cups + '<small>杯</small>';
+  $('sMl').innerHTML = stats.ml + '<small>ml</small>';
+  $('sCheers').innerHTML = stats.cheers + '<small>次</small>';
+  $('sSpill').innerHTML = stats.spill + '<small>ml</small>';
+  $('scoreCard').classList.remove('hide');
+}
+
+function cheers() {
+  if (state === 'gate') return;
+  ensureAudio(); sfxClink(); vib([15, 30, 15]);
+  stats.cheers += 1; saveStats();
+  splash(rr(0.25, 0.75), halfW * 0.55, 0.4);
+  splash(rr(0.1, 0.9), -halfW * 0.4, 0.3);
+  foam = Math.min(1, foam + 0.42 * drink.foamGain);
+  for (let i = 0; i < 18; i++) {
+    if (randInLiquid(_pt)) bubbles.push({
+      x: _pt.x, y: _pt.y, r: rr(1, 3) * (halfW / 90), ph: rr(0, TAU), sp: rr(1, 2)
+    });
+  }
+  toast('干杯 🍻 × ' + stats.cheers);
+}
+
+let hudCache = '';
+function updateHUD(force) {
+  const frac = clamp(vol / drink.ml, 0, 1);
+  const key = drink.id + '|' + Math.round(vol) + '|' + state;
+  if (!force && key === hudCache) return;
+  hudCache = key;
+  $('drinkName').textContent = drink.name;
+  $('mlText').textContent = Math.round(vol) + ' / ' + drink.ml + ' ml';
+  $('barFill').style.width = (frac * 100).toFixed(1) + '%';
+  $('barFill').style.background = 'linear-gradient(90deg,' + drink.lo + ',' + drink.hi + ')';
+  const hint = $('hint');
+  if (state === 'pour') hint.textContent = '正在倒…';
+  else if (state === 'empty') hint.textContent = '空了 · 换一种，或者再来一杯';
+  else if (haveSensor) hint.textContent = '把手机后仰，杯口朝自己 · 摇一摇干杯';
+  else hint.textContent = '向下拖 = 杯口转向自己 · 空格干杯';
+}
+
+function updateDock() {
+  document.querySelectorAll('.pill').forEach((p) => {
+    p.classList.toggle('on', p.dataset.id === drink.id);
+    p.style.background = p.dataset.id === drink.id
+      ? 'linear-gradient(180deg,' + hexA(drink.accent, 0.30) + ',' + hexA(drink.accent, 0.07) + ')'
+      : '';
+  });
+}
+
+const _rgb = (hex) => {
+  const h = hex.replace('#', '');
+  const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+function mix(a, b, t) {
+  const A = _rgb(a), B = _rgb(b);
+  return 'rgb(' + Math.round(lerp(A[0], B[0], t)) + ',' +
+                  Math.round(lerp(A[1], B[1], t)) + ',' +
+                  Math.round(lerp(A[2], B[2], t)) + ')';
+}
+
+function hexA(hex, a) {
+  const h = hex.replace('#', '');
+  const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+
+function buildDock() {
+  const dock = $('dock');
+  dock.innerHTML = '';
+  DRINKS.forEach((d) => {
+    const el = document.createElement('div');
+    el.className = 'pill glassy';
+    el.dataset.id = d.id;
+    el.innerHTML = '<span class="emo">' + d.emo + '</span><span class="lb">' + d.name + '</span>';
+    el.addEventListener('click', () => {
+      ensureAudio();
+      if (d === drink && state === 'play' && vol > drink.ml * 0.98) return;
+      pour(d);
+    });
+    dock.appendChild(el);
+  });
+}
+
+/* =======================================================================
+   ⑬  布局 / 主循环 / 启动
+   ======================================================================= */
+function layoutGlass() {
+  const availH = (H - 24) * 0.86, availW = W * 0.78;   // 底部固定留给提示行
+  let h = availH, w = h / drink.aspect;
+  if (w > availW) { w = availW; h = w * drink.aspect; }
+  halfW = w / 2;
+  hG = h;
+  cxG = W / 2;
+  topG = (H - h) / 2 - H * 0.022;
+  const g = buildGlass(drink.glass, cxG, topG, halfW, hG);
+  GP = g.p; GN = g.n;
+  glassArea = polyArea(GP, GN);
+  rimR = halfW * hwAt(PROFILES[drink.glass], 0);
+  clingY = topG + hG;
+}
+
+function resize() {
+  const st = $('stage');
+  W = Math.max(80, st.clientWidth);
+  H = Math.max(120, st.clientHeight);
+  cv.width = Math.max(1, W * DPR | 0);
+  cv.height = Math.max(1, H * DPR | 0);
+  makeNoise();
+  layoutGlass();
+  buildBackdrop();
+  buildGlassFront();
+  resetPearls(); resetIce();
+}
+
+function computeRanges() {
+  uLo = Infinity; uHi = -Infinity; projHi = -Infinity;
+  for (let i = 0; i < GN; i++) {
+    const x = GP[i * 2], y = GP[i * 2 + 1];
+    const u = -x * gy + y * gx, p = x * gx + y * gy;
+    if (u < uLo) uLo = u;
+    if (u > uHi) uHi = u;
+    if (p > projHi) projHi = p;
+  }
+}
+
+function solveAndClip() {
+  level = solveLevel(GP, GN, gx, gy, glassArea * FILL * clamp(vol / drink.ml, 0, 1));
+  clipBelow(GP, GN, gx, gy, level);
+  surfaceRange();
+}
+
+let last = 0, raf = 0;
+function frame(ts) {
+  raf = requestAnimationFrame(frame);
+  const now = ts / 1000;
+  let dt = now - last; last = now;
+  if (!(dt > 0)) dt = 1 / 60;
+  dt = Math.min(dt, 0.05);
+
+  tiltToGravity();
+  smoothGravity(dt);
+  computeRanges();
+
+  solveAndClip();                              // 供 stepFlow 判断杯口是否淹没
+  if (state === 'pour') pourT += dt;
+  stepFlow(dt);
+  solveAndClip();                              // 用喝掉之后的体积渲染
+
+  stepWaves(clamp(Math.round(dt * 120), 1, 4));
+  stepBubbles(dt);
+  stepPearls(dt);
+  stepIce(dt);
+  stepDrops(dt);
+
+  // 泡沫：自然消退 + 晃动补充
+  let energy = 0;
+  for (let i = 0; i < NW; i++) energy += wv[i] * wv[i];
+  energy = Math.sqrt(energy / NW) / (halfW || 1);
+  // 泡沫衰减到各自的"静置层"而不是 0——啤酒的酒头能站住，气泡水的转眼就没
+  const rest = drink.foamRest;
+  foam = clamp(rest + (foam - rest) * Math.pow(0.5, dt * drink.foamDecay * 2)
+               + energy * dt * 3.0 * drink.foamGain, 0, 1);
+
+  // 持续音的增益跟着流量走
+  if (AC && pourG) pourG.gain.value = state === 'pour' ? 0.10 : 0.0001;
+  if (drink.fizz > 0.02 && vol > 0 && state !== 'gate') {
+    fizzLoop(1);
+    if (fizzG) fizzG.gain.value = 0.016 * drink.fizz * (vol / drink.ml);
+  } else fizzLoop(0);
+
+  if (shakeCd > 0) shakeCd -= dt;
+  if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').classList.remove('on'); }
+
+  draw(now);
+  updateHUD(false);
+}
+
+/* ---- 首屏：iOS 需要在同一个用户手势里申请传感器权限 ---- */
+function bindSensors() {
+  window.addEventListener('deviceorientation', onOrient);
+  window.addEventListener('devicemotion', onMotion);
+}
+
+let wakeLock = null;
+async function requestWake() {
+  try { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+}
+
+async function startUp(useSensor) {
+  ensureAudio();                                // 必须同步调用，别丢掉手势
+  $('gate').classList.add('hide');
+  if (useSensor) {
+    const DOE = window.DeviceOrientationEvent;
+    if (DOE && typeof DOE.requestPermission === 'function') {
+      try {
+        const r = await DOE.requestPermission();
+        if (r === 'granted') bindSensors();
+        else toast('没拿到陀螺仪权限 · 用手指拖');
+      } catch (e) { toast('陀螺仪不可用 · 用手指拖'); }
+      try {
+        const DME = window.DeviceMotionEvent;
+        if (DME && typeof DME.requestPermission === 'function') await DME.requestPermission();
+      } catch (e) {}
+    } else if (DOE) {
+      bindSensors();
+    } else {
+      toast('这台设备没有陀螺仪 · 用手指拖');
+    }
+  }
+  requestWake();
+  pour(drink);
+}
+
+/* ---- PWA：运行时生成 manifest 与图标，保持单文件 ---- */
+function makeIcon(size) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const x = c.getContext('2d');
+  const s = size / 180;
+  x.fillStyle = '#0a0b12'; x.fillRect(0, 0, size, size);
+  x.save(); x.scale(s, s);
+  x.beginPath();
+  x.moveTo(48, 34); x.lineTo(126, 34); x.lineTo(118, 150); x.lineTo(56, 150); x.closePath();
+  x.fillStyle = 'rgba(255,255,255,.10)'; x.fill();
+  x.save(); x.clip();
+  const g = x.createLinearGradient(0, 60, 0, 150);
+  g.addColorStop(0, '#ffd970'); g.addColorStop(1, '#b8630a');
+  x.fillStyle = g; x.fillRect(40, 62, 100, 100);
+  x.fillStyle = '#fdf6e3'; x.fillRect(40, 34, 100, 30);
+  x.restore();
+  x.beginPath();
+  x.moveTo(48, 34); x.lineTo(126, 34); x.lineTo(118, 150); x.lineTo(56, 150); x.closePath();
+  x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 5; x.stroke();
+  x.restore();
+  return c.toDataURL('image/png');
+}
+
+function installPWA() {
+  try {
+    const icon = makeIcon(180);
+    const add = (rel, href, type) => {
+      const l = document.createElement('link');
+      l.rel = rel; l.href = href;
+      if (type) l.type = type;
+      document.head.appendChild(l);
+    };
+    add('apple-touch-icon', icon);
+    add('icon', icon, 'image/png');
+    const m = {
+      name: '一杯 · iBeer 2026', short_name: '一杯',
+      display: 'standalone', orientation: 'portrait',
+      background_color: '#07080f', theme_color: '#0a0b12',
+      start_url: location.href.split('#')[0],
+      icons: [{ src: icon, sizes: '180x180', type: 'image/png', purpose: 'any' }]
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(m)], { type: 'application/manifest+json' }));
+    add('manifest', url);
+  } catch (e) {}
+}
+
+/* ---- 启动 ---- */
+function boot() {
+  buildDock();
+  resize();
+  updateDock();
+  updateHUD(true);
+  bindPointer();
+  installPWA();
+
+  $('btnStart').addEventListener('click', () => startUp(true));
+  $('btnNoSensor').addEventListener('click', () => startUp(false));
+  $('btnAgain').addEventListener('click', () => pour(drink));
+  $('btnClose').addEventListener('click', () => $('scoreCard').classList.add('hide'));
+  $('btnScore').addEventListener('click', () => { ensureAudio(); showScore(); });
+  $('btnSound').addEventListener('click', () => {
+    muted = !muted;
+    $('btnSound').textContent = muted ? '🔇' : '🔊';
+    $('btnSound').classList.toggle('off', muted);
+    if (master) master.gain.value = muted ? 0 : 0.8;
+  });
+
+  let rt = 0;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(resize, 140); });
+  window.addEventListener('orientationchange', () => setTimeout(resize, 260));
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      cancelAnimationFrame(raf); raf = 0;
+      pourLoop(0); fizzLoop(0);
+      if (AC) AC.suspend();
+      if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
+    } else if (!raf) {
+      last = performance.now() / 1000;
+      raf = requestAnimationFrame(frame);
+      if (AC) AC.resume();
+      requestWake();
+    }
+  });
+
+  raf = requestAnimationFrame((t) => { last = t / 1000; frame(t); });
+}
+
+/* 调试 / 自动化钩子 */
+window.__ibeer = {
+  setTilt(b, g) { haveSensor = true; beta = b; gamma = g; },
+  setPose(rollDeg, reclineDeg) { haveSensor = false; roll = rollDeg * D2R; recline = reclineDeg * D2R; },
+  snapTilt(b, g) { haveSensor = true; beta = b; gamma = g; tiltToGravity(); gx = tgx; gy = tgy; },
+  setVol(f) { vol = clamp(f, 0, 1) * drink.ml; state = 'play'; drinkStart = performance.now(); },
+  setDrink(id) { const d = DRINKS.find(x => x.id === id); if (d) pour(d); },
+  skipGate() { $('gate').classList.add('hide'); state = 'play'; vol = drink.ml;
+               foam = Math.min(1, drink.foamRest + 0.28); drinkStart = performance.now(); },
+  cheers, pour: () => pour(drink),
+  state: () => ({ id: drink.id, vol, volFrac: vol / drink.ml, level, foam, state,
+                  g: [gx, gy], gzOut, gzN, betaRef, beta, gamma, haveSensor,
+                  roll: roll / D2R, recline: recline / D2R, subN, cutStart,
+                  GN, bubbles: bubbles.length, pearls: pearls.length, ice: ices.length,
+                  glassArea, W, H, halfW, hG })
+};
+
+boot();
+</script>
+</body>
+</html>
