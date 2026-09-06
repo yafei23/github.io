@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minolta XL-401 × iPhone 16 Pro</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTIiIGZpbGw9IiMxNDE3MWMiLz48Y2lyY2xlIGN4PSIzOCIgY3k9IjMwIiByPSIxNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZDhhMjRhIiBzdHJva2Utd2lkdGg9IjQiLz48Y2lyY2xlIGN4PSIzOCIgY3k9IjMwIiByPSI2IiBmaWxsPSIjZDhhMjRhIi8+PHJlY3QgeD0iOCIgeT0iMTYiIHdpZHRoPSIxNCIgaGVpZ2h0PSIyOCIgcng9IjMiIGZpbGw9IiMzYTQwNDgiLz48L3N2Zz4=">
+<meta name="description" content="A 3D-printable Super 8 camera body that takes an iPhone 16 Pro.">
+<style>
+  :root{
+    --bg:#0d0f12; --panel:#14171c; --line:#242a33; --ink:#e7ecf3;
+    --dim:#8b95a5; --accent:#d8a24a; --ok:#5fbf7f; --warn:#d1685a;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans);
+       -webkit-font-smoothing:antialiased}
+  a{color:var(--accent)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+
+  header{border-bottom:1px solid var(--line);padding:44px 0 30px;margin-bottom:0}
+  .eyebrow{font:11px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;
+           color:var(--accent);margin-bottom:16px}
+  h1{margin:0;font-size:clamp(28px,5vw,46px);line-height:1.08;letter-spacing:-.02em;font-weight:600}
+  h1 .x{color:var(--dim);font-weight:300}
+  .sub{margin:16px 0 0;max-width:62ch;color:var(--dim);font-size:16px}
+  .specline{margin-top:22px;font:12.5px/1.7 var(--mono);color:var(--dim)}
+  .specline b{color:var(--ink);font-weight:500}
+
+  /* viewer */
+  .stage{position:relative;height:min(70vh,620px);border:1px solid var(--line);
+         border-radius:10px;overflow:hidden;background:
+         radial-gradient(115% 85% at 50% 8%,#2b323c 0%,#161a20 62%,#101318 100%);margin:26px 0 0}
+  canvas{display:block;width:100%;height:100%}
+  .hud{position:absolute;left:0;right:0;bottom:0;padding:14px 16px;
+       background:linear-gradient(to top,rgba(13,15,18,.94),rgba(13,15,18,0));
+       display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+  .ctl{display:flex;align-items:center;gap:9px;font:12px/1 var(--mono);color:var(--dim)}
+  .ctl label{cursor:pointer;user-select:none}
+  input[type=range]{width:150px;accent-color:var(--accent)}
+  input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+  .loading{position:absolute;inset:0;display:grid;place-items:center;
+           font:12px/1 var(--mono);color:var(--dim);letter-spacing:.1em}
+  .hint{position:absolute;top:14px;right:16px;font:11px/1 var(--mono);color:#5b6472}
+
+  section{padding:52px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase;
+     color:var(--accent);margin:0 0 22px;font-weight:500}
+  h3{font-size:17px;margin:0 0 10px;font-weight:600}
+  p{margin:0 0 14px;max-width:70ch;color:#c3ccd8}
+  .lead{color:var(--ink)}
+
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:34px}
+  .note{border-left:2px solid var(--line);padding:2px 0 2px 18px}
+  .note h3{font-size:15px}
+  .note p{font-size:14.5px;color:var(--dim);margin-bottom:0}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{font:11px/1 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--dim);
+     font-weight:500}
+  td.num{font-family:var(--mono);font-size:13px;color:var(--dim)}
+  td.name{font-family:var(--mono);font-size:13px}
+  tr.on td{background:rgba(216,162,74,.07)}
+  .yes{color:var(--ok)} .no{color:var(--warn)}
+  .dl{color:var(--accent);text-decoration:none;font-family:var(--mono);font-size:12px}
+  .dl:hover{text-decoration:underline}
+
+  .shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  figure{margin:0}
+  figure img{width:100%;border:1px solid var(--line);border-radius:8px;display:block;background:#111}
+  figcaption{font:11.5px/1.5 var(--mono);color:var(--dim);margin-top:8px}
+
+  .modes{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+  .modes td,.modes th{white-space:nowrap}
+
+  footer{padding:34px 0 60px;color:var(--dim);font-size:13px}
+  code{font-family:var(--mono);font-size:.9em;background:#191d24;padding:2px 6px;
+       border-radius:4px;color:#cbd5e1}
+  pre{background:#111419;border:1px solid var(--line);border-radius:8px;padding:14px 16px;
+      overflow-x:auto;font-family:var(--mono);font-size:12.5px;color:#cbd5e1}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Printable prototype</div>
+    <h1>Minolta XL-401 <span class="x">×</span> iPhone&nbsp;16&nbsp;Pro</h1>
+    <p class="sub">A Super 8 camera body whose film cartridge chamber has been replaced
+      by a cradle for a phone. The rear cameras look forward through the lens board;
+      the screen faces back down a finder tunnel.</p>
+    <div class="specline"><!--specline-->
+      <b>227</b> × <b>232</b> × <b>94</b> mm &nbsp;·&nbsp;
+      <b>13</b> printed parts &nbsp;·&nbsp;
+      <b>~514 g</b> PLA &nbsp;·&nbsp;
+      fits a <b>256³</b> bed
+    <!--/specline--></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div class="loading" id="loading">LOADING MODEL…</div>
+    <div class="hint">drag to orbit · scroll to zoom</div>
+    <div class="hud">
+      <div class="ctl"><label for="ex">EXPLODE</label>
+        <input type="range" id="ex" min="0" max="100" value="0"></div>
+      <div class="ctl"><input type="checkbox" id="barrel" checked>
+        <label for="barrel">LENS BARREL</label></div>
+      <div class="ctl"><input type="checkbox" id="phone" checked>
+        <label for="phone">PHONE</label></div>
+      <div class="ctl"><input type="checkbox" id="spin">
+        <label for="spin">SPIN</label></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<section>
+  <h2>Why it looks like this</h2>
+  <div class="cols">
+    <div class="note">
+      <h3>Not a scale replica</h3>
+      <p>The real XL-400 is 48 × 103 × 184 mm. An iPhone 16 Pro is 71.5 mm wide — half
+        again as wide as that whole camera — and 149.6 mm tall. Standing one upright
+        inside a Super 8 body forces a bigger, taller camera. This is an homage in the
+        XL-401's idiom, not a copy of it.</p>
+    </div>
+    <div class="note">
+      <h3>The lens is 10.9 mm off centre</h3>
+      <p>Deliberately. The iPhone's camera plateau sits in the corner of its back, so
+        the optical axis lands off-centre however you place the phone. Centring it
+        would need a 100 mm-wide body. The photocell window on the other side balances
+        it, the way a real meter cell does.</p>
+    </div>
+    <div class="note">
+      <h3>It shoots vertical by default</h3>
+      <p>The phone is physically portrait, so iOS records portrait — fine for Reels or
+        Shorts. For 16:9, use a camera app that locks orientation independently of the
+        device; Blackmagic Camera and Filmic Pro both do.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>The two lens modes</h2>
+  <p class="lead">A Super 8 zoom barrel is a tube in front of the lens, and a tube is
+    exactly what vignettes a phone camera. So the barrel twists off.</p>
+  <div class="scroll">
+  <table class="modes">
+    <thead><tr><th>Lens</th><th>Needs</th><th>Barrel fitted</th><th>Barrel removed</th></tr></thead>
+    <tbody><!--optics-->
+      <tr><td>Ultra-wide 0.5×</td><td class="num">60.0°</td>
+          <td class="num no">12.0° vignettes</td><td class="num yes">68.6° clear</td></tr>
+      <tr><td>Main 1×</td><td class="num">36.5°</td>
+          <td class="num no">12.0° vignettes</td><td class="num yes">66.5° clear</td></tr>
+      <tr><td>Tele 5×</td><td class="num">11.5°</td>
+          <td class="num yes">12.0° clear</td><td class="num yes">64.8° clear</td></tr>
+    <!--/optics--></tbody>
+  </table>
+  </div>
+  <p style="margin-top:16px">Measured, not asserted: the generator ray-casts the
+    assembled geometry from each lens position and reports the largest cone that
+    reaches open air. Barrel on is for the shelf, and for 5× shots. Barrel off is for
+    shooting.</p>
+</section>
+
+<section>
+  <h2>Parts</h2>
+  <div class="scroll">
+  <table id="parts">
+    <thead><tr><th>Part</th><th>Print size</th><th>PLA</th><th>Closed</th>
+      <th>Overhang</th><th>Notes</th><th>STL</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  </div>
+  <p style="margin-top:18px"><b>Print <code>13_phone_gauge</code> first.</b> It is a
+    dummy iPhone 16 Pro at cased dimensions and takes about 40 minutes — check it drops
+    into the cavity before committing 20 hours to the main shell.</p>
+  <p>Everything else: 0.4 mm nozzle, 0.2 mm layers, 4 perimeters, 20 % gyroid,
+    <b>no supports</b> in the orientations above. The shell prints outer-face-down with
+    the seam upward on purpose, so every pocket, bore and boss opens toward the sky.</p>
+  <p><a href="3mf/xl401_all_parts.3mf">Download all parts as one 3MF</a> ·
+     <a href="xl401.blend">Blender source</a> ·
+     <a href="build_xl401.py">Generator script</a> ·
+     <a href="VALIDATION.md">Validation report</a></p>
+</section>
+
+<section>
+  <h2>Renders</h2>
+  <div class="shots">
+    <figure><img src="renders/hero_front.png" alt="Front three-quarter view">
+      <figcaption>Display mode — barrel fitted.</figcaption></figure>
+    <figure><img src="renders/hero_rear.png" alt="Rear three-quarter view">
+      <figcaption>The finder tunnel frames the middle 90 % × 84 % of the screen.</figcaption></figure>
+    <figure><img src="renders/shooting.png" alt="Shooting mode, barrel removed">
+      <figcaption>Shooting mode — barrel off, all three lenses clear.</figcaption></figure>
+    <figure><img src="renders/profile.png" alt="Profile view">
+      <figcaption>Profile. The 5.6° front rake is clamped so it can't cut into the cavity.</figcaption></figure>
+    <figure style="grid-column:1/-1"><img src="renders/exploded.png" alt="Exploded view">
+      <figcaption>Exploded. The grip's T-tenon is captured when the service panel closes —
+        no grip fasteners.</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <h2>Build it</h2>
+  <pre>pip install bpy==4.5.3 trimesh manifold3d rtree numpy
+python3 build_xl401.py export          # STLs, 3MF, GLB, .blend, VALIDATION.md
+python3 build_xl401.py render hero_front</pre>
+  <p>Every dimension lives in one <code>PARAMS</code> block. Change a number, re-run,
+    get a new set of STLs. Geometry is built from primitives and CSG; the kernel is
+    <code>manifold3d</code> rather than Blender's boolean modifier, which segfaults
+    nondeterministically on this model in a headless build.</p>
+  <p>Hardware: 6 × M3 × 25, 4 × M3 × 10 (door), 2 × M3 × 10 (lens board),
+    4 × Ø3 × 18 dowel pins, 1 × ¼"-20 hex nut.</p>
+</section>
+
+<footer class="wrap" style="padding-left:0;padding-right:0">
+  CC0. A homage to a Minolta product — Minolta and Apple own their respective marks,
+  and nothing here is affiliated with or endorsed by either.
+</footer>
+
+</div>
+
+<!-- three.js r169 vendored locally: no CDN dependency, works offline and
+     cannot drift. Source and licence in vendor/three/. -->
+<script type="importmap">
+{"imports":{
+  "three":"./vendor/three/build/three.module.min.js",
+  "three/addons/":"./vendor/three/addons/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const PARTS = [ // parts-data-start
+  ['01_body_main', '170 × 154 × 77', '206 g', '22 %', 'Outer face down, seam up. Longest print.'],
+  ['02_body_panel', '168 × 154 × 17', '112 g', '41 %', 'Service panel. Flat and quick.'],
+  ['03_grip', '46 × 72 × 78', '84 g', '15 %', 'Stands on its base, tenon up.'],
+  ['04_lens_board', '83 × 75 × 6', '8 g', '29 %', 'Aperture face up.'],
+  ['05_lens_barrel', '67 × 67 × 56', '14 g', '7 %', 'Mouth down, concentric.'],
+  ['06_lens_ring', '66 × 66 × 7', '3 g', '25 %', 'Contrast colour.'],
+  ['07_phone_door', '169 × 31 × 10', '11 g', '37 %', 'Flange face down.'],
+  ['08_eyecup', '94 × 155 × 24', '14 g', '6 %', 'TPU 95A if you have it.'],
+  ['09_trigger', '15 × 14 × 22', '1 g', '18 %', 'Tiny - print alongside something.'],
+  ['10_shim_0p8', '74 × 1 × 152', '1 g', '1 %', 'Slim case (~2.5 mm).'],
+  ['11_shim_1p6', '74 × 2 × 152', '2 g', '2 %', 'Thin case (~1.5 mm).'],
+  ['12_shim_3p2', '74 × 3 × 152', '5 g', '4 %', 'Bare phone.'],
+  ['13_phone_gauge', '74 × 152 × 15', '52 g', '41 %', 'Fit gauge. Print this first.'],
+// parts-data-end
+];
+const tb = document.querySelector('#parts tbody');
+for (const [n, sz, g, oh, note] of PARTS) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td class="name">${n}</td><td class="num">${sz}</td>` +
+    `<td class="num">${g}</td><td class="num yes">yes</td><td class="num">${oh}</td>` +
+    `<td style="white-space:normal;color:#8b95a5">${note}</td>` +
+    `<td><a class="dl" href="stl/${n}.stl" download>download</a></td>`;
+  tr.dataset.part = n;
+  tb.appendChild(tr);
+}
+
+// Explode offsets, in glTF space: Blender (x,y,z) maps to (x, z, -y).
+const EXPLODE = {
+  '05_lens_barrel': [0, 0, -120], '06_lens_ring': [0, 0, -165],
+  '04_lens_board':  [0, 0, -55],  '07_phone_door': [-105, 0, 0],
+  '08_eyecup':      [0, 0, 95],   '03_grip': [0, -110, 0],
+  '09_trigger':     [0, -110, -30], '12_shim_3p2': [0, 0, 55],
+  '02_body_panel':  [85, 0, 0],   'phone_fitted': [0, 0, 20],
+};
+
+const canvas = document.getElementById('cv');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1b2027);   // canvas is opaque, so set it here
+const camera = new THREE.PerspectiveCamera(38, 1, 1, 6000);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+
+scene.add(new THREE.HemisphereLight(0xb9cbe4, 0x2a2f36, 2.0));
+const key = new THREE.DirectionalLight(0xfff3e0, 3.1); key.position.set(340, 420, -300);
+const fill = new THREE.DirectionalLight(0x9db4d8, 1.1); fill.position.set(-420, 160, 180);
+const rim  = new THREE.DirectionalLight(0xbcd2f0, 2.0); rim.position.set(-140, 260, 420);
+scene.add(key, fill, rim);
+
+const root = new THREE.Group();
+scene.add(root);
+const home = new Map();
+let phoneObj = null, barrelObjs = [];
+
+function resize(){
+  const r = canvas.getBoundingClientRect();
+  renderer.setSize(r.width, r.height, false);
+  camera.aspect = r.width / Math.max(1, r.height);
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize);
+
+new GLTFLoader().load('preview.glb', gltf => {
+  root.add(gltf.scene);
+  gltf.scene.traverse(o => {
+    if (!o.isMesh) return;
+    o.material = new THREE.MeshStandardMaterial({
+      color: /ring|trigger/.test(o.name) ? 0xcfd4db
+           : /phone/.test(o.name)        ? 0x4a6ea8
+           : /eyecup/.test(o.name)       ? 0x24272c : 0x3a4048,
+      roughness: /ring|trigger/.test(o.name) ? 0.28 : 0.58,
+      metalness: /ring|trigger/.test(o.name) ? 0.85 : 0.06,
+    });
+  });
+  for (const c of gltf.scene.children) home.set(c, c.position.clone());
+  phoneObj = gltf.scene.getObjectByName('phone_fitted');
+  barrelObjs = ['05_lens_barrel','06_lens_ring']
+    .map(n => gltf.scene.getObjectByName(n)).filter(Boolean);
+
+  const box = new THREE.Box3().setFromObject(gltf.scene);
+  const ctr = box.getCenter(new THREE.Vector3());
+  const rad = box.getSize(new THREE.Vector3()).length() / 2;
+  root.position.sub(ctr);
+  controls.target.set(0, 0, 0);
+  const dist = rad / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.92;
+  camera.position.set(dist * 0.60, dist * 0.40, -dist * 0.68);
+  camera.near = dist / 100; camera.far = dist * 12;
+  controls.minDistance = rad * 0.7; controls.maxDistance = dist * 3;
+  camera.updateProjectionMatrix();
+  document.getElementById('loading').remove();
+  resize();
+}, undefined, () => {
+  document.getElementById('loading').textContent =
+    'Could not load preview.glb — the renders and STLs below still work.';
+});
+
+const exSlider = document.getElementById('ex');
+function applyExplode(){
+  const t = exSlider.value / 100;
+  for (const [obj, base] of home) {
+    const d = EXPLODE[obj.name] || [0, 0, 0];
+    obj.position.set(base.x + d[0]*t, base.y + d[1]*t, base.z + d[2]*t);
+  }
+}
+exSlider.addEventListener('input', applyExplode);
+document.getElementById('phone').addEventListener('change', e => {
+  if (phoneObj) phoneObj.visible = e.target.checked;
+});
+document.getElementById('barrel').addEventListener('change', e => {
+  barrelObjs.forEach(o => o.visible = e.target.checked);
+});
+const spin = document.getElementById('spin');
+
+let last = performance.now();
+(function loop(now){
+  requestAnimationFrame(loop);
+  const dt = (now - last) / 1000; last = now;
+  if (spin.checked) root.rotation.y += dt * 0.32;
+  controls.update();
+  renderer.render(scene, camera);
+})(last);
+
+resize();
+
+// Highlight the matching table row when a part is hovered in the list.
+tb.addEventListener('mouseover', e => {
+  const tr = e.target.closest('tr'); if (!tr) return;
+  [...tb.children].forEach(r => r.classList.toggle('on', r === tr));
+});
+tb.addEventListener('mouseleave', () => [...tb.children].forEach(r => r.classList.remove('on')));
+</script>
+</body>
+</html>
