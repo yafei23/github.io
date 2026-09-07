@@ -1,0 +1,894 @@
+<title>楼顶庭院补光图纸</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap">
+<style>
+:root{
+  --paper:#EDF0F2; --card:#FFFFFF; --card-2:#F6F8F9;
+  --ink:#141A20; --ink-2:#3D4A56; --ink-3:#6B7986;
+  --line:#D2D9DE; --line-2:#B6C0C8;
+  --amber:#D98A24; --amber-ink:#9E5C0B; --amber-soft:#FAEAD1;
+  --slate:#4D6377; --slate-soft:#E2E8ED;
+  --warn:#B23F26; --warn-ink:#93331E; --warn-soft:#F8E3DD;
+  --leaf:#37795A; --leaf-soft:#DFEDE5;
+  --sans:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+  --serif:'Noto Serif SC',Georgia,'Songti SC',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1216; --card:#161B21; --card-2:#1B2128;
+    --ink:#E7EBEF; --ink-2:#AFBBC5; --ink-3:#7E8D9A;
+    --line:#262F38; --line-2:#38434E;
+    --amber:#EFAE55; --amber-ink:#F3BE76; --amber-soft:#2C2114;
+    --slate:#8CA4B6; --slate-soft:#1E262E;
+    --warn:#E07E64; --warn-ink:#EC9077; --warn-soft:#33201A;
+    --leaf:#6FB48D; --leaf-soft:#17261F;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1216; --card:#161B21; --card-2:#1B2128;
+  --ink:#E7EBEF; --ink-2:#AFBBC5; --ink-3:#7E8D9A;
+  --line:#262F38; --line-2:#38434E;
+  --amber:#EFAE55; --amber-ink:#F3BE76; --amber-soft:#2C2114;
+  --slate:#8CA4B6; --slate-soft:#1E262E;
+  --warn:#E07E64; --warn-ink:#EC9077; --warn-soft:#33201A;
+  --leaf:#6FB48D; --leaf-soft:#17261F;
+}
+
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.75;
+  -webkit-font-smoothing:antialiased;font-size:15px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 22px 90px}
+.prose{max-width:38em}
+h1,h2,h3{font-family:var(--serif);text-wrap:balance;line-height:1.35}
+p{margin:0}
+a{color:var(--amber-ink)}
+
+/* ---------- masthead ---------- */
+.mast{padding:56px 0 30px;border-bottom:2px solid var(--ink)}
+.mast .kicker{font-family:var(--mono);font-size:.74rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:18px}
+.mast h1{font-size:clamp(2rem,5.2vw,3rem);font-weight:700;letter-spacing:.02em;margin-bottom:14px}
+.mast .lede{font-size:1.03rem;color:var(--ink-2);max-width:34em}
+.specs{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:1px;background:var(--line);border:1px solid var(--line);margin-top:34px}
+.spec{background:var(--card);padding:13px 15px}
+.spec dt{font-size:.72rem;letter-spacing:.1em;color:var(--ink-3);font-family:var(--mono);
+  text-transform:uppercase;margin-bottom:5px}
+.spec dd{margin:0;font-family:var(--mono);font-size:1.02rem;font-weight:500;color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.spec dd small{font-family:var(--sans);font-size:.78rem;color:var(--ink-3);font-weight:400}
+
+/* ---------- sheets ---------- */
+section{padding-top:52px}
+.sheet-no{font-family:var(--mono);font-size:.76rem;letter-spacing:.14em;color:var(--amber-ink);
+  font-weight:500}
+.sheet-hd{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;
+  border-top:1px solid var(--line-2);padding-top:12px;margin-bottom:22px}
+.sheet-hd h2{font-size:1.42rem;font-weight:600}
+.sheet-hd .note{margin-left:auto;font-size:.8rem;color:var(--ink-3)}
+h3{font-size:1.02rem;font-weight:600;margin:30px 0 10px}
+
+/* ---------- figures ---------- */
+figure{margin:26px 0 0}
+.plate{background:var(--card);border:1px solid var(--line-2);padding:14px;overflow-x:auto}
+.plate svg{display:block;width:100%;min-width:640px;height:auto}
+.plate.wide svg{min-width:860px}
+figcaption{margin-top:11px;font-size:.83rem;color:var(--ink-3);max-width:46em}
+figcaption b{color:var(--ink-2);font-weight:500}
+
+/* ---------- tag ---------- */
+.tag{display:inline-flex;align-items:center;justify-content:center;
+  width:21px;height:21px;border-radius:50%;background:var(--amber-soft);
+  color:var(--amber-ink);border:1px solid var(--amber);font-family:var(--mono);
+  font-size:.72rem;font-weight:500;line-height:1;flex:none;vertical-align:-4px}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin-top:18px;border:1px solid var(--line-2);background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:.87rem}
+th{text-align:left;font-family:var(--mono);font-weight:500;font-size:.72rem;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-3);padding:11px 13px;
+  border-bottom:1px solid var(--line-2);background:var(--card-2);white-space:nowrap}
+td{padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
+tbody tr:last-child td{border-bottom:0}
+td:first-child{width:34px}
+td strong{color:var(--ink);font-weight:500}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
+tfoot td{background:var(--card-2);font-weight:500;color:var(--ink);border-top:1px solid var(--line-2)}
+
+/* ---------- boxes ---------- */
+.calc{margin-top:22px;background:var(--card);border:1px solid var(--line-2);
+  border-left:3px solid var(--amber);padding:18px 20px}
+.calc .eq{font-family:var(--mono);font-size:1.05rem;color:var(--ink);margin-bottom:14px;
+  font-variant-numeric:tabular-nums}
+.calc ul{margin:0;padding-left:0;list-style:none;font-size:.86rem;color:var(--ink-2);
+  display:grid;gap:5px}
+.calc ul li{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.calc .out{margin-top:14px;padding-top:13px;border-top:1px dashed var(--line-2);
+  font-family:var(--mono);font-size:.94rem;color:var(--amber-ink)}
+
+.danger{margin-top:24px;background:var(--warn-soft);border-left:3px solid var(--warn);
+  padding:16px 20px}
+.danger h3{margin:0 0 9px;font-size:.95rem;color:var(--warn-ink)}
+.danger ol{margin:0;padding-left:1.15em;font-size:.87rem;color:var(--ink-2);display:grid;gap:6px}
+.danger ol::marker{color:var(--warn)}
+
+/* ---------- principle grid ---------- */
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));
+  gap:1px;background:var(--line);border:1px solid var(--line);margin-top:22px}
+.rule{background:var(--card);padding:17px 18px}
+.rule .rn{font-family:var(--mono);font-size:.72rem;color:var(--amber-ink);letter-spacing:.1em;
+  margin-bottom:7px}
+.rule h4{font-family:var(--serif);font-size:1rem;font-weight:600;margin:0 0 7px}
+.rule p{font-size:.855rem;color:var(--ink-2)}
+.rule .v{font-family:var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* ---------- scenes ---------- */
+.scenes{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:22px}
+.scene{background:var(--card);border:1px solid var(--line-2);padding:15px 17px}
+.scene .sn{font-family:var(--serif);font-size:1.02rem;font-weight:600;margin-bottom:4px}
+.scene .sw{font-family:var(--mono);font-size:.76rem;color:var(--ink-3);margin-bottom:10px;
+  font-variant-numeric:tabular-nums}
+.scene .st{display:flex;gap:5px;flex-wrap:wrap}
+
+/* ---------- steps ---------- */
+.steps{margin-top:22px;display:grid;gap:1px;background:var(--line);border:1px solid var(--line)}
+.step{background:var(--card);padding:14px 18px;display:grid;
+  grid-template-columns:44px 1fr auto;gap:16px;align-items:baseline}
+.step .d{font-family:var(--mono);font-size:.76rem;color:var(--amber-ink)}
+.step .t{font-size:.9rem;color:var(--ink-2)}
+.step .t b{color:var(--ink);font-weight:500}
+.step .h{font-family:var(--mono);font-size:.76rem;color:var(--ink-3);white-space:nowrap}
+
+.tips{margin-top:20px;padding-left:0;list-style:none;display:grid;gap:11px;max-width:44em}
+.tips li{font-size:.9rem;color:var(--ink-2);padding-left:26px;position:relative}
+.tips li::before{content:"¥";position:absolute;left:0;top:0;font-family:var(--mono);
+  color:var(--leaf);font-size:.9rem}
+.tips li b{color:var(--ink);font-weight:500}
+
+footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line-2);
+  font-size:.8rem;color:var(--ink-3);max-width:44em;display:grid;gap:8px}
+@media (max-width:560px){
+  .step{grid-template-columns:38px 1fr;}
+  .step .h{grid-column:2;}
+}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="kicker">照明方案 · 住宅屋面平台 · 2026</div>
+  <h1>楼顶庭院补光图纸</h1>
+  <p class="lede">现在整个院子靠一盏高位强光灯撑着：近处刺眼、远处发黑、人脸上全是硬阴影。
+  这份图纸把它拆成八组小功率暖光，分三个回路控制，总造价约一千元，一个下午能装完。</p>
+  <dl class="specs">
+    <div class="spec"><dt>平台面积</dt><dd>≈58 ㎡ <small>9.0×6.5 m</small></dd></div>
+    <div class="spec"><dt>目标平均照度</dt><dd>24 lx <small>餐桌 150–200</small></dd></div>
+    <div class="spec"><dt>色温 / 显色</dt><dd>2700 K <small>Ra≥80</small></dd></div>
+    <div class="spec"><dt>市电功率</dt><dd>90 W <small>全开</small></dd></div>
+    <div class="spec"><dt>月电费</dt><dd>≈¥6 <small>按常用场景</small></dd></div>
+    <div class="spec"><dt>材料预算</dt><dd>¥590<small> / ¥1010</small></dd></div>
+  </dl>
+</header>
+
+<!-- ================= E-01 ================= -->
+<section>
+  <div class="sheet-hd">
+    <span class="sheet-no">E-01</span>
+    <h2>现状诊断：一盏灯干不了四件事</h2>
+    <span class="note">依据实拍夜景判读</span>
+  </div>
+  <div class="prose">
+    <p>照片里的光有四个能量化的毛病，它们都是同一个原因造成的——<b>单一高位点光源</b>。
+    一个光源同时要负责吃饭、走路、上楼梯、看绿植，结果哪一件都做不好。</p>
+  </div>
+
+  <figure>
+    <div class="plate wide">
+      <svg viewBox="0 0 900 340" role="img" aria-label="剖面对比：左侧单点强光造成硬阴影与眩光，右侧分层多点光形成均匀柔和照明">
+        <defs>
+          <marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--warn)"/>
+          </marker>
+          <marker id="ar1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--slate)"/>
+          </marker>
+          <circle id="bulbA" cx="0" cy="0" r="4" fill="var(--amber)"/>
+          <circle id="glowA" cx="0" cy="0" r="13" fill="var(--amber)" opacity="0.16"/>
+        </defs>
+
+        <!-- ===== LEFT : 现状 ===== -->
+        <text x="20" y="26" font-family="var(--serif)" font-size="15" font-weight="600" fill="var(--ink)">现状 · 一盏强光</text>
+        <text x="20" y="45" font-family="var(--mono)" font-size="11" fill="var(--warn)">最亮 : 最暗 ≈ 15 : 1</text>
+        <line x1="20" y1="250" x2="430" y2="250" stroke="var(--ink-2)" stroke-width="1.5"/>
+        <rect x="20" y="62" width="13" height="188" fill="var(--slate-soft)" stroke="var(--slate)" stroke-width="1"/>
+        <!-- flood light -->
+        <rect x="33" y="80" width="26" height="16" rx="2" fill="var(--slate)"/>
+        <polygon points="59,90 430,250 132,250" fill="var(--amber)" opacity="0.20"/>
+        <line x1="59" y1="90" x2="196" y2="196" stroke="var(--warn)" stroke-width="1.6" marker-end="url(#ar1)"/>
+        <text x="108" y="112" font-size="11.5" fill="var(--warn)" font-weight="500">直射眩光</text>
+        <!-- people -->
+        <g fill="var(--slate)">
+          <circle cx="190" cy="205" r="8"/><path d="M180 250 L182 218 h16 l2 32 z"/>
+          <circle cx="262" cy="205" r="8"/><path d="M252 250 L254 218 h16 l2 32 z"/>
+          <circle cx="334" cy="205" r="8"/><path d="M324 250 L326 218 h16 l2 32 z"/>
+        </g>
+        <!-- hard shadows -->
+        <g fill="var(--ink)" opacity="0.42">
+          <rect x="200" y="250" width="56" height="6"/>
+          <rect x="272" y="250" width="56" height="6"/>
+          <rect x="344" y="250" width="56" height="6"/>
+        </g>
+        <text x="264" y="274" font-size="11" font-family="var(--mono)" fill="var(--ink-3)">长硬阴影</text>
+        <text x="118" y="238" font-size="11" font-family="var(--mono)" fill="var(--ink)">180 lx</text>
+        <text x="382" y="238" font-size="11" font-family="var(--mono)" fill="var(--ink-3)">12 lx</text>
+        <text x="20" y="302" font-size="11.5" fill="var(--ink-2)">光源在视线正前方 · 人脸背光 · 桌面靠一侧打亮</text>
+        <text x="20" y="320" font-size="11.5" fill="var(--ink-2)">远端地面几乎没光，绿植和栏杆完全消失在黑里</text>
+
+        <line x1="450" y1="14" x2="450" y2="326" stroke="var(--line-2)" stroke-width="1" stroke-dasharray="4 4"/>
+
+        <!-- ===== RIGHT : 改造后 ===== -->
+        <text x="470" y="26" font-family="var(--serif)" font-size="15" font-weight="600" fill="var(--ink)">改造后 · 分层多点</text>
+        <text x="470" y="45" font-family="var(--mono)" font-size="11" fill="var(--leaf)">最亮 : 最暗 ≈ 5 : 1</text>
+        <line x1="470" y1="250" x2="880" y2="250" stroke="var(--ink-2)" stroke-width="1.5"/>
+        <rect x="470" y="62" width="13" height="188" fill="var(--slate-soft)" stroke="var(--slate)" stroke-width="1"/>
+        <rect x="867" y="150" width="13" height="100" fill="var(--slate-soft)" stroke="var(--slate)" stroke-width="1"/>
+        <!-- string -->
+        <path d="M486 104 Q683 132 866 100" fill="none" stroke="var(--ink-3)" stroke-width="1.2"/>
+        <g><use href="#glowA" x="530" y="115"/><use href="#glowA" x="600" y="124"/><use href="#glowA" x="670" y="126"/><use href="#glowA" x="740" y="120"/><use href="#glowA" x="808" y="108"/></g>
+        <g><use href="#bulbA" x="530" y="115"/><use href="#bulbA" x="565" y="120"/><use href="#bulbA" x="600" y="124"/><use href="#bulbA" x="635" y="126"/><use href="#bulbA" x="670" y="126"/><use href="#bulbA" x="705" y="124"/><use href="#bulbA" x="740" y="120"/><use href="#bulbA" x="775" y="115"/><use href="#bulbA" x="808" y="108"/></g>
+        <text x="486" y="90" font-size="11.5" fill="var(--amber-ink)" font-weight="500">① 灯串 2.7 m</text>
+        <!-- wall sconce -->
+        <rect x="483" y="158" width="11" height="16" rx="1.5" fill="var(--slate)"/>
+        <polygon points="494,160 520,132 520,146" fill="var(--amber)" opacity="0.2"/>
+        <polygon points="494,172 520,206 520,192" fill="var(--amber)" opacity="0.2"/>
+        <text x="500" y="152" font-size="10.5" fill="var(--ink-3)" font-family="var(--mono)">②</text>
+        <!-- uplight wall wash -->
+        <polygon points="856,248 866,150 880,150 880,248" fill="var(--amber)" opacity="0.15"/>
+        <path d="M850 248 L862 176" stroke="var(--amber)" stroke-width="1.4" marker-end="url(#ar1b)"/>
+        <text x="800" y="268" font-size="10.5" fill="var(--ink-3)" font-family="var(--mono)">③ 洗墙</text>
+        <!-- table + people -->
+        <rect x="614" y="212" width="112" height="5" fill="var(--slate)"/>
+        <line x1="622" y1="217" x2="622" y2="250" stroke="var(--slate)" stroke-width="2.5"/>
+        <line x1="718" y1="217" x2="718" y2="250" stroke="var(--slate)" stroke-width="2.5"/>
+        <polygon points="664,198 676,198 692,212 648,212" fill="var(--amber)" opacity="0.24"/>
+        <rect x="663" y="190" width="14" height="9" rx="2" fill="var(--amber)"/>
+        <text x="686" y="192" font-size="10.5" fill="var(--amber-ink)" font-family="var(--mono)">⑧ 桌灯</text>
+        <g fill="var(--slate)">
+          <circle cx="596" cy="205" r="8"/><path d="M586 250 L588 218 h16 l2 32 z"/>
+          <circle cx="748" cy="205" r="8"/><path d="M738 250 L740 218 h16 l2 32 z"/>
+        </g>
+        <g fill="var(--ink)" opacity="0.16">
+          <rect x="604" y="250" width="20" height="5"/><rect x="722" y="250" width="20" height="5"/>
+        </g>
+        <text x="527" y="238" font-size="11" font-family="var(--mono)" fill="var(--ink)">26 lx</text>
+        <text x="640" y="238" font-size="11" font-family="var(--mono)" fill="var(--ink)">桌面 180 lx</text>
+        <text x="470" y="302" font-size="11.5" fill="var(--ink-2)">光源全部移出 0.5–2.2 m 视线带 · 人脸被两侧交叉光照亮</text>
+        <text x="470" y="320" font-size="11.5" fill="var(--ink-2)">墙面被洗亮当反光板，阴影自然变软变短</text>
+      </svg>
+    </div>
+    <figcaption><b>图 E-01</b>　同一个剖面的前后对比。关键差别不是"更亮"，而是光源数量从 1 个变成 8 组、
+    单灯功率从几十瓦降到 1–10 W，并且全部避开了坐姿与站姿的视线高度。总光通量只增加约一倍，观感差距却很大。</figcaption>
+  </figure>
+</section>
+
+<!-- ================= E-02 ================= -->
+<section>
+  <div class="sheet-hd">
+    <span class="sheet-no">E-02</span>
+    <h2>五条布光原则（可校核的量）</h2>
+  </div>
+  <div class="rules">
+    <div class="rule">
+      <div class="rn">01 / 照度分级</div>
+      <h4>不同区域给不同的量</h4>
+      <p>餐桌台面 <span class="v">150–200 lx</span>，通行与休闲 <span class="v">20–30 lx</span>，
+      楼梯踏面 <span class="v">≥50 lx</span>，边界与绿植 <span class="v">5–10 lx</span>。
+      庭院不需要照到能看书，均匀的 25 lx 比一处 200 lx 舒服得多。</p>
+    </div>
+    <div class="rule">
+      <div class="rn">02 / 色温统一</div>
+      <h4>全场只用一个 2700 K</h4>
+      <p>暖光让人放松、蚊虫吸引也更少。整院色温差不超过 <span class="v">±300 K</span>，
+      只有楼梯安全灯可放宽到 3000 K。混着 6500 K 白光是家用户外最常见的翻车点。</p>
+    </div>
+    <div class="rule">
+      <div class="rn">03 / 显色与频闪</div>
+      <h4>吃饭的地方要 Ra≥90</h4>
+      <p>餐区灯具选 <span class="v">Ra≥90、R9&gt;50</span>，饭菜和肤色才不发灰；
+      其余 <span class="v">Ra≥80</span> 即可。恒流驱动、无频闪，手机拍不出横条纹。</p>
+    </div>
+    <div class="rule">
+      <div class="rn">04 / 眩光控制</div>
+      <h4>0.5–2.2 m 是禁区</h4>
+      <p>裸露光源只能在 <span class="v">≥2.2 m</span>（视线之上）或 <span class="v">≤0.5 m</span>（视线之下）。
+      中间这一段只允许放背对人、带遮光罩或朝墙打的灯。</p>
+    </div>
+    <div class="rule">
+      <div class="rn">05 / 多点低功率</div>
+      <h4>八盏 1 W 胜过一盏 50 W</h4>
+      <p>光源越多、越分散，阴影就越软。同样的照度下，多点布光的最亮最暗比可以从
+      <span class="v">15:1</span> 压到 <span class="v">5:1</span>，这正是"看着舒服"的物理来源。</p>
+    </div>
+    <div class="rule">
+      <div class="rn">06 / 不打扰别人</div>
+      <h4>光不越界、不上天</h4>
+      <p>所有灯具下照或朝自家墙打，不得直射邻楼窗户；女儿墙外侧零溢光。
+      屋顶位置高，光污染扰邻是最容易被投诉的一项。</p>
+    </div>
+  </div>
+
+  <div class="calc">
+    <div class="eq">Φ<sub>总</sub> ≈ E × S ÷ ( U × K )</div>
+    <ul>
+      <li>E = 25 lx　　目标平均照度</li>
+      <li>S = 58 ㎡　　平台面积</li>
+      <li>U = 0.40　　利用系数（露天无顶棚，仅墙面反射）</li>
+      <li>K = 0.75　　维护系数（室外积尘）</li>
+    </ul>
+    <div class="out">需求 Φ ≈ 25 × 58 ÷ 0.30 ≈ 4 800 lm　→　本方案实配 ≈ 4 700 lm（①1680 + ②900 + ③1800 + ⑦300），平均 ≈ 24 lx ✓</div>
+  </div>
+  <figcaption style="margin-top:10px">这不是精确计算，是量级校核。它的用处是告诉你：<b>四五千流明就够了</b>，
+  不要被"100 W 超亮投光灯"带偏——那一只灯就是 9000 lm，全打在 58 ㎡ 上会刺眼得没法待人。</figcaption>
+</section>
+
+<!-- ================= E-03 ================= -->
+<section>
+  <div class="sheet-hd">
+    <span class="sheet-no">E-03</span>
+    <h2>灯具平面布置图</h2>
+    <span class="note">尺寸按照片估算，施工前请实测</span>
+  </div>
+
+  <figure>
+    <div class="plate wide">
+      <svg viewBox="0 0 1020 780" role="img" aria-label="楼顶庭院灯光平面布置图，标注编号1至10的灯具位置、安装高度与市电走线路径">
+        <defs>
+          <pattern id="wallH" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="7" stroke="var(--slate)" stroke-width="1" opacity="0.55"/>
+          </pattern>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--slate)"/>
+          </marker>
+          <marker id="ar2a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--amber)"/>
+          </marker>
+          <circle id="bulbP" cx="0" cy="0" r="4.2" fill="var(--amber)"/>
+          <g id="tagP"><circle cx="0" cy="0" r="11" fill="var(--amber-soft)" stroke="var(--amber)" stroke-width="1.2"/></g>
+        </defs>
+
+        <!-- 平台底 -->
+        <rect x="150" y="120" width="792" height="572" fill="var(--card-2)"/>
+        <!-- 围合结构 -->
+        <rect x="126" y="96" width="24" height="620" fill="url(#wallH)" stroke="var(--slate)" stroke-width="1"/>
+        <rect x="126" y="96" width="840" height="24" fill="url(#wallH)" stroke="var(--slate)" stroke-width="1"/>
+        <rect x="126" y="692" width="840" height="24" fill="url(#wallH)" stroke="var(--slate)" stroke-width="1"/>
+        <rect x="942" y="96" width="24" height="620" fill="url(#wallH)" stroke="var(--slate)" stroke-width="1"/>
+        <!-- 栏杆示意 -->
+        <g stroke="var(--slate)" stroke-width="1.4">
+          <line x1="948" y1="150" x2="948" y2="670"/>
+          <line x1="960" y1="150" x2="960" y2="670"/>
+        </g>
+        <!-- 玻璃推拉门 -->
+        <g stroke="var(--amber)" stroke-width="3"><line x1="138" y1="208" x2="138" y2="384"/></g>
+        <text x="118" y="300" font-size="11.5" fill="var(--amber-ink)" font-family="var(--mono)" transform="rotate(-90 118 300)" text-anchor="middle">玻璃推拉门</text>
+
+        <!-- 钢楼梯 -->
+        <rect x="282" y="120" width="264" height="106" fill="var(--slate-soft)" stroke="var(--slate)" stroke-width="1.2"/>
+        <g stroke="var(--slate)" stroke-width="1">
+          <line x1="326" y1="120" x2="326" y2="226"/><line x1="370" y1="120" x2="370" y2="226"/>
+          <line x1="414" y1="120" x2="414" y2="226"/><line x1="458" y1="120" x2="458" y2="226"/>
+          <line x1="502" y1="120" x2="502" y2="226"/>
+        </g>
+        <line x1="296" y1="173" x2="534" y2="173" stroke="var(--slate)" stroke-width="1.4" marker-end="url(#ar2)"/>
+        <text x="414" y="166" font-size="11" fill="var(--slate)" text-anchor="middle" font-family="var(--mono)">上行 ↗</text>
+
+        <!-- 绿植 -->
+        <g fill="var(--leaf-soft)" stroke="var(--leaf)" stroke-width="1">
+          <circle cx="650" cy="166" r="16"/><circle cx="688" cy="158" r="12"/><circle cx="722" cy="170" r="14"/>
+          <circle cx="762" cy="160" r="11"/><circle cx="812" cy="168" r="15"/><circle cx="858" cy="158" r="12"/>
+          <circle cx="890" cy="170" r="11"/>
+        </g>
+        <text x="770" y="200" font-size="11" fill="var(--leaf)" text-anchor="middle">盆栽带</text>
+        <!-- 落水管 -->
+        <circle cx="916" cy="208" r="7" fill="var(--card)" stroke="var(--slate)" stroke-width="1.6"/>
+        <text x="900" y="232" font-size="10.5" fill="var(--ink-3)" text-anchor="middle" font-family="var(--mono)">落水管</text>
+        <!-- 花架 -->
+        <rect x="150" y="470" width="48" height="42" fill="var(--leaf-soft)" stroke="var(--leaf)" stroke-width="1"/>
+        <text x="174" y="495" font-size="10.5" fill="var(--leaf)" text-anchor="middle" transform="rotate(-90 174 495)">花架</text>
+
+        <!-- 餐桌椅 -->
+        <rect x="467" y="331" width="141" height="88" rx="5" fill="var(--card)" stroke="var(--ink-3)" stroke-width="1.4"/>
+        <text x="537" y="345" font-size="11" fill="var(--ink-3)" text-anchor="middle">餐桌 1.6×1.0</text>
+        <g fill="var(--card)" stroke="var(--ink-3)" stroke-width="1">
+          <rect x="490" y="303" width="26" height="20" rx="2"/><rect x="540" y="303" width="26" height="20" rx="2"/>
+          <rect x="490" y="427" width="26" height="20" rx="2"/>
+          <rect x="431" y="345" width="20" height="26" rx="2"/><rect x="431" y="381" width="20" height="26" rx="2"/>
+          <rect x="618" y="345" width="20" height="26" rx="2"/><rect x="618" y="381" width="20" height="26" rx="2"/>
+        </g>
+        <circle cx="655" cy="296" r="9" fill="none" stroke="var(--ink-3)" stroke-width="1.3"/>
+        <line x1="649" y1="290" x2="661" y2="302" stroke="var(--ink-3)" stroke-width="1.3"/>
+        <text x="676" y="292" font-size="10.5" fill="var(--ink-3)">遮阳伞</text>
+
+        <!-- 市电走线 -->
+        <polyline points="163,441 163,132 845,132" fill="none" stroke="var(--slate)" stroke-width="1.4" stroke-dasharray="7 5"/>
+        <polyline points="643,132 643,148" fill="none" stroke="var(--slate)" stroke-width="1.4" stroke-dasharray="7 5"/>
+        <polyline points="845,132 845,148" fill="none" stroke="var(--slate)" stroke-width="1.4" stroke-dasharray="7 5"/>
+        <polyline points="163,278 176,278" fill="none" stroke="var(--slate)" stroke-width="1.4" stroke-dasharray="7 5"/>
+        <polyline points="288,132 288,221" fill="none" stroke="var(--slate)" stroke-width="1.4" stroke-dasharray="7 5"/>
+
+        <!-- ① 灯串两跑 -->
+        <line x1="176" y1="278" x2="907" y2="243" stroke="var(--amber)" stroke-width="1.6"/>
+        <line x1="176" y1="525" x2="907" y2="490" stroke="var(--amber)" stroke-width="1.6"/>
+        <g>
+          <use href="#bulbP" x="232" y="275"/><use href="#bulbP" x="288" y="273"/><use href="#bulbP" x="345" y="270"/>
+          <use href="#bulbP" x="401" y="267"/><use href="#bulbP" x="457" y="265"/><use href="#bulbP" x="513" y="262"/>
+          <use href="#bulbP" x="569" y="259"/><use href="#bulbP" x="626" y="257"/><use href="#bulbP" x="682" y="254"/>
+          <use href="#bulbP" x="738" y="251"/><use href="#bulbP" x="794" y="248"/><use href="#bulbP" x="850" y="246"/>
+          <use href="#bulbP" x="232" y="522"/><use href="#bulbP" x="288" y="520"/><use href="#bulbP" x="345" y="517"/>
+          <use href="#bulbP" x="401" y="514"/><use href="#bulbP" x="457" y="512"/><use href="#bulbP" x="513" y="509"/>
+          <use href="#bulbP" x="569" y="506"/><use href="#bulbP" x="626" y="503"/><use href="#bulbP" x="682" y="501"/>
+          <use href="#bulbP" x="738" y="498"/><use href="#bulbP" x="794" y="495"/><use href="#bulbP" x="850" y="493"/>
+        </g>
+        <!-- 锚点 -->
+        <g fill="var(--card)" stroke="var(--ink)" stroke-width="1.6">
+          <rect x="170" y="272" width="12" height="12"/><rect x="901" y="237" width="12" height="12"/>
+          <rect x="170" y="519" width="12" height="12"/><rect x="901" y="484" width="12" height="12"/>
+        </g>
+        <text x="196" y="266" font-size="10.5" fill="var(--ink-2)" font-family="var(--mono)">锚点 A</text>
+        <text x="878" y="230" font-size="10.5" fill="var(--ink-2)" font-family="var(--mono)" text-anchor="end">锚点 B</text>
+        <text x="196" y="513" font-size="10.5" fill="var(--ink-2)" font-family="var(--mono)">锚点 C</text>
+        <text x="878" y="477" font-size="10.5" fill="var(--ink-2)" font-family="var(--mono)" text-anchor="end">锚点 D</text>
+        <!-- 跨距 -->
+        <line x1="780" y1="249" x2="780" y2="496" stroke="var(--ink-3)" stroke-width="1" marker-start="url(#ar2)" marker-end="url(#ar2)"/>
+        <text x="790" y="378" font-size="11" fill="var(--ink-2)" font-family="var(--mono)">跨距 2.8 m</text>
+
+        <!-- ③ 洗墙灯 -->
+        <g fill="var(--amber)" opacity="0.22">
+          <polygon points="643,152 590,120 696,120"/><polygon points="845,152 792,120 898,120"/>
+        </g>
+        <!-- ② 壁灯 -->
+        <g fill="var(--amber)" opacity="0.18">
+          <polygon points="154,190 210,164 210,216"/><polygon points="154,410 210,384 210,436"/>
+        </g>
+        <!-- ④ 楼梯灯带 -->
+        <line x1="288" y1="221" x2="540" y2="221" stroke="var(--amber)" stroke-width="3" stroke-dasharray="9 5"/>
+
+        <!-- ===== 编号标记 ===== -->
+        <g font-family="var(--mono)" font-size="11.5" font-weight="500" fill="var(--amber-ink)" text-anchor="middle">
+          <use href="#tagP" x="205" y="290"/><text x="205" y="294">1</text>
+          <use href="#tagP" x="154" y="190"/><text x="154" y="194">2</text>
+          <use href="#tagP" x="154" y="410"/><text x="154" y="414">2</text>
+          <use href="#tagP" x="643" y="155"/><text x="643" y="159">3</text>
+          <use href="#tagP" x="845" y="155"/><text x="845" y="159">3</text>
+          <use href="#tagP" x="414" y="243"/><text x="414" y="247">4</text>
+          <use href="#tagP" x="258" y="150"/><text x="258" y="154">5</text>
+          <use href="#tagP" x="566" y="150"/><text x="566" y="154">5</text>
+          <use href="#tagP" x="920" y="296"/><text x="920" y="300">6</text>
+          <use href="#tagP" x="920" y="384"/><text x="920" y="388">6</text>
+          <use href="#tagP" x="920" y="560"/><text x="920" y="564">6</text>
+          <use href="#tagP" x="920" y="657"/><text x="920" y="661">6</text>
+          <use href="#tagP" x="766" y="674"/><text x="766" y="678">6</text>
+          <use href="#tagP" x="590" y="674"/><text x="590" y="678">6</text>
+          <use href="#tagP" x="414" y="674"/><text x="414" y="678">6</text>
+          <use href="#tagP" x="256" y="674"/><text x="256" y="678">6</text>
+          <use href="#tagP" x="696" y="190"/><text x="696" y="194">7</text>
+          <use href="#tagP" x="854" y="199"/><text x="854" y="203">7</text>
+          <use href="#tagP" x="222" y="491"/><text x="222" y="495">7</text>
+          <use href="#tagP" x="515" y="375"/><text x="515" y="379">8</text>
+          <use href="#tagP" x="568" y="375"/><text x="568" y="379">8</text>
+          <use href="#tagP" x="163" y="595"/><text x="163" y="599">9</text>
+          <use href="#tagP" x="163" y="441"/><text x="163" y="445">10</text>
+        </g>
+        <!-- 引注 -->
+        <text x="222" y="316" font-size="11" fill="var(--amber-ink)">灯串两跑 · 挂高 2.6–2.8 m</text>
+        <text x="185" y="618" font-size="11" fill="var(--warn)">现有投光灯：加罩、转向打墙</text>
+        <text x="185" y="459" font-size="11" fill="var(--ink-2)">IP55 插座箱 + 漏电保护</text>
+
+        <!-- 标题栏 -->
+        <rect x="620" y="560" width="280" height="112" fill="var(--card)" stroke="var(--ink-2)" stroke-width="1.2"/>
+        <line x1="620" y1="588" x2="900" y2="588" stroke="var(--line-2)" stroke-width="1"/>
+        <text x="632" y="580" font-size="12.5" font-family="var(--serif)" font-weight="600" fill="var(--ink)">楼顶庭院 · 灯光平面布置</text>
+        <text x="632" y="608" font-size="11" font-family="var(--mono)" fill="var(--ink-2)">≈ 9.0 × 6.5 m ≈ 58 ㎡（估算）</text>
+        <text x="632" y="628" font-size="11" font-family="var(--mono)" fill="var(--ink-2)">全场 2700 K · 平均 24 lx</text>
+        <line x1="632" y1="645" x2="656" y2="645" stroke="var(--slate)" stroke-width="1.4" stroke-dasharray="7 5"/>
+        <text x="664" y="649" font-size="10.5" font-family="var(--mono)" fill="var(--ink-3)">市电走线（穿管沿墙）</text>
+        <rect x="632" y="659" width="10" height="10" fill="var(--card)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text x="664" y="668" font-size="10.5" font-family="var(--mono)" fill="var(--ink-3)">灯串承重锚点</text>
+
+        <!-- 边界标注 -->
+        <text x="546" y="84" font-size="12.5" fill="var(--ink-2)" text-anchor="middle">后墙 · 米色实墙 + 外挂钢楼梯</text>
+        <text x="546" y="756" font-size="12.5" fill="var(--ink-2)" text-anchor="middle">开阔活动区（无遮挡）</text>
+        <text x="112" y="406" font-size="12.5" fill="var(--ink-2)" text-anchor="middle" transform="rotate(-90 112 406)">主屋外墙</text>
+        <text x="1000" y="406" font-size="12.5" fill="var(--ink-2)" text-anchor="middle" transform="rotate(90 1000 406)">女儿墙 + 金属栏杆</text>
+        <!-- 尺寸 -->
+        <line x1="150" y1="734" x2="942" y2="734" stroke="var(--ink-3)" stroke-width="1" marker-start="url(#ar2)" marker-end="url(#ar2)"/>
+        <text x="546" y="728" font-size="11" fill="var(--ink-2)" text-anchor="middle" font-family="var(--mono)">9.0 m（估算）</text>
+        <line x1="978" y1="120" x2="978" y2="692" stroke="var(--ink-3)" stroke-width="1" marker-start="url(#ar2)" marker-end="url(#ar2)"/>
+      </svg>
+    </div>
+    <figcaption><b>图 E-03</b>　核心动作是 <span class="tag">1</span> 的<b>两跑灯串</b>：不从餐桌正上方吊一条，
+    而是在桌子南北两侧各拉一跑、间距 2.8 m。这样桌面拿到的是两侧约 45° 的交叉光，
+    人脸和菜品都没有硬阴影，也不会有一颗灯泡正好悬在谁的眼前。</figcaption>
+  </figure>
+
+  <h3>灯具表</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>编号</th><th>灯具</th><th>安装位置</th><th>高度</th><th>数量</th><th>关键参数</th><th>作用</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag">1</span></td><td><strong>户外灯串</strong><br>S14 可换泡型</td><td>主屋墙锚点 A/C → 落水管抱箍 B、栏杆夹 D，两跑跨越用餐区</td><td class="num">2.6–2.8 m</td><td class="num">20 m<br>24 灯</td><td class="num">1 W/颗 · 2700 K<br>IP65 · Ra≥80</td><td>基础环境光，全场唯一的主光层</td></tr>
+        <tr><td><span class="tag">2</span></td><td><strong>上下发光壁灯</strong></td><td>主屋外墙，玻璃门两侧</td><td class="num">2.2 m</td><td class="num">2 只</td><td class="num">6 W · 2700 K<br>IP65</td><td>垂直面亮度 + 门口引导，让空间不像山洞</td></tr>
+        <tr><td><span class="tag">3</span></td><td><strong>洗墙投光灯</strong><br>带遮光罩</td><td>后墙根，藏在盆栽后向上打</td><td class="num">0.2 m</td><td class="num">2 只</td><td class="num">10 W · 30° · 2700 K<br>IP65</td><td>把米色后墙变成大反光板，用间接光消硬影</td></tr>
+        <tr><td><span class="tag">4</span></td><td><strong>扶手灯带</strong><br>低压 24 V</td><td>钢楼梯扶手下缘，装铝槽内朝下</td><td class="num">随梯</td><td class="num">5 m</td><td class="num">24 V · 4.8 W/m<br>2700 K · IP67</td><td>只照踏面不照眼睛，夜间上下楼的安全线</td></tr>
+        <tr><td><span class="tag">5</span></td><td><strong>人体感应壁灯</strong></td><td>楼梯下口后墙 + 梯顶各 1</td><td class="num">1.8 m</td><td class="num">2 只</td><td class="num">太阳能 · 3000 K<br>感应 15 s</td><td>人来才亮，省电且不整夜扰邻</td></tr>
+        <tr><td><span class="tag">6</span></td><td><strong>地插柱头灯</strong></td><td>女儿墙内侧 4 只 + 前边界 4 只</td><td class="num">0.3–0.4 m</td><td class="num">8 只</td><td class="num">太阳能 · 暖光<br>低亮度</td><td>界定边界防绊倒，同时给地面做层次</td></tr>
+        <tr><td><span class="tag">7</span></td><td><strong>插地射灯</strong></td><td>大盆栽根部、花架下</td><td class="num">0.15 m</td><td class="num">3 只</td><td class="num">24 V · 3 W · 24°<br>2700 K</td><td>绿植打亮做明暗对比，夜里空间才有纵深</td></tr>
+        <tr><td><span class="tag">8</span></td><td><strong>充电式桌灯</strong></td><td>餐桌上，可随桌子移动</td><td class="num">桌面</td><td class="num">2 只</td><td class="num">3 W 可调光<br>2700 K · Ra≥90</td><td>人脸与食物的关键光，聚会气氛的一半靠它</td></tr>
+        <tr><td><span class="tag">9</span></td><td><strong>现有投光灯改造</strong></td><td>原位保留，加遮光罩并转向打墙</td><td class="num">≈3.0 m</td><td class="num">1 只</td><td class="num">单独回路</td><td>降级成"打扫/搬东西"用的作业灯，平时关</td></tr>
+        <tr><td><span class="tag">10</span></td><td><strong>防水插座箱</strong></td><td>主屋墙门边，室内插座穿墙引出</td><td class="num">1.3 m</td><td class="num">1 套</td><td class="num">IP55 + 30 mA<br>漏电保护</td><td>全院唯一市电取电点，所有回路从这里出</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================= E-04 ================= -->
+<section>
+  <div class="sheet-hd">
+    <span class="sheet-no">E-04</span>
+    <h2>高度剖面与眩光禁区</h2>
+    <span class="note">决定"刺不刺眼"的唯一一张图</span>
+  </div>
+
+  <figure>
+    <div class="plate wide">
+      <svg viewBox="0 0 980 520" role="img" aria-label="灯具安装高度剖面图，标出0.5至2.2米的眩光禁区、坐姿与站姿视线高度，以及各区域目标照度">
+        <defs>
+          <pattern id="warnH" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="8" stroke="var(--warn)" stroke-width="1.1" opacity="0.3"/>
+          </pattern>
+          <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--amber)"/>
+          </marker>
+          <marker id="ar3d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-3)"/>
+          </marker>
+          <circle id="bulbS" cx="0" cy="0" r="4" fill="var(--amber)"/>
+          <circle id="glowS" cx="0" cy="0" r="14" fill="var(--amber)" opacity="0.15"/>
+        </defs>
+
+        <!-- 三个高度层 -->
+        <rect x="76" y="85" width="724" height="84" fill="var(--amber-soft)"/>
+        <rect x="76" y="169" width="724" height="178" fill="url(#warnH)"/>
+        <rect x="76" y="169" width="724" height="178" fill="none" stroke="var(--warn)" stroke-width="1" stroke-dasharray="5 4"/>
+        <rect x="76" y="347" width="724" height="53" fill="var(--leaf-soft)"/>
+
+        <!-- 右侧图例栏 -->
+        <line x1="806" y1="85" x2="806" y2="400" stroke="var(--line-2)" stroke-width="1"/>
+        <g font-size="12">
+          <text x="816" y="118" fill="var(--amber-ink)" font-weight="500">高位层 2.2–3.0 m</text>
+          <text x="816" y="136" fill="var(--ink-3)" font-size="11.5">允许裸露光源</text>
+          <text x="816" y="250" fill="var(--warn)" font-weight="500">眩光禁区 0.5–2.2 m</text>
+          <text x="816" y="268" fill="var(--ink-3)" font-size="11.5">禁止裸露光源</text>
+          <text x="816" y="368" fill="var(--leaf)" font-weight="500">低位层 0–0.5 m</text>
+          <text x="816" y="386" fill="var(--ink-3)" font-size="11.5">只允许朝下 / 朝墙</text>
+        </g>
+
+        <!-- 高度轴 -->
+        <line x1="52" y1="61" x2="52" y2="400" stroke="var(--ink-3)" stroke-width="1"/>
+        <g font-family="var(--mono)" font-size="10.5" fill="var(--ink-3)" text-anchor="end">
+          <line x1="47" y1="400" x2="57" y2="400" stroke="var(--ink-3)"/><text x="42" y="404">0</text>
+          <line x1="47" y1="347" x2="57" y2="347" stroke="var(--ink-3)"/><text x="42" y="351">0.5</text>
+          <line x1="47" y1="295" x2="57" y2="295" stroke="var(--ink-3)"/><text x="42" y="299">1.0</text>
+          <line x1="47" y1="242" x2="57" y2="242" stroke="var(--ink-3)"/><text x="42" y="246">1.5</text>
+          <line x1="47" y1="190" x2="57" y2="190" stroke="var(--ink-3)"/><text x="42" y="194">2.0</text>
+          <line x1="47" y1="137" x2="57" y2="137" stroke="var(--ink-3)"/><text x="42" y="141">2.5</text>
+          <line x1="47" y1="85" x2="57" y2="85" stroke="var(--ink-3)"/><text x="42" y="89">3.0 m</text>
+        </g>
+
+        <!-- 结构 -->
+        <line x1="76" y1="400" x2="800" y2="400" stroke="var(--ink-2)" stroke-width="1.8"/>
+        <rect x="60" y="61" width="16" height="339" fill="var(--slate-soft)" stroke="var(--slate)" stroke-width="1"/>
+        <text x="68" y="52" font-size="11" fill="var(--slate)" text-anchor="middle">主屋墙</text>
+        <rect x="784" y="284" width="16" height="116" fill="var(--slate-soft)" stroke="var(--slate)" stroke-width="1"/>
+        <text x="800" y="272" font-size="11" fill="var(--slate)" text-anchor="end">女儿墙</text>
+
+        <!-- ① 灯串 -->
+        <g fill="var(--amber)" opacity="0.10">
+          <polygon points="196,114 300,400 90,400"/><polygon points="472,121 580,400 360,400"/><polygon points="731,108 800,400 640,400"/>
+        </g>
+        <path d="M92 106 Q440 138 778 104" fill="none" stroke="var(--ink-3)" stroke-width="1.2"/>
+        <g><use href="#glowS" x="196" y="114"/><use href="#glowS" x="334" y="120"/><use href="#glowS" x="472" y="121"/><use href="#glowS" x="608" y="117"/><use href="#glowS" x="731" y="108"/></g>
+        <g><use href="#bulbS" x="196" y="114"/><use href="#bulbS" x="265" y="118"/><use href="#bulbS" x="334" y="120"/><use href="#bulbS" x="403" y="122"/><use href="#bulbS" x="472" y="121"/><use href="#bulbS" x="540" y="120"/><use href="#bulbS" x="608" y="117"/><use href="#bulbS" x="676" y="113"/><use href="#bulbS" x="731" y="108"/></g>
+        <text x="214" y="100" font-size="12" fill="var(--amber-ink)" font-weight="500">① 灯串 2.6–2.8 m　（人站起来伸手够不到）</text>
+
+        <!-- ② 壁灯 2.2 m -->
+        <rect x="76" y="161" width="12" height="17" rx="2" fill="var(--slate)"/>
+        <polygon points="88,163 128,133 128,150" fill="var(--amber)" opacity="0.2"/>
+        <polygon points="88,176 128,214 128,197" fill="var(--amber)" opacity="0.2"/>
+        <text x="140" y="150" font-size="11.5" fill="var(--ink-2)" font-family="var(--mono)">② 2.2 m 上下发光</text>
+
+        <!-- ③ 贴地洗墙 -->
+        <polygon points="96,396 76,150 88,150 108,396" fill="var(--amber)" opacity="0.16"/>
+        <rect x="92" y="392" width="18" height="8" rx="2" fill="var(--slate)"/>
+        <line x1="104" y1="392" x2="90" y2="200" stroke="var(--amber)" stroke-width="1.3" marker-end="url(#ar3)"/>
+        <text x="116" y="332" font-size="11.5" fill="var(--ink-2)" font-family="var(--mono)">③ 贴地洗墙</text>
+
+        <!-- 视线 -->
+        <line x1="76" y1="279" x2="800" y2="279" stroke="var(--warn)" stroke-width="1.2" stroke-dasharray="8 5"/>
+        <text x="150" y="274" font-size="11" fill="var(--warn)" font-family="var(--mono)">坐姿视线 1.15 m</text>
+        <line x1="76" y1="227" x2="800" y2="227" stroke="var(--warn)" stroke-width="1.2" stroke-dasharray="8 5"/>
+        <text x="150" y="222" font-size="11" fill="var(--warn)" font-family="var(--mono)">站姿视线 1.65 m</text>
+
+        <!-- 桌 + ⑧ -->
+        <rect x="386" y="318" width="180" height="6" fill="var(--slate)"/>
+        <line x1="398" y1="324" x2="398" y2="400" stroke="var(--slate)" stroke-width="3"/>
+        <line x1="554" y1="324" x2="554" y2="400" stroke="var(--slate)" stroke-width="3"/>
+        <text x="368" y="322" font-size="10.5" fill="var(--ink-3)" text-anchor="end" font-family="var(--mono)">桌面 0.75 m</text>
+        <polygon points="462,308 482,308 512,318 432,318" fill="var(--amber)" opacity="0.26"/>
+        <rect x="462" y="296" width="20" height="12" rx="3" fill="var(--amber)"/>
+        <text x="492" y="292" font-size="11.5" fill="var(--amber-ink)" font-family="var(--mono)">⑧ 桌灯 可调光</text>
+
+        <!-- ⑥ 地插灯 -->
+        <polygon points="230,362 255,362 266,400 219,400" fill="var(--amber)" opacity="0.2"/>
+        <rect x="238" y="362" width="9" height="38" fill="var(--slate)"/>
+        <polygon points="670,358 695,358 706,400 659,400" fill="var(--amber)" opacity="0.2"/>
+        <rect x="678" y="358" width="9" height="42" fill="var(--slate)"/>
+        <line x1="626" y1="342" x2="676" y2="356" stroke="var(--ink-3)" stroke-width="0.9"/>
+        <text x="620" y="338" font-size="11.5" fill="var(--ink-2)" text-anchor="end" font-family="var(--mono)">⑥ 0.4 m</text>
+
+        <!-- ⑦ 射灯 + 绿植 -->
+        <circle cx="760" cy="352" r="22" fill="var(--leaf-soft)" stroke="var(--leaf)" stroke-width="1"/>
+        <polygon points="742,392 756,392 776,334 750,330" fill="var(--amber)" opacity="0.2"/>
+        <rect x="742" y="392" width="14" height="8" rx="2" fill="var(--slate)"/>
+        <line x1="734" y1="320" x2="748" y2="388" stroke="var(--ink-3)" stroke-width="0.9"/>
+        <text x="728" y="316" font-size="11.5" fill="var(--ink-2)" text-anchor="end" font-family="var(--mono)">⑦ 打绿植</text>
+
+        <!-- 照度目标 -->
+        <g stroke="var(--ink-3)" stroke-width="1">
+          <line x1="150" y1="428" x2="360" y2="428" marker-start="url(#ar3d)" marker-end="url(#ar3d)"/>
+          <line x1="386" y1="428" x2="566" y2="428" marker-start="url(#ar3d)" marker-end="url(#ar3d)"/>
+          <line x1="620" y1="428" x2="796" y2="428" marker-start="url(#ar3d)" marker-end="url(#ar3d)"/>
+        </g>
+        <g font-family="var(--mono)" font-size="11.5" fill="var(--ink)" text-anchor="middle">
+          <text x="255" y="448">通行 · 休闲　20–30 lx</text>
+          <text x="476" y="448">餐桌台面　150–200 lx</text>
+          <text x="708" y="448">边界 · 绿植　5–10 lx</text>
+        </g>
+        <text x="52" y="480" font-size="12" fill="var(--ink-2)">规则：任何会直接看到发光面的灯具，安装高度要么高于 2.2 m，要么低于 0.5 m；</text>
+        <text x="52" y="500" font-size="12" fill="var(--ink-2)">禁区里只能出现"朝墙打"或"带遮光罩朝下"的灯——现有那盏投光灯犯的就是这一条。</text>
+      </svg>
+    </div>
+    <figcaption><b>图 E-04</b>　这张图是全套方案里最省钱的一张：它不要求你买贵灯具，
+    只要求你把灯装对高度。坐着的人眼睛在 1.15 m、站着在 1.65 m，
+    把所有裸露光源赶出这条 <b>0.5–2.2 m</b> 的带子，眩光问题就解决了九成。</figcaption>
+  </figure>
+</section>
+
+<!-- ================= E-05 ================= -->
+<section>
+  <div class="sheet-hd">
+    <span class="sheet-no">E-05</span>
+    <h2>配电、回路与场景</h2>
+    <span class="note">三个回路 / 三种用法</span>
+  </div>
+
+  <figure>
+    <div class="plate">
+      <svg viewBox="0 0 900 430" role="img" aria-label="配电系统图：市电经防水插座箱与漏电保护分为安全、聚会、作业三个回路，另有太阳能与电池独立供电组">
+        <defs>
+          <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--slate)"/>
+          </marker>
+          <g id="tagC"><circle cx="0" cy="0" r="12" fill="var(--amber-soft)" stroke="var(--amber)" stroke-width="1.2"/></g>
+        </defs>
+
+        <!-- 电源链 -->
+        <rect x="20" y="30" width="150" height="52" fill="var(--card-2)" stroke="var(--slate)" stroke-width="1.2"/>
+        <text x="95" y="53" font-size="12.5" fill="var(--ink)" text-anchor="middle">市电 220 V</text>
+        <text x="95" y="70" font-size="11" fill="var(--ink-3)" text-anchor="middle" font-family="var(--mono)">室内插座穿墙引出</text>
+        <line x1="170" y1="56" x2="204" y2="56" stroke="var(--slate)" stroke-width="1.6" marker-end="url(#ar4)"/>
+
+        <rect x="210" y="30" width="222" height="52" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.6"/>
+        <text x="321" y="52" font-size="12.5" fill="var(--ink)" text-anchor="middle" font-weight="500">⑩ IP55 防水插座箱</text>
+        <text x="321" y="70" font-size="11.5" fill="var(--warn-ink)" text-anchor="middle" font-family="var(--mono)">30 mA 漏电保护 · 必装</text>
+
+        <!-- 分支 -->
+        <path d="M432 56 L470 56 L470 110 L512 110" fill="none" stroke="var(--slate)" stroke-width="1.4" marker-end="url(#ar4)"/>
+        <path d="M470 110 L470 200 L512 200" fill="none" stroke="var(--slate)" stroke-width="1.4" marker-end="url(#ar4)"/>
+        <path d="M470 200 L470 290 L512 290" fill="none" stroke="var(--slate)" stroke-width="1.4" marker-end="url(#ar4)"/>
+        <text x="446" y="168" font-size="10.5" fill="var(--ink-3)" font-family="var(--mono)" transform="rotate(-90 446 168)" text-anchor="middle">RVV 2×1.0 穿管沿墙</text>
+
+        <!-- 回路 A -->
+        <rect x="518" y="88" width="152" height="44" fill="var(--card-2)" stroke="var(--line-2)" stroke-width="1.2"/>
+        <text x="594" y="106" font-size="11.5" fill="var(--ink)" text-anchor="middle">24 V IP67 电源</text>
+        <text x="594" y="122" font-size="10.5" fill="var(--ink-3)" text-anchor="middle" font-family="var(--mono)">＋ 光控定时插座</text>
+        <line x1="670" y1="110" x2="866" y2="110" stroke="var(--amber)" stroke-width="1.6"/>
+        <g font-family="var(--mono)" font-size="11.5" fill="var(--amber-ink)" text-anchor="middle">
+          <use href="#tagC" x="712" y="110"/><text x="712" y="114">4</text>
+          <use href="#tagC" x="762" y="110"/><text x="762" y="114">7</text>
+        </g>
+        <text x="518" y="76" font-size="12.5" fill="var(--ink)" font-weight="500">回路 A · 安全常亮</text>
+        <text x="800" y="114" font-size="11" fill="var(--ink-3)" font-family="var(--mono)">天黑自动</text>
+
+        <!-- 回路 B -->
+        <rect x="518" y="178" width="152" height="44" fill="var(--card-2)" stroke="var(--line-2)" stroke-width="1.2"/>
+        <text x="594" y="196" font-size="11.5" fill="var(--ink)" text-anchor="middle">WiFi 智能插座</text>
+        <text x="594" y="212" font-size="10.5" fill="var(--ink-3)" text-anchor="middle" font-family="var(--mono)">＋ 门边无线开关</text>
+        <line x1="670" y1="200" x2="866" y2="200" stroke="var(--amber)" stroke-width="1.6"/>
+        <g font-family="var(--mono)" font-size="11.5" fill="var(--amber-ink)" text-anchor="middle">
+          <use href="#tagC" x="706" y="200"/><text x="706" y="204">1</text>
+          <use href="#tagC" x="750" y="200"/><text x="750" y="204">2</text>
+          <use href="#tagC" x="794" y="200"/><text x="794" y="204">3</text>
+        </g>
+        <text x="518" y="166" font-size="12.5" fill="var(--ink)" font-weight="500">回路 B · 聚会</text>
+        <text x="822" y="204" font-size="11" fill="var(--ink-3)" font-family="var(--mono)">手动</text>
+
+        <!-- 回路 C -->
+        <rect x="518" y="268" width="152" height="44" fill="var(--card-2)" stroke="var(--line-2)" stroke-width="1.2"/>
+        <text x="594" y="286" font-size="11.5" fill="var(--ink)" text-anchor="middle">独立墙面开关</text>
+        <text x="594" y="302" font-size="10.5" fill="var(--ink-3)" text-anchor="middle" font-family="var(--mono)">平时保持关闭</text>
+        <line x1="670" y1="290" x2="866" y2="290" stroke="var(--amber)" stroke-width="1.6"/>
+        <g font-family="var(--mono)" font-size="11.5" fill="var(--amber-ink)" text-anchor="middle">
+          <use href="#tagC" x="712" y="290"/><text x="712" y="294">9</text>
+        </g>
+        <text x="518" y="256" font-size="12.5" fill="var(--ink)" font-weight="500">回路 C · 作业</text>
+        <text x="762" y="294" font-size="11" fill="var(--ink-3)" font-family="var(--mono)">只在打扫/搬东西时开</text>
+
+        <!-- 免布线组 -->
+        <rect x="20" y="340" width="846" height="66" fill="var(--leaf-soft)" stroke="var(--leaf)" stroke-width="1.2" stroke-dasharray="7 5"/>
+        <text x="42" y="366" font-size="12.5" fill="var(--ink)" font-weight="500">免布线组 · 不接市电</text>
+        <text x="42" y="386" font-size="11" fill="var(--ink-3)" font-family="var(--mono)">太阳能板自带蓄电 / USB 充电，装哪都行，也是省钱与省工的关键</text>
+        <g font-family="var(--mono)" font-size="11.5" fill="var(--amber-ink)" text-anchor="middle">
+          <use href="#tagC" x="640" y="373"/><text x="640" y="377">5</text>
+          <use href="#tagC" x="684" y="373"/><text x="684" y="377">6</text>
+          <use href="#tagC" x="728" y="373"/><text x="728" y="377">8</text>
+        </g>
+        <text x="756" y="377" font-size="11" fill="var(--leaf)" font-family="var(--mono)">感应 / 光控 / 电池</text>
+      </svg>
+    </div>
+    <figcaption><b>图 E-05</b>　把 10 组灯拆到三个回路上，是为了让"开灯"变成一个动作而不是七个。
+    <span class="tag">5</span><span class="tag">6</span><span class="tag">8</span> 完全不接线，
+    所以真正需要电工介入的只有从室内引出的那一路。</figcaption>
+  </figure>
+
+  <h3>三种场景</h3>
+  <div class="scenes">
+    <div class="scene">
+      <div class="sn">日常</div>
+      <div class="sw">回路 A · 约 33 W</div>
+      <div class="st"><span class="tag">4</span><span class="tag">5</span><span class="tag">6</span><span class="tag">7</span></div>
+      <p style="font-size:.85rem;color:var(--ink-2);margin-top:10px">天黑自动亮。看得清路和楼梯，绿植有轮廓，屋顶不是黑洞，仅此而已。</p>
+    </div>
+    <div class="scene">
+      <div class="sn">聚餐</div>
+      <div class="sw">A + B + 桌灯 · 约 89 W</div>
+      <div class="st"><span class="tag">1</span><span class="tag">2</span><span class="tag">3</span><span class="tag">8</span></div>
+      <p style="font-size:.85rem;color:var(--ink-2);margin-top:10px">门边按一下无线开关。灯串 + 洗墙 + 桌灯三层同时到位，就是照片里想要的那个氛围。</p>
+    </div>
+    <div class="scene">
+      <div class="sn">作业</div>
+      <div class="sw">A + C · 约 83 W</div>
+      <div class="st"><span class="tag">9</span></div>
+      <p style="font-size:.85rem;color:var(--ink-2);margin-top:10px">打扫、收晾晒、搬东西时才开那盏大投光灯。用完随手关——它不再是常亮灯。</p>
+    </div>
+  </div>
+
+  <div class="danger">
+    <h3>屋面施工的六条硬规矩</h3>
+    <ol>
+      <li><b>不在屋面防水层和女儿墙压顶上打孔。</b>屋顶漏水的修复成本远超这套灯。固定一律用抱箍、栏杆夹、配重底座，只在既有实体墙、钢楼梯型钢和落水管上生根。</li>
+      <li><b>市电部分务必带 30 mA 漏电保护，并请持证电工完成穿墙与接线。</b>户外潮湿环境，这一条没有商量余地。</li>
+      <li><b>灯串必须挂在 3 mm 不锈钢钢丝绳上，灯串自身电线不受力。</b>预留 3–5% 垂度吸收热胀冷缩和风摆。</li>
+      <li><b>屋顶风大，所有灯具做二次防坠</b>（细钢丝或扎带兜一道）；台风或大风预警前把灯串整条取下。</li>
+      <li><b>线缆穿 PVC 波纹管或线槽沿墙走，不横穿地面。</b>地面走线既绊人又加速老化破皮。</li>
+      <li><b>无遮挡位置的灯具选 IP65 起</b>，檐口下可放宽到 IP44；接头处一律用防水接线盒或热缩管，别用普通电工胶布。</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================= E-06 ================= -->
+<section>
+  <div class="sheet-hd">
+    <span class="sheet-no">E-06</span>
+    <h2>采购清单</h2>
+    <span class="note">2026 年电商参考价，含五金</span>
+  </div>
+  <div class="prose">
+    <p>分两档买。<b>基础版就能出 80% 的效果</b>——如果预算只够一次，先买这一档，
+    尤其是灯串和桌灯，它俩是观感变化最大的两项。进阶版是把"能用"提升到"耐看"。</p>
+  </div>
+
+  <h3>第一档 · 基础版</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>编号</th><th>物品</th><th>规格要点</th><th>数量</th><th>参考价</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag">1</span></td><td><strong>户外防水灯串</strong></td><td>S14 / G40 <b>可换灯泡型</b>，20 m·24 灯，1 W 磨砂泡，2700 K，IP65，带公母插可串联</td><td class="num">1 套</td><td class="num">¥110</td></tr>
+        <tr><td>—</td><td><strong>灯串五金包</strong></td><td>3 mm 304 包塑钢丝绳 20 m、M6 花篮螺栓 ×4、钢丝绳夹 ×10、M8×80 膨胀螺栓 ×4、管夹/栏杆夹 ×4、S 钩若干</td><td class="num">1 批</td><td class="num">¥65</td></tr>
+        <tr><td><span class="tag">8</span></td><td><strong>充电式户外桌灯</strong></td><td>3 W 无极调光，2700 K，Ra≥90，Type-C 充电，IP54</td><td class="num">2 只</td><td class="num">¥90</td></tr>
+        <tr><td><span class="tag">6</span></td><td><strong>太阳能地插柱头灯</strong></td><td>暖光，单只 ≤20 lm（不要买"超亮"款），带光控</td><td class="num">8 只</td><td class="num">¥80</td></tr>
+        <tr><td><span class="tag">5</span></td><td><strong>太阳能人体感应壁灯</strong></td><td>3000 K，感应距离 3–5 m，延时 15 s</td><td class="num">2 只</td><td class="num">¥55</td></tr>
+        <tr><td><span class="tag">10</span></td><td><strong>防水插座箱 + 漏电保护</strong></td><td>IP55 户外插座箱、30 mA 漏电保护插头、防水穿墙套管</td><td class="num">1 套</td><td class="num">¥75</td></tr>
+        <tr><td>—</td><td><strong>线材与走线</strong></td><td>RVV 2×1.0 护套线 20 m、PVC 波纹管/线槽 10 m、管卡、扎带、防水接线盒 ×3</td><td class="num">1 批</td><td class="num">¥60</td></tr>
+        <tr><td>—</td><td><strong>控制件</strong></td><td>防水 WiFi 智能插座 ×1、免布线无线贴墙开关 ×1（贴在推拉门边）</td><td class="num">1 套</td><td class="num">¥55</td></tr>
+      </tbody>
+      <tfoot><tr><td colspan="4">基础版小计</td><td class="num">≈ ¥590</td></tr></tfoot>
+    </table>
+  </div>
+
+  <h3>第二档 · 进阶版</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>编号</th><th>物品</th><th>规格要点</th><th>数量</th><th>参考价</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag">3</span></td><td><strong>洗墙投光灯</strong></td><td>10 W，2700 K，IP65，30° 光束，<b>带遮光罩或蜂窝网</b>，可调角度</td><td class="num">2 只</td><td class="num">¥90</td></tr>
+        <tr><td><span class="tag">2</span></td><td><strong>上下发光壁灯</strong></td><td>双头筒形，6 W，2700 K，IP65，铝压铸外壳</td><td class="num">2 只</td><td class="num">¥110</td></tr>
+        <tr><td><span class="tag">4</span></td><td><strong>楼梯扶手灯带</strong></td><td>24 V 灯带 2700 K IP67 5 m + 铝槽乳白罩 5 m + 60 W IP67 恒压电源</td><td class="num">1 套</td><td class="num">¥130</td></tr>
+        <tr><td><span class="tag">7</span></td><td><strong>低压插地射灯</strong></td><td>24 V 3 W，24° 窄光束，2700 K，IP65，带插地针</td><td class="num">3 只</td><td class="num">¥90</td></tr>
+        <tr><td><span class="tag">9</span></td><td><strong>遮光罩改造件</strong></td><td>给现有投光灯加装挡光板/蜂窝网 + 万向支架</td><td class="num">1 套</td><td class="num">¥20</td></tr>
+      </tbody>
+      <tfoot><tr><td colspan="4">进阶版小计</td><td class="num">≈ ¥440</td></tr></tfoot>
+    </table>
+  </div>
+
+  <div class="tw" style="margin-top:14px">
+    <table style="min-width:320px">
+      <tbody><tr><td style="width:auto"><strong>两档合计</strong>（不含人工，灯泡备件另加 ¥20）</td><td class="num" style="text-align:right;font-size:1.05rem"><strong>≈ ¥1 030</strong></td></tr></tbody>
+    </table>
+  </div>
+
+  <h3>五条省钱要点</h3>
+  <ul class="tips">
+    <li><b>千万别买大功率白光投光灯。</b>50–100 W 冷白投光灯是全场最便宜也最毁气氛的东西，
+    一只就顶掉整院的层次。把同样的钱拆成八组小功率暖光，效果是两个世界。</li>
+    <li><b>灯串买"可换灯泡"的商用款，不买一体式。</b>贵 20 块，但坏一颗换一颗；
+    一体式坏一颗就得整串扔，两年内一定回本。顺手多买 4 颗备用泡。</li>
+    <li><b>太阳能只用在边界和感应位</b>（<span class="tag">5</span><span class="tag">6</span>）。
+    它省下的是布线的钱和工，但阴雨天、冬季会明显变暗，还常有频闪——所以绝不能拿它当主照明或用在人脸区。</li>
+    <li><b>同一批次一次买齐 2700 K。</b>不同批次、不同店家的"暖白"色温能差出 400 K，
+    装上墙一眼就能看出来，返工比多买贵。</li>
+    <li><b>五金去本地五金店按需买。</b>钢丝绳、膨胀螺栓、管夹这些在灯具店按"套装"卖要贵一倍，
+    五金店散买还能顺便问清楚你那面墙该用什么锚栓。</li>
+  </ul>
+</section>
+
+<!-- ================= E-07 ================= -->
+<section>
+  <div class="sheet-hd">
+    <span class="sheet-no">E-07</span>
+    <h2>安装顺序与维护</h2>
+    <span class="note">一个下午 + 一个晚上调试</span>
+  </div>
+  <div class="steps">
+    <div class="step"><span class="d">步 1</span><span class="t"><b>定取电点。</b>请电工从室内插座穿墙引出，装 <span class="tag">10</span> IP55 插座箱与 30 mA 漏电保护，做好穿墙防水。这是唯一必须专业介入的一步。</span><span class="h">60 min</span></div>
+    <div class="step"><span class="d">步 2</span><span class="t"><b>拉钢丝绳。</b>先在主屋墙打两个 M8 膨胀螺栓做锚点 A/C，另一端用抱箍卡落水管、用夹具卡栏杆立柱，花篮螺栓收紧到略有垂度。<b>先拉绳，后挂灯。</b></span><span class="h">50 min</span></div>
+    <div class="step"><span class="d">步 3</span><span class="t"><b>挂 <span class="tag">1</span> 灯串。</b>用 S 钩或扎带每 50 cm 把灯串固定到钢丝绳上，电线全程不受力，末端留一段余量落到插座箱。</span><span class="h">40 min</span></div>
+    <div class="step"><span class="d">步 4</span><span class="t"><b>装 <span class="tag">2</span><span class="tag">3</span>。</b>壁灯定在 2.2 m；洗墙灯贴后墙根放到盆栽后面，通电后现场调角度——<b>站到餐桌位置看，看不见灯珠为准。</b></span><span class="h">50 min</span></div>
+    <div class="step"><span class="d">步 5</span><span class="t"><b>低压组 <span class="tag">4</span><span class="tag">7</span>。</b>24 V 电源装在插座箱旁，灯带装铝槽后贴扶手下缘（开口朝下），射灯插到盆栽根部。</span><span class="h">45 min</span></div>
+    <div class="step"><span class="d">步 6</span><span class="t"><b>免布线组 <span class="tag">5</span><span class="tag">6</span><span class="tag">8</span>。</b>直接插/挂即可。注意太阳能板要朝南且白天不被楼梯或女儿墙挡住。</span><span class="h">20 min</span></div>
+    <div class="step"><span class="d">步 7</span><span class="t"><b>改造 <span class="tag">9</span>。</b>给原投光灯加遮光罩，转向打墙面，接到独立开关（回路 C）。<b>把它从常亮改成偶尔用，是整套方案里效果最立竿见影的一步。</b></span><span class="h">25 min</span></div>
+    <div class="step"><span class="d">步 8</span><span class="t"><b>入夜调试。</b>坐到每一个座位上，看四个方向有没有直射光进眼；用手机的测光/照度 App 粗测桌面与地面，再用 <span class="tag">8</span> 的调光旋钮把桌面收到 150–200 lx。</span><span class="h">30 min</span></div>
+  </div>
+
+  <h3>维护</h3>
+  <div class="tw">
+    <table style="min-width:480px">
+      <thead><tr><th>周期</th><th>动作</th><th>原因</th></tr></thead>
+      <tbody>
+        <tr><td class="num">每季度</td><td>擦灯罩与太阳能板</td><td>屋顶积灰可让光通量掉 20–30%，也是太阳能灯"越用越暗"的头号原因</td></tr>
+        <tr><td class="num">每半年</td><td>检查钢丝绳张力、锚点与防坠扎带</td><td>热胀冷缩加风摆会让绳松，松了灯串会打到墙</td></tr>
+        <tr><td class="num">大风前</td><td>整条取下灯串收室内</td><td>屋顶风速远高于地面，这是灯串唯一的真实损坏风险</td></tr>
+        <tr><td class="num">按需</td><td>换备用灯泡</td><td>可换泡型的意义所在，单颗成本约 ¥4</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <p>平面尺寸（9.0 × 6.5 m）与灯具定位为根据夜景照片的透视判读所作估算，施工前请用卷尺实测，
+  并按实际墙体位置、楼梯投影和栏杆立柱间距微调锚点。照度值为设计目标，非实测结果。</p>
+  <p>价格为 2026 年国内电商平台常见区间，不含人工。涉及市电的穿墙、接线与漏电保护安装请交由持证电工完成。</p>
+</footer>
+
+</div>
