@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1b0d47">
+<meta name="description" content="Ultracode 吉他律动 · 拨弦看波形，吉祥物边跳边动">
+<title>Ultracode · 吉他律动</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+  html,body{
+    height:100%;
+    overscroll-behavior:none;
+    background:#0b0620;
+  }
+
+  body{
+    position:fixed;inset:0;
+    color:#e9e3ff;
+    font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans SC',system-ui,-apple-system,sans-serif;
+    -webkit-user-select:none;user-select:none;
+    background:
+      radial-gradient(120% 70% at 50% -10%, #3a1a86 0%, #22105a 40%, #0b0620 78%);
+    display:flex;justify-content:center;
+    overflow:hidden;
+  }
+
+  #app{
+    width:100%;max-width:480px;
+    height:100%;
+    display:flex;flex-direction:column;gap:9px;
+    padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));
+  }
+
+  /* ---------- 顶部 Ultracode 胶囊（复刻选择器那一行） ---------- */
+  .chip{
+    position:relative;flex:0 0 auto;height:58px;border-radius:16px;overflow:hidden;
+    background:linear-gradient(90deg,#2b1266 0%,#331873 52%,#3b1c82 100%);
+    box-shadow:0 8px 26px rgba(59,28,130,.5), inset 0 0 0 1px rgba(167,139,250,.18);
+    display:flex;align-items:center;
+  }
+  .chip .label{
+    position:relative;z-index:2;padding-left:18px;
+    font-size:21px;font-weight:600;color:#fff;letter-spacing:.2px;
+    text-shadow:0 2px 10px rgba(0,0,0,.35);
+  }
+  #chip{position:absolute;right:0;top:0;height:100%;width:56%;z-index:1}
+
+  .tagline{
+    flex:0 0 auto;text-align:center;
+    font-size:11.5px;letter-spacing:1.6px;color:#a493d8;
+  }
+  .tagline b{color:#d6c8ff;font-weight:600}
+
+  /* ---------- 舞台：吉祥物 ---------- */
+  .stage{
+    position:relative;flex:1 1 40%;min-height:0;
+    border-radius:20px;overflow:hidden;
+    background:radial-gradient(125% 85% at 50% 12%, #4b2699 0%, #2d1269 46%, #1a0c46 100%);
+    box-shadow:inset 0 0 0 1px rgba(167,139,250,.2), 0 10px 30px rgba(0,0,0,.35);
+  }
+  .stage .px{
+    position:absolute;inset:0;pointer-events:none;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(198,180,255,.10) 0 1px, transparent 1px 11px),
+      repeating-linear-gradient(90deg, rgba(198,180,255,.10) 0 1px, transparent 1px 11px);
+    -webkit-mask-image:radial-gradient(120% 95% at 50% 55%, #000 25%, transparent 80%);
+            mask-image:radial-gradient(120% 95% at 50% 55%, #000 25%, transparent 80%);
+  }
+  .stage .flash{
+    position:absolute;inset:0;pointer-events:none;opacity:0;
+    background:radial-gradient(60% 45% at 50% 62%, rgba(196,181,253,.55), transparent 70%);
+    mix-blend-mode:screen;
+  }
+  #stage{position:absolute;inset:0;width:100%;height:100%;z-index:2}
+  .badge{
+    position:absolute;left:10px;top:9px;z-index:3;
+    font:600 9.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:1.6px;
+    color:#c9b8ff;background:rgba(20,10,55,.55);border:1px solid rgba(167,139,250,.25);
+    padding:5px 8px;border-radius:7px;
+  }
+
+  /* ---------- 波形示波器 ---------- */
+  .scope{
+    position:relative;flex:0 0 auto;height:84px;
+    border-radius:14px;overflow:hidden;
+    background:linear-gradient(180deg,#1c0e4a,#150a38);
+    box-shadow:inset 0 0 0 1px rgba(167,139,250,.18);
+  }
+  .scope .head{
+    position:absolute;left:10px;right:10px;top:7px;z-index:2;
+    display:flex;justify-content:space-between;align-items:center;
+    font:600 9.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:1.6px;
+    color:#8f7cc9;pointer-events:none;
+  }
+  .scope .head #hz{color:#f6c945}
+  #scope{position:absolute;inset:0;width:100%;height:100%}
+
+  /* ---------- 琴弦 ---------- */
+  .fret{
+    position:relative;flex:1 1 46%;min-height:0;
+    border-radius:18px;overflow:hidden;
+    background:linear-gradient(180deg,#231148 0%,#190c39 100%);
+    box-shadow:inset 0 0 0 1px rgba(167,139,250,.2), 0 10px 30px rgba(0,0,0,.3);
+  }
+  #strings{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+  .hint{
+    position:absolute;left:0;right:0;bottom:6px;text-align:center;z-index:2;
+    font-size:11px;letter-spacing:1.4px;color:#9d8ad3;pointer-events:none;
+    transition:opacity .5s ease;
+  }
+  .hint.gone{opacity:0}
+
+  /* ---------- 控制条 ---------- */
+  .controls{
+    flex:0 0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+  }
+  .controls button{
+    -webkit-appearance:none;appearance:none;
+    height:44px;border-radius:12px;border:1px solid rgba(167,139,250,.24);
+    background:linear-gradient(180deg,rgba(76,38,150,.55),rgba(45,20,100,.55));
+    color:#d8cbff;font-size:13px;font-family:inherit;font-weight:500;letter-spacing:.5px;
+    display:flex;align-items:center;justify-content:center;gap:5px;
+    transition:transform .08s ease, background .2s ease, color .2s ease, border-color .2s ease;
+  }
+  .controls button:active{transform:scale(.95)}
+  .controls button.on{
+    background:linear-gradient(180deg,#6d3ce0,#4a22a8);
+    border-color:rgba(196,181,253,.55);color:#fff;
+    box-shadow:0 4px 16px rgba(109,60,224,.42);
+  }
+  .controls button.off{color:#7f6cb3}
+  .controls button .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.85}
+
+  @media (max-height:620px){
+    .chip{height:50px}
+    .chip .label{font-size:18px}
+    .scope{height:68px}
+    .controls button{height:40px}
+    .tagline{display:none}
+  }
+
+  /* 横屏：左边看它跳，右边弹 */
+  @media (orientation:landscape) and (max-height:560px){
+    #app{
+      max-width:920px;
+      display:grid;gap:8px;
+      grid-template-columns:38% 1fr;
+      grid-template-rows:auto 1fr auto;
+      grid-template-areas:
+        "chip  scope"
+        "stage fret"
+        "stage controls";
+    }
+    .chip{grid-area:chip}
+    .stage{grid-area:stage}
+    .scope{grid-area:scope;height:auto}
+    .fret{grid-area:fret}
+    .controls{grid-area:controls}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .stage .flash{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="chip">
+    <span class="label">Ultracode</span>
+    <canvas id="chip"></canvas>
+  </div>
+
+  <p class="tagline">拨动琴弦 · 看见 <b>波形</b> 与 <b>震动</b> · 它会边跳边弹</p>
+
+  <section class="stage">
+    <div class="px"></div>
+    <canvas id="stage"></canvas>
+    <div class="flash" id="flash"></div>
+    <span class="badge">CLAUDE CODE</span>
+  </section>
+
+  <section class="scope">
+    <div class="head"><span>WAVEFORM</span><span id="hz">— IDLE —</span></div>
+    <canvas id="scope"></canvas>
+  </section>
+
+  <section class="fret">
+    <canvas id="strings"></canvas>
+    <div class="hint" id="hint">在琴弦上滑动 / 点按即可拨弦</div>
+  </section>
+
+  <div class="controls">
+    <button id="btnSound" class="on"><span class="dot"></span>声音</button>
+    <button id="btnHaptic" class="on"><span class="dot"></span>震动</button>
+    <button id="btnStrum">扫弦</button>
+    <button id="btnDemo">演示</button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* =====================================================================
+   1. 像素素材
+   ===================================================================== */
+const PAL = {
+  K:'#1a1033', /* 描边 */
+  B:'#c4783f', /* 身体 */
+  H:'#e8a86d', /* 高光 */
+  S:'#8e4c26', /* 阴影 */
+  M:'#f3d2ad', /* 口鼻 */
+  W:'#ffffff', /* 眼白 */
+  D:'#2c2166', /* 琴身 */
+  s:'#0c0522', /* 音孔 */
+  n:'#8878c8', /* 琴颈 */
+  h:'#2a1c5c', /* 琴颈描边 */
+  N:'#f6c945'  /* 音符 */
+};
+
+function sprite(rows){ return { w: rows[0].length, h: rows.length, rows: rows }; }
+
+const SPR = {
+  body: sprite([
+    '.....KK..........KK.....',
+    '....KBBK........KBBK....',
+    '....KBHBK......KBHBK....',
+    '...KBBHBBKKKKKKBBHBBK...',
+    '...KBHHBBBBBBBBBBBHBK...',
+    '..KBHHHBBBBBBBBBBBBBBK..',
+    '..KBHHBBBBBBBBBBBBBBBK..',
+    '..KBHBBWKBBBBBBBBWKBBK..',
+    '..KBBBBKKBBBBBBBBKKBBK..',
+    '..KBBBBBBBBSSBBBBBBBBK..',
+    '...KBBBBBBSMMSBBBBBBK...',
+    '...KBBBBBBBSSBBBBBBBK...',
+    '....KBBBBBBBBBBBBBBK....',
+    '.....KKBBBBBBBBBBKK.....',
+    '......KBBBBBBBBBBK......',
+    '.....KBBBBBBBBBBBBK.....',
+    '.....KBHBBBBBBBBBBK.....',
+    '.....KBHBBBBBBBBBBK.....',
+    '.....KBBBBBBBBBBBBK.....',
+    '.....KBBBBBBBBBBBBK.....',
+    '......KBBBBBBBBBBK......',
+    '......KBBKKKKKKBBK......',
+    '......KBBK....KBBK......',
+    '......KBBK....KBBK......',
+    '......KKKK....KKKK......'
+  ]),
+  guitar: sprite([
+    '..................hh',
+    '.................hnn',
+    '................hnnh',
+    '...............hnnh.',
+    '..............hnnh..',
+    '....KKKK.....hnnh...',
+    '..KKDDDDKK..hnnh....',
+    '.KDDDDDDDDK.nnh.....',
+    '.KDDsssDDDDnnh......',
+    '.KDsssssDDDnh.......',
+    '.KDDsssDDDDDK.......',
+    '.KDDDDDDDDDDK.......',
+    '..KDDDDDDDDK........',
+    '...KKDDDDKK.........',
+    '.....KKKK...........'
+  ]),
+  arm: sprite([
+    '.KK.',
+    'KBBK',
+    'KBBK',
+    'KBBK',
+    '.KK.'
+  ]),
+  note: sprite([
+    '......NN',
+    '.....NNN',
+    '....NNNN',
+    '....N.NN',
+    '....N...',
+    '.NNNN...',
+    'NNNNN...',
+    '.NNN....'
+  ])
+};
+
+/* 把像素图预渲染成离屏 canvas，绘制时只需 drawImage */
+function bake(sp, s){
+  const c = document.createElement('canvas');
+  c.width = sp.w * s; c.height = sp.h * s;
+  const x = c.getContext('2d');
+  for(let r=0;r<sp.h;r++){
+    const row = sp.rows[r];
+    for(let i=0;i<sp.w;i++){
+      const ch = row[i];
+      if(ch === '.') continue;
+      x.fillStyle = PAL[ch] || '#ff00ff';
+      x.fillRect(i*s, r*s, s, s);
+    }
+  }
+  return c;
+}
+
+/* =====================================================================
+   2. 画布
+   ===================================================================== */
+function cv(id){
+  const el = document.getElementById(id);
+  return { el: el, ctx: el.getContext('2d'), w: 0, h: 0 };
+}
+const CV = { stage: cv('stage'), scope: cv('scope'), strings: cv('strings'), chip: cv('chip') };
+
+let SCALE = 5, CHIP_SCALE = 2;
+let baked = null, bakedChip = null;
+
+function rebake(){
+  baked = {
+    body:   bake(SPR.body,   SCALE),
+    guitar: bake(SPR.guitar, SCALE),
+    arm:    bake(SPR.arm,    SCALE),
+    note:   bake(SPR.note,   Math.max(2, Math.round(SCALE*0.62)))
+  };
+  bakedChip = {
+    body:   bake(SPR.body,   CHIP_SCALE),
+    guitar: bake(SPR.guitar, CHIP_SCALE),
+    arm:    bake(SPR.arm,    CHIP_SCALE)
+  };
+}
+
+function fitAll(){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  for(const k in CV){
+    const c = CV[k];
+    const r = c.el.getBoundingClientRect();
+    c.w = Math.max(1, r.width);
+    c.h = Math.max(1, r.height);
+    c.el.width  = Math.round(c.w * dpr);
+    c.el.height = Math.round(c.h * dpr);
+    c.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.ctx.imageSmoothingEnabled = false;
+  }
+  /* 吉祥物 + 吉他合成后 24 格宽、25 格高 */
+  SCALE = Math.max(3, Math.min(14, Math.floor(Math.min(CV.stage.w*0.70/24, CV.stage.h*0.62/25))));
+  CHIP_SCALE = Math.max(1, Math.min(3, Math.floor((CV.chip.h - 8)/25)));
+  rebake();
+  drawChipBg();
+}
+
+let fitQueued = false;
+function queueFit(){
+  if(fitQueued) return;
+  fitQueued = true;
+  requestAnimationFrame(function(){ fitQueued = false; fitAll(); });
+}
+window.addEventListener('resize', queueFit);
+window.addEventListener('orientationchange', queueFit);
+if(window.ResizeObserver){
+  const ro = new ResizeObserver(queueFit);
+  ro.observe(document.getElementById('app'));
+}
+
+/* =====================================================================
+   3. 六根弦的物理 / 视觉模型
+   ===================================================================== */
+const STRINGS = [
+  { n:'E', f: 82.41,  g:3.4 },
+  { n:'A', f:110.00,  g:3.0 },
+  { n:'D', f:146.83,  g:2.6 },
+  { n:'G', f:196.00,  g:2.2 },
+  { n:'B', f:246.94,  g:1.8 },
+  { n:'e', f:329.63,  g:1.5 }
+];
+
+const ST = STRINGS.map(function(s, i){
+  return {
+    amp: 0,            /* 拨弦力度 0..1 */
+    t: 99,             /* 起振后经过的时间(s) */
+    tau: 2.7 - i*0.28, /* 衰减时间常数 */
+    p: 0.5,            /* 拨弦位置 0..1 */
+    ph: 0,             /* 初相 */
+    vf: 5.5 + i*2.0,   /* 视觉振动频率(Hz)，真实频率太快看不清 */
+    sf: STRINGS[i].f/8,/* 示波器频率 */
+    y: 0,              /* 屏幕上的 y */
+    flash: 0,          /* 拨弦点闪光 */
+    fx: 0.5
+  };
+});
+
+function env(s, t){
+  if(t < 0) return 0;
+  return s.amp * Math.exp(-t / s.tau);
+}
+
+/* 前三阶模态叠加：a_n = sin(nπp)/n² —— 拨弦位置决定泛音成分 */
+function modeShape(s, u, t){
+  const w = 2*Math.PI*s.vf;
+  let v = 0;
+  for(let n=1;n<=3;n++){
+    const a = Math.sin(n*Math.PI*s.p)/(n*n);
+    v += a * Math.sin(n*Math.PI*u) * Math.cos(n*w*t + s.ph);
+  }
+  return v / 1.2;
+}
+
+/* 示波器取样：把 6 根弦叠加成一条“音频”波形 */
+function sampleAt(back){
+  let v = 0;
+  for(let i=0;i<6;i++){
+    const s = ST[i];
+    const t = s.t - back;
+    if(t < 0 || s.amp <= 0.001) continue;
+    const e = env(s, t);
+    if(e < 0.002) continue;
+    const w = 2*Math.PI*s.sf;
+    v += e * (0.68*Math.sin(w*t + s.ph)
+            + 0.22*Math.sin(2*w*t + s.ph + 0.7)
+            + 0.10*Math.sin(3*w*t + s.ph + 1.4));
+  }
+  return Math.max(-1.6, Math.min(1.6, v));
+}
+
+/* =====================================================================
+   4. 吉祥物状态
+   ===================================================================== */
+const MAS = {
+  y: 0,        /* 离地高度(px)，向上为正 */
+  vy: 0,
+  sq: 0,       /* 挤压/拉伸 */
+  sway: 0,
+  tilt: 0,
+  energy: 0,   /* 兴奋度：越高跳得越久 */
+  arm: 0,      /* 扫弦手臂动画 0..1 */
+  breath: 0    /* 待机时的呼吸 */
+};
+const NOTES = [];   /* 飘起来的音符 */
+const RINGS = [];   /* 落地冲击波 */
+
+/* 重力与弹跳高度都按舞台高度归一化，任何屏幕上都不会跳出画面 */
+const GA = 3.4;                                  /* 重力 = GA × 舞台高度 */
+function stageH(){ return CV.stage.h || 240; }
+function hopV(frac){ return stageH() * Math.sqrt(2*GA*frac); }
+
+function mascotHit(power){
+  MAS.energy = Math.min(1, MAS.energy + 0.30 + power*0.45);
+  const boost = hopV(0.05 + power*0.11);         /* 最高约 16% 舞台高 */
+  if(MAS.y < 2) MAS.vy = boost;
+  else MAS.vy = Math.max(MAS.vy, boost*0.5);
+  MAS.arm = 1;
+  MAS.sq = -Math.min(0.22, power*0.22);   /* 起跳先拉长 */
+  /* 冒音符 */
+  const dir = Math.random() < 0.5 ? -1 : 1;
+  /* 上方还剩多少空间，音符就飘多高，任何屏幕上都不会飞出画面 */
+  const room = Math.max(14, CV.stage.h*0.88 - MAS.y - 27*SCALE);
+  NOTES.push({
+    x: dir * (2.5 + Math.random()*5) * SCALE,
+    y: (Math.random()*2.2) * SCALE,
+    vx: dir * (18 + Math.random()*52),
+    vy: room * (0.30 + Math.random()*0.16 + power*0.10),
+    ph: Math.random()*6.28,
+    life: 1
+  });
+  if(NOTES.length > 18) NOTES.splice(0, NOTES.length-18);
+}
+
+function updateMascot(dt){
+  MAS.energy = Math.max(0, MAS.energy - dt*0.42);
+  MAS.arm    = Math.max(0, MAS.arm - dt*3.2);
+
+  MAS.vy -= GA*stageH()*dt;
+  MAS.y  += MAS.vy*dt;
+
+  if(MAS.y <= 0){
+    const impact = -MAS.vy;
+    MAS.y = 0;
+    if(MAS.energy > 0.06){
+      /* 还有劲儿：接着蹦 */
+      MAS.vy = hopV(0.02 + MAS.energy*0.07);
+      MAS.sq = Math.min(0.30, 0.10 + impact/(stageH()*9));
+      RINGS.push({ r: 0, life: 1 });
+      if(RINGS.length > 6) RINGS.shift();
+    }else{
+      MAS.vy = 0;
+      if(impact > stageH()*0.15) MAS.sq = Math.min(0.26, impact/(stageH()*8));
+    }
+  }
+
+  /* 挤压回弹 */
+  MAS.sq += (0 - MAS.sq) * Math.min(1, dt*9);
+
+  /* 待机时轻轻起伏，别站得像块石头 */
+  MAS.breath = (1 - Math.min(1, MAS.energy*5)) * Math.sin(T*1.7) * 0.022;
+
+  /* 左右扭动 + 倾斜（跳得越欢摆得越大） */
+  const e = MAS.energy;
+  MAS.sway = Math.sin(T*7.2) * e * 9;
+  MAS.tilt = Math.sin(T*7.2 + 0.6) * e * 0.13;
+
+  for(let i=NOTES.length-1;i>=0;i--){
+    const n = NOTES[i];
+    n.life -= dt*0.72;
+    n.x += n.vx*dt;
+    n.y += n.vy*dt;
+    n.vy *= (1 - dt*0.5);
+    n.vx *= (1 - dt*0.9);
+    if(n.life <= 0) NOTES.splice(i,1);
+  }
+  for(let i=RINGS.length-1;i>=0;i--){
+    const r = RINGS[i];
+    r.life -= dt*1.7;
+    r.r += dt*stageH()*0.55;
+    if(r.life <= 0) RINGS.splice(i,1);
+  }
+}
+
+/* =====================================================================
+   5. 绘制：舞台
+   ===================================================================== */
+function drawMascotInto(ctx, bk, cx, groundY, s, hopScale){
+  const hop = MAS.y * (hopScale === undefined ? 1 : hopScale);
+  const sway = MAS.sway * (hopScale === undefined ? 1 : hopScale);
+  /* 影子 */
+  const hFrac = Math.min(1, hop/110);
+  ctx.save();
+  ctx.globalAlpha = 0.34 * (1 - hFrac*0.6);
+  ctx.fillStyle = '#0c0526';
+  ctx.beginPath();
+  ctx.ellipse(cx + sway*0.5, groundY + s*0.8, s*8*(1-hFrac*0.35), s*1.9*(1-hFrac*0.3), 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(cx + sway, groundY - hop);
+  ctx.rotate(MAS.tilt);
+  ctx.scale(1 + MAS.sq - MAS.breath, 1 - MAS.sq + MAS.breath);
+  ctx.imageSmoothingEnabled = false;
+
+  /* 身体：底边中心为原点，24×25 格 */
+  ctx.drawImage(bk.body, -12*s, -25*s);
+  /* 吉他：合成坐标 (3,8) —— 斜挎在肚子前，琴颈向右上 */
+  ctx.drawImage(bk.guitar, -9*s, -17*s);
+  /* 扫弦的手：合成坐标 (9,13)，随拨弦上下摆 */
+  const armDy = Math.sin(MAS.arm*Math.PI) * s * 2.6;
+  ctx.drawImage(bk.arm, -3*s, -12*s + armDy);
+
+  ctx.restore();
+}
+
+function drawStage(){
+  const C = CV.stage, ctx = C.ctx, w = C.w, h = C.h, s = SCALE;
+  ctx.clearRect(0,0,w,h);
+
+  const groundY = h * 0.88;
+  const cx = w * 0.5;
+
+  /* 地面：像素虚线 */
+  ctx.fillStyle = 'rgba(167,139,250,' + (0.16 + MAS.energy*0.22) + ')';
+  const cell = Math.max(3, Math.round(s*0.7));
+  for(let x = ((w*0.5) % (cell*2)) - cell*2; x < w; x += cell*2){
+    ctx.fillRect(x, groundY + s*2.2, cell, 2);
+  }
+
+  /* 落地冲击波 */
+  for(let i=0;i<RINGS.length;i++){
+    const r = RINGS[i];
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, r.life) * 0.5;
+    ctx.strokeStyle = '#c4b5fd';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(cx + MAS.sway*0.5, groundY + s*0.8, r.r + s*6, (r.r + s*6)*0.24, 0, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  drawMascotInto(ctx, baked, cx, groundY, s, 1);
+
+  /* 音符 */
+  const ns = baked.note;
+  for(let i=0;i<NOTES.length;i++){
+    const n = NOTES[i];
+    ctx.save();
+    /* 像素风：把淡出量化成几档，而不是连续渐隐 */
+    const l = Math.max(0, Math.min(1, n.life));
+    ctx.globalAlpha = l > 0.6 ? 1 : (l > 0.35 ? 0.7 : (l > 0.15 ? 0.4 : 0.18));
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(ns,
+      Math.round(cx + n.x + Math.sin(n.life*6 + n.ph) * SCALE*0.8),
+      Math.round(groundY - MAS.y - s*26 - n.y));
+    ctx.restore();
+  }
+}
+
+/* =====================================================================
+   6. 绘制：示波器
+   ===================================================================== */
+const WIN = 0.35; /* 屏幕上显示的时间窗口(s) */
+
+function drawScope(){
+  const C = CV.scope, ctx = C.ctx, w = C.w, h = C.h;
+  ctx.clearRect(0,0,w,h);
+
+  /* 网格 */
+  ctx.strokeStyle = 'rgba(167,139,250,.10)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for(let x = 0; x <= w; x += 26){ ctx.moveTo(x+.5, 0); ctx.lineTo(x+.5, h); }
+  for(let y = h/4; y < h; y += h/4){ ctx.moveTo(0, Math.round(y)+.5); ctx.lineTo(w, Math.round(y)+.5); }
+  ctx.stroke();
+
+  /* 中线 */
+  ctx.strokeStyle = 'rgba(167,139,250,.22)';
+  ctx.setLineDash([3,4]);
+  ctx.beginPath(); ctx.moveTo(0, Math.round(h/2)+.5); ctx.lineTo(w, Math.round(h/2)+.5); ctx.stroke();
+  ctx.setLineDash([]);
+
+  /* 波形（右侧为最新） */
+  const amp = h*0.34;
+  const step = w > 420 ? 2 : 1;
+  ctx.beginPath();
+  for(let x = 0; x <= w; x += step){
+    const back = (1 - x/w) * WIN;
+    const y = h/2 - Math.tanh(sampleAt(back)) * amp;
+    if(x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(167,139,250,.22)';
+  ctx.lineWidth = 7;
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(196,181,253,.45)';
+  ctx.lineWidth = 3.5;
+  ctx.stroke();
+  ctx.strokeStyle = '#efe8ff';
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+
+  /* 右端光点 */
+  const yEnd = h/2 - Math.tanh(sampleAt(0))*amp;
+  ctx.fillStyle = '#f6c945';
+  ctx.beginPath(); ctx.arc(w-2, yEnd, 2.6, 0, Math.PI*2); ctx.fill();
+}
+
+/* =====================================================================
+   7. 绘制：琴弦
+   ===================================================================== */
+const LAY = { padL: 30, padR: 12, padT: 20, padB: 26 };
+
+function stringY(i){
+  const h = CV.strings.h;
+  const gap = (h - LAY.padT - LAY.padB) / 5;
+  return LAY.padT + i*gap;
+}
+function stringGap(){
+  return (CV.strings.h - LAY.padT - LAY.padB) / 5;
+}
+
+function drawStrings(){
+  const C = CV.strings, ctx = C.ctx, w = C.w, h = C.h;
+  ctx.clearRect(0,0,w,h);
+
+  const gap = stringGap();
+  const x0 = LAY.padL, x1 = w - LAY.padR, span = x1 - x0;
+
+  /* 品丝 */
+  ctx.fillStyle = 'rgba(198,180,255,.09)';
+  for(let f=1; f<=5; f++){
+    const x = x0 + span*(f/6);
+    ctx.fillRect(Math.round(x), LAY.padT - gap*0.5, 1, (h - LAY.padT - LAY.padB) + gap);
+  }
+  /* 品记点 */
+  ctx.fillStyle = 'rgba(198,180,255,.16)';
+  [2,4].forEach(function(f){
+    const x = x0 + span*((f+0.5)/6);
+    ctx.beginPath(); ctx.arc(x, LAY.padT + gap*2.5, 3, 0, Math.PI*2); ctx.fill();
+  });
+  /* 上弦枕 */
+  ctx.fillStyle = 'rgba(198,180,255,.30)';
+  ctx.fillRect(x0 - 8, LAY.padT - gap*0.5, 2.5, (h - LAY.padT - LAY.padB) + gap);
+
+  for(let i=0;i<6;i++){
+    const s = ST[i];
+    const y0 = stringY(i);
+    s.y = y0;
+
+    const e = env(s, s.t);
+    const A = e * Math.min(gap*0.46, 26);
+
+    /* 振动包络（模糊带） */
+    if(A > 0.6){
+      ctx.beginPath();
+      for(let k=0;k<=32;k++){
+        const u = k/32, x = x0 + span*u;
+        const y = y0 - A*Math.sin(Math.PI*u)*1.05;
+        if(k===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      for(let k=32;k>=0;k--){
+        const u = k/32, x = x0 + span*u;
+        const y = y0 + A*Math.sin(Math.PI*u)*1.05;
+        ctx.lineTo(x,y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(167,139,250,' + (0.10 + e*0.13) + ')';
+      ctx.fill();
+    }
+
+    /* 弦本体 */
+    const lw = Math.max(1, STRINGS[i].g * Math.min(1.15, gap/26));
+    const grad = ctx.createLinearGradient(x0, 0, x1, 0);
+    grad.addColorStop(0,   '#7b68b8');
+    grad.addColorStop(0.5, e > 0.05 ? '#f0e9ff' : '#cbb9ff');
+    grad.addColorStop(1,   '#7b68b8');
+
+    ctx.beginPath();
+    const steps = 72;
+    for(let k=0;k<=steps;k++){
+      const u = k/steps, x = x0 + span*u;
+      const y = y0 + A*modeShape(s, u, s.t);
+      if(k===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = lw;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    /* 拨弦点闪光 */
+    if(s.flash > 0.01){
+      const fx = x0 + span*s.fx;
+      ctx.save();
+      ctx.globalAlpha = s.flash;
+      ctx.strokeStyle = '#f6c945';
+      ctx.lineWidth = 1.6;
+      const rr = 4 + (1 - s.flash)*13;
+      ctx.beginPath(); ctx.arc(fx, y0, rr, 0, Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
+
+    /* 弦名 */
+    ctx.fillStyle = e > 0.05 ? '#f6c945' : 'rgba(198,180,255,.45)';
+    ctx.font = '600 11px ui-monospace,SFMono-Regular,Menlo,monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(STRINGS[i].n, 14, y0);
+  }
+}
+
+/* =====================================================================
+   8. 顶部胶囊：像素格 + 迷你吉祥物
+   ===================================================================== */
+let chipBg = null;
+function drawChipBg(){
+  const C = CV.chip, w = C.w, h = C.h;
+  const c = document.createElement('canvas');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  c.width = Math.round(w*dpr); c.height = Math.round(h*dpr);
+  const x = c.getContext('2d');
+  x.setTransform(dpr,0,0,dpr,0,0);
+  const cell = 6;
+  for(let gy=0; gy<h; gy+=cell){
+    for(let gx=0; gx<w; gx+=cell){
+      const t = gx / Math.max(1,w);
+      /* 确定性的“抖动”，做出截图里那种像素点阵质感 */
+      const n = (Math.sin(gx*12.9898 + gy*78.233) * 43758.5453) % 1;
+      const a = Math.pow(t, 1.15) * (0.42 + Math.abs(n)*0.35);
+      x.fillStyle = 'rgba(167,146,222,' + (0.05 + a).toFixed(3) + ')';
+      x.fillRect(gx, gy, cell-1, cell-1);
+    }
+  }
+  chipBg = c;
+}
+
+function drawChip(){
+  const C = CV.chip, ctx = C.ctx, w = C.w, h = C.h, s = CHIP_SCALE;
+  ctx.clearRect(0,0,w,h);
+  if(chipBg) ctx.drawImage(chipBg, 0, 0, w, h);
+  drawMascotInto(ctx, bakedChip, w - 12*s - 8, h - 4, s, 0.10);
+}
+
+/* =====================================================================
+   9. 声音（Karplus-Strong 拨弦合成）
+   ===================================================================== */
+let AC = null, MASTER = null;
+let soundOn = true, hapticOn = true;
+const BUFS = [], VOICES = [];
+
+function ensureAudio(){
+  if(AC){
+    if(AC.state === 'suspended') AC.resume();
+    return;
+  }
+  const Ctor = window.AudioContext || window.webkitAudioContext;
+  if(!Ctor) return;
+  try{
+    AC = new Ctor();
+    MASTER = AC.createGain();
+    MASTER.gain.value = 0.85;
+    const lp = AC.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 3600; lp.Q.value = 0.5;
+    MASTER.connect(lp); lp.connect(AC.destination);
+    if(AC.state === 'suspended') AC.resume();
+  }catch(err){ AC = null; }
+}
+
+function makePluck(freq, dur){
+  const sr = AC.sampleRate;
+  const N = Math.max(2, Math.round(sr/freq));
+  const len = Math.floor(sr*dur);
+  const buf = AC.createBuffer(1, len, sr);
+  const d = buf.getChannelData(0);
+  let prev = 0;
+  for(let i=0;i<N;i++){
+    const wn = Math.random()*2 - 1;
+    prev = prev*0.35 + wn*0.65;   /* 轻微低通，音色更暖 */
+    d[i] = prev;
+  }
+  const damp = 0.9962;
+  for(let i=N;i<len;i++){
+    d[i] = (d[i-N] + d[i-N+1]) * 0.5 * damp;
+  }
+  const fade = Math.floor(sr*0.3);
+  for(let i=len-fade;i<len;i++) d[i] *= (len-i)/fade;
+  return buf;
+}
+
+function playNote(i, amp){
+  if(!soundOn) return;
+  ensureAudio();
+  if(!AC) return;
+  if(!BUFS[i]) BUFS[i] = makePluck(STRINGS[i].f, 3.0);
+  const old = VOICES[i];
+  if(old){
+    try{
+      old.g.gain.setTargetAtTime(0, AC.currentTime, 0.02);
+      old.src.stop(AC.currentTime + 0.2);
+    }catch(err){}
+  }
+  const src = AC.createBufferSource();
+  src.buffer = BUFS[i];
+  src.playbackRate.value = 1 + (Math.random()*0.006 - 0.003);
+  const g = AC.createGain();
+  g.gain.value = 0.10 + amp*0.30;
+  src.connect(g); g.connect(MASTER);
+  try{ src.start(); }catch(err){}
+  VOICES[i] = { src: src, g: g };
+}
+
+let userGestured = false;
+function haptic(amp){
+  if(!hapticOn || !userGestured || !navigator.vibrate) return;
+  try{ navigator.vibrate(Math.round(6 + amp*16)); }catch(err){}
+}
+
+/* =====================================================================
+   10. 拨弦
+   ===================================================================== */
+const hintEl = document.getElementById('hint');
+const hzEl = document.getElementById('hz');
+let hintHidden = false;
+
+function pluck(i, pos, power){
+  const s = ST[i];
+  s.amp = Math.min(1, 0.34 + power*0.66);
+  s.t = 0;
+  s.p = Math.max(0.10, Math.min(0.90, pos));
+  s.ph = Math.random()*0.8;   /* 每次拨弦相位略有不同，波形不会长得一模一样 */
+  s.flash = 1;
+  s.fx = s.p;
+
+  playNote(i, s.amp);
+  mascotHit(s.amp);
+  haptic(s.amp);
+
+  hzEl.textContent = STRINGS[i].n + ' · ' + STRINGS[i].f.toFixed(2) + ' Hz';
+  if(!hintHidden){ hintHidden = true; hintEl.classList.add('gone'); }
+}
+
+const PTR = new Map();
+const sc = CV.strings.el;
+
+function localPos(e){
+  const r = sc.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top, t: performance.now() };
+}
+
+sc.addEventListener('pointerdown', function(e){
+  e.preventDefault();
+  userGestured = true;
+  ensureAudio();
+  const p = localPos(e);
+  PTR.set(e.pointerId, p);
+  try{ sc.setPointerCapture(e.pointerId); }catch(err){}
+  const gap = stringGap();
+  let best = -1, bd = 1e9;
+  for(let i=0;i<6;i++){
+    const d = Math.abs(p.y - stringY(i));
+    if(d < bd){ bd = d; best = i; }
+  }
+  if(best >= 0 && bd < gap*0.55){
+    const u = (p.x - LAY.padL) / Math.max(1, CV.strings.w - LAY.padL - LAY.padR);
+    pluck(best, u, 0.35);
+  }
+}, { passive:false });
+
+sc.addEventListener('pointermove', function(e){
+  const prev = PTR.get(e.pointerId);
+  if(!prev) return;
+  e.preventDefault();
+  const p = localPos(e);
+  const dt = Math.max(1, p.t - prev.t);
+  const speed = Math.hypot(p.x - prev.x, p.y - prev.y) / dt;  /* px/ms */
+  const gap = stringGap();
+  const span = Math.max(1, CV.strings.w - LAY.padL - LAY.padR);
+
+  for(let i=0;i<6;i++){
+    const sy = stringY(i);
+    const a = prev.y - sy, b = p.y - sy;
+    if((a <= 0 && b > 0) || (a >= 0 && b < 0)){        /* 穿过这根弦 */
+      const k = Math.abs(a) / Math.max(0.0001, Math.abs(a) + Math.abs(b));
+      const cx = prev.x + (p.x - prev.x)*k;
+      const power = Math.min(1, 0.25 + speed*0.55);
+      pluck(i, (cx - LAY.padL)/span, power);
+    }else if(Math.abs(b) < gap*0.18 && speed > 0.55 && ST[i].t > 0.16){
+      /* 贴着弦快速横扫 */
+      pluck(i, (p.x - LAY.padL)/span, Math.min(1, speed*0.5));
+    }
+  }
+  PTR.set(e.pointerId, p);
+}, { passive:false });
+
+function endPtr(e){
+  PTR.delete(e.pointerId);
+  try{ sc.releasePointerCapture(e.pointerId); }catch(err){}
+}
+sc.addEventListener('pointerup', endPtr);
+sc.addEventListener('pointercancel', endPtr);
+sc.addEventListener('pointerleave', endPtr);
+sc.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+/* =====================================================================
+   11. 扫弦 / 演示（统一的排程队列）
+   ===================================================================== */
+const QUEUE = [];   /* {at, i, pos, power} */
+
+function schedule(i, delay, pos, power){
+  QUEUE.push({ at: T + delay, i: i, pos: pos, power: power });
+}
+
+function strum(down, base){
+  base = base || 0;
+  for(let k=0;k<6;k++){
+    const i = down ? k : 5-k;
+    schedule(i, base + k*0.045, 0.42 + k*0.03, 0.55 + k*0.05);
+  }
+}
+
+/* 演示乐句：[弦, 时间(s), 位置] */
+const RIFF = [
+  [0,0.00,0.55],[2,0.16,0.50],[4,0.32,0.45],[3,0.48,0.52],
+  [5,0.64,0.42],[4,0.80,0.48],[2,0.96,0.55],[1,1.12,0.50]
+];
+const RIFF_LEN = 3.0;
+let demoOn = false, demoT = 0, demoIdx = 0, demoStrummed = false;
+
+function updateDemo(dt){
+  if(!demoOn) return;
+  demoT += dt;
+  while(demoIdx < RIFF.length && RIFF[demoIdx][1] <= demoT){
+    const ev = RIFF[demoIdx++];
+    pluck(ev[0], ev[2], 0.55 + Math.random()*0.25);
+  }
+  if(!demoStrummed && demoT >= 1.55){ demoStrummed = true; strum(true, 0); }
+  if(demoT >= RIFF_LEN){ demoT -= RIFF_LEN; demoIdx = 0; demoStrummed = false; }
+}
+
+function updateQueue(){
+  for(let i=QUEUE.length-1;i>=0;i--){
+    if(QUEUE[i].at <= T){
+      const q = QUEUE[i];
+      QUEUE.splice(i,1);
+      pluck(q.i, q.pos, q.power);
+    }
+  }
+}
+
+/* =====================================================================
+   12. 按钮
+   ===================================================================== */
+const btnSound  = document.getElementById('btnSound');
+const btnHaptic = document.getElementById('btnHaptic');
+const btnStrum  = document.getElementById('btnStrum');
+const btnDemo   = document.getElementById('btnDemo');
+
+function setToggle(btn, on){
+  btn.classList.toggle('on', on);
+  btn.classList.toggle('off', !on);
+}
+
+btnSound.addEventListener('click', function(){
+  soundOn = !soundOn;
+  setToggle(btnSound, soundOn);
+  if(soundOn) ensureAudio();
+});
+btnHaptic.addEventListener('click', function(){
+  hapticOn = !hapticOn;
+  setToggle(btnHaptic, hapticOn);
+});
+btnStrum.addEventListener('click', function(){
+  userGestured = true;
+  ensureAudio();
+  strum(true, 0);
+});
+btnDemo.addEventListener('click', function(){
+  userGestured = true;
+  ensureAudio();
+  demoOn = !demoOn;
+  demoT = 0; demoIdx = 0; demoStrummed = false;
+  setToggle(btnDemo, demoOn);
+  btnDemo.textContent = demoOn ? '停止' : '演示';
+});
+
+if(!navigator.vibrate){
+  hapticOn = false;
+  setToggle(btnHaptic, false);
+  btnHaptic.title = '当前浏览器不支持震动';
+}
+
+/* =====================================================================
+   13. 主循环
+   ===================================================================== */
+const flashEl = document.getElementById('flash');
+let T = 0, last = performance.now();
+
+let idleFrames = 0;
+
+function isIdle(){
+  if(MAS.energy > 0.004 || MAS.y > 0.5 || Math.abs(MAS.vy) > 1) return false;
+  if(NOTES.length || RINGS.length || QUEUE.length || demoOn) return false;
+  for(let i=0;i<6;i++){ if(ST[i].amp > 0 || ST[i].flash > 0.01) return false; }
+  return true;
+}
+
+function frame(now){
+  const dt = Math.min(0.05, (now - last)/1000);
+  last = now;
+  T += dt;
+
+  /* 没事干的时候降到 ~20fps，省电 */
+  if(isIdle()){
+    if((idleFrames++ % 3) !== 0){ requestAnimationFrame(frame); return; }
+  }else{
+    idleFrames = 0;
+  }
+
+  updateQueue();
+  updateDemo(dt);
+
+  for(let i=0;i<6;i++){
+    const s = ST[i];
+    s.t += dt;
+    s.flash = Math.max(0, s.flash - dt*2.2);
+    if(env(s, s.t) < 0.010) s.amp = 0;
+  }
+  updateMascot(dt);
+
+  flashEl.style.opacity = (Math.min(0.55, MAS.energy*0.45)).toFixed(3);
+
+  drawStage();
+  drawScope();
+  drawStrings();
+  drawChip();
+
+  requestAnimationFrame(frame);
+}
+
+fitAll();
+requestAnimationFrame(frame);
+
+/* 首屏给一点提示性的动静 */
+setTimeout(function(){ if(T < 3 && MAS.energy === 0) strum(true, 0.1); }, 600);
+
+})();
+</script>
+</body>
+</html>
