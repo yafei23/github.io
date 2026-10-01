@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>格子玻璃冰球</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root {
+  /* Layout: one screen. A pale studio sweep; the table (grid glass held by two aluminium rods and square clamps) sits centred under a slim score strip. */
+  --studio-hi: #eef0f1;
+  --studio-lo: #c8ced1;
+  --ink: #1a1f23;
+  --ink-soft: #5b656c;
+  --rule: #b3babf;
+  --card: #f9fafa;
+  --hover: #e5e9eb;
+  --p1: #ff5b1f;
+  --p2: #2a5aff;
+  --on-p1: #16191c;
+  --puck: #16191c;
+  --table: #eef1f2;
+  --table-edge: #d5dbde;
+  --mark-red: #d9473b;
+  --mark-blue: #6b8cc4;
+  --crease: #d8e4f5;
+  --numeral: #ccd3d7;
+  --env-hi: #ffffff;
+  --env-lo: #97a0a6;
+  --metal-1: #737b82;
+  --metal-2: #c2c8cc;
+  --metal-3: #fbfcfc;
+  --metal-4: #959da3;
+  --pocket: #1c2024;
+  --pocket-hi: #454c52;
+  --shadow: rgba(28, 36, 42, 0.32);
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+  padding-block: env(safe-area-inset-top, 0px) env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --studio-hi: #272b2f;
+    --studio-lo: #111315;
+    --ink: #e7ebed;
+    --ink-soft: #9aa3aa;
+    --rule: #3c4349;
+    --card: #1a1e21;
+    --hover: #262b2f;
+    --p1: #ff6a2c;
+    --p2: #5580ff;
+    --on-p1: #16191c;
+    --puck: #eef0ec;
+    --table: #2c3237;
+    --table-edge: #1c2024;
+    --mark-red: #e0574a;
+    --mark-blue: #5e7eb6;
+    --crease: #2e3a4b;
+    --numeral: #3b434a;
+    --env-hi: #d4dbe0;
+    --env-lo: #22272b;
+    --metal-1: #464d53;
+    --metal-2: #8a9298;
+    --metal-3: #dde2e5;
+    --metal-4: #61696f;
+    --pocket: #060708;
+    --pocket-hi: #22272b;
+    --shadow: rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --studio-hi: #272b2f;
+  --studio-lo: #111315;
+  --ink: #e7ebed;
+  --ink-soft: #9aa3aa;
+  --rule: #3c4349;
+  --card: #1a1e21;
+  --hover: #262b2f;
+  --p1: #ff6a2c;
+  --p2: #5580ff;
+  --on-p1: #16191c;
+  --puck: #eef0ec;
+  --table: #2c3237;
+  --table-edge: #1c2024;
+  --mark-red: #e0574a;
+  --mark-blue: #5e7eb6;
+  --crease: #2e3a4b;
+  --numeral: #3b434a;
+  --env-hi: #d4dbe0;
+  --env-lo: #22272b;
+  --metal-1: #464d53;
+  --metal-2: #8a9298;
+  --metal-3: #dde2e5;
+  --metal-4: #61696f;
+  --pocket: #060708;
+  --pocket-hi: #22272b;
+  --shadow: rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+html { box-sizing: border-box; height: 100%; }
+*, *::before, *::after { box-sizing: inherit; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--studio-lo);
+  background-image: radial-gradient(130% 95% at 50% 10%, var(--studio-hi) 0%, var(--studio-lo) 100%);
+  color: var(--ink);
+  font: 14px/1.5 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--p2); outline-offset: 2px; }
+
+#app {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ---------- score strip ---------- */
+.hud {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 52px;
+  padding-inline: 16px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  z-index: 5;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.brand-name { font-weight: 700; font-size: 15px; letter-spacing: 0.06em; white-space: nowrap; }
+.brand-spec {
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.score { display: flex; align-items: center; gap: 14px; }
+.side { display: flex; align-items: center; gap: 8px; }
+.side b { font-weight: 500; font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
+.side output {
+  font: 800 28px/1 var(--font-display);
+  font-stretch: 72%;
+  font-variant-numeric: tabular-nums;
+  min-width: 1.1ch;
+  text-align: center;
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.s1 .dot { background: var(--p1); }
+.s2 .dot { background: var(--p2); }
+.colon { font: 700 20px/1 var(--font-display); color: var(--rule); }
+.tools { justify-self: end; display: flex; align-items: center; gap: 6px; }
+.icon, .chip {
+  appearance: none;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.icon { width: 34px; height: 34px; border-radius: 50%; padding: 0; }
+.chip { height: 30px; padding: 0 11px; border-radius: 999px; font: 500 12px/1 var(--font-mono); letter-spacing: 0.04em; white-space: nowrap; }
+.icon:hover, .chip:hover { background: var(--hover); }
+.icon svg { width: 17px; height: 17px; display: block; }
+#btnSound[aria-pressed="false"] .waves { display: none; }
+#btnSound[aria-pressed="true"] .mute { display: none; }
+#app[data-state="play"] { cursor: none; }
+#app[data-state="play"] .hud, #app[data-state="play"] .overlay { cursor: auto; }
+#app[data-state="menu"] .score,
+#app[data-state="menu"] #btnPause { visibility: hidden; }
+
+/* ---------- table ---------- */
+#glass {
+  position: absolute;
+  display: block;
+  background: var(--table);
+  box-shadow: 0 26px 50px -26px var(--shadow);
+}
+#frame { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.rod { position: absolute; border-radius: 999px; }
+.rod.v {
+  background: linear-gradient(90deg, var(--metal-1) 0%, var(--metal-2) 17%, var(--metal-3) 35%, var(--metal-2) 54%, var(--metal-4) 78%, var(--metal-1) 100%);
+  box-shadow: 5px 6px 10px -5px var(--shadow);
+}
+.rod.h {
+  background: linear-gradient(180deg, var(--metal-1) 0%, var(--metal-2) 17%, var(--metal-3) 35%, var(--metal-2) 54%, var(--metal-4) 78%, var(--metal-1) 100%);
+  box-shadow: 0 7px 10px -5px var(--shadow);
+}
+.pocket {
+  position: absolute;
+  background: var(--pocket);
+  background-image: radial-gradient(closest-side, var(--pocket) 55%, var(--pocket-hi) 140%);
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px var(--metal-1), inset 0 6px 12px rgba(0, 0, 0, 0.6);
+  transition: box-shadow 0.6s ease;
+}
+.pocket.lit { box-shadow: inset 0 0 0 1px var(--metal-1), inset 0 0 16px var(--glow), 0 0 28px 2px var(--glow); transition-duration: 0.08s; }
+.clamp {
+  position: absolute;
+  border-radius: 3px;
+  background: linear-gradient(155deg, var(--metal-3) 0%, var(--metal-2) 36%, var(--metal-4) 58%, var(--metal-2) 100%);
+  box-shadow: inset 0 0 0 1px var(--metal-1), inset 0 1px 1px var(--metal-3), 0 5px 10px -4px var(--shadow);
+}
+.clamp::before {
+  content: "";
+  position: absolute;
+  inset: 26%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 32%, var(--metal-3) 0%, var(--metal-2) 45%, var(--metal-1) 100%);
+  box-shadow: inset 0 0 0 1px var(--metal-1), 0 1px 0 var(--metal-3);
+}
+.clamp::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 26%;
+  height: 26%;
+  transform: translate(-50%, -50%) rotate(12deg);
+  background:
+    linear-gradient(var(--metal-1), var(--metal-1)) center / 100% 2px no-repeat,
+    linear-gradient(var(--metal-1), var(--metal-1)) center / 2px 100% no-repeat;
+}
+
+/* ---------- goal banner ---------- */
+.banner {
+  position: absolute;
+  z-index: 6;
+  pointer-events: none;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  opacity: 0;
+}
+.banner strong {
+  font: 700 clamp(46px, 11vmin, 112px)/1 var(--font-body);
+  letter-spacing: 0.1em;
+  padding-left: 0.1em;
+  color: var(--bc, var(--ink));
+  text-shadow: 0 2px 0 var(--card), 0 14px 34px var(--shadow);
+}
+.banner span {
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 7px 10px;
+}
+.banner span:empty { display: none; }
+.banner.show { animation: banner 1.3s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@keyframes banner {
+  0% { opacity: 0; transform: scale(1.14); }
+  12% { opacity: 1; transform: scale(1); }
+  74% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.98); }
+}
+
+/* ---------- cards ---------- */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 64px 16px 16px;
+}
+.card {
+  width: min(404px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  touch-action: pan-y;
+  user-select: text;
+  -webkit-user-select: text;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 22px 22px 20px;
+  box-shadow: 0 34px 70px -28px var(--shadow);
+  display: grid;
+  gap: 14px;
+}
+.card.compact { width: min(340px, 100%); }
+.eyebrow {
+  margin: 0;
+  font: 500 11px/1.4 var(--font-mono);
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+.card h1, .card h2 { margin: 0; font-weight: 700; letter-spacing: 0.04em; text-wrap: balance; line-height: 1.15; }
+.card h1 { font-size: 30px; }
+.card h2 { font-size: 26px; }
+.lead { margin: 0; color: var(--ink-soft); line-height: 1.7; max-width: 34em; }
+.field { display: grid; gap: 7px; transition: opacity 0.2s; }
+.field[aria-disabled="true"] { opacity: 0.4; pointer-events: none; }
+.label { font-size: 12px; font-weight: 500; color: var(--ink-soft); }
+.seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.seg button {
+  appearance: none;
+  border: 0;
+  border-left: 1px solid var(--rule);
+  background: transparent;
+  padding: 9px 6px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  align-content: center;
+}
+.seg button:first-child { border-left: 0; }
+.seg button:hover { background: var(--hover); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--card); }
+.seg b { font: 500 13px/1 var(--font-mono); letter-spacing: 0.02em; }
+.seg small { font-size: 11px; font-weight: 400; opacity: 0.78; }
+.primary, .ghost {
+  appearance: none;
+  border-radius: 3px;
+  min-height: 46px;
+  padding: 0 18px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+.primary { border: 0; background: var(--p1); color: var(--on-p1); }
+.primary:hover { filter: brightness(1.06); }
+.ghost { border: 1px solid var(--rule); background: transparent; font-weight: 500; letter-spacing: 0.06em; }
+.ghost:hover { background: var(--hover); }
+.hint { margin: 0; font-size: 12px; line-height: 1.65; color: var(--ink-soft); }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.final {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font: 800 64px/1 var(--font-display);
+  font-stretch: 70%;
+  font-variant-numeric: tabular-nums;
+}
+.final .f1 { color: var(--p1); }
+.final .f2 { color: var(--p2); }
+.final .colon { font-size: 40px; }
+.stat { margin: 0; font: 400 12px/1.6 var(--font-mono); color: var(--ink-soft); }
+.nogl { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; margin: 0; }
+
+@media (max-width: 960px) {
+  .brand-spec { display: none; }
+}
+@media (max-width: 600px) {
+  .brand { display: none; }
+  .hud { grid-template-columns: auto 1fr auto; }
+  .score { grid-column: 2; justify-self: center; gap: 10px; }
+  .side b { display: none; }
+}
+@media (max-width: 380px) {
+  .chip { padding: 0 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .banner.show { animation: fade 1.3s linear both; }
+  @keyframes fade { 0%, 100% { opacity: 0; } 10%, 74% { opacity: 1; } }
+}
+</style>
+</head>
+<body>
+<div id="app" data-state="menu">
+  <header class="hud">
+    <div class="brand">
+      <span class="brand-name">格子玻璃冰球</span>
+      <span class="brand-spec">方格压花玻璃 · 6 mm 厚 · n 1.52</span>
+    </div>
+    <div class="score" aria-live="polite">
+      <span class="side s1"><i class="dot" aria-hidden="true"></i><b id="name1">你</b><output id="sc1">0</output></span>
+      <span class="colon" aria-hidden="true">:</span>
+      <span class="side s2"><output id="sc2">0</output><b id="name2">电脑</b><i class="dot" aria-hidden="true"></i></span>
+    </div>
+    <div class="tools">
+      <button class="chip" id="btnGap" type="button" title="玻璃离台面的距离（G 键切换）">8 mm</button>
+      <button class="icon" id="btnSound" type="button" aria-pressed="true" aria-label="声音">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/>
+          <path class="waves" d="M15.5 9.2a4 4 0 0 1 0 5.6M18.2 6.6a7.6 7.6 0 0 1 0 10.8"/>
+          <path class="mute" d="M16 9.5l5 5M21 9.5l-5 5"/>
+        </svg>
+      </button>
+      <button class="icon" id="btnPause" type="button" aria-label="暂停">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6.5v11M15 6.5v11"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <canvas id="glass" role="img" aria-label="桌上冰球球台，台面压着一块方格压花玻璃"></canvas>
+
+  <div id="frame" aria-hidden="true">
+    <div class="pocket" id="pocket0"></div>
+    <div class="pocket" id="pocket1"></div>
+    <div class="rod" id="rail0"></div>
+    <div class="rod" id="rail1"></div>
+    <div class="rod" id="rail2"></div>
+    <div class="rod" id="rail3"></div>
+    <div class="rod" id="rodA"></div>
+    <div class="rod" id="rodB"></div>
+    <div class="clamp" id="clamp0"></div>
+    <div class="clamp" id="clamp1"></div>
+    <div class="clamp" id="clamp2"></div>
+    <div class="clamp" id="clamp3"></div>
+    <div class="clamp" id="clamp4"></div>
+    <div class="clamp" id="clamp5"></div>
+  </div>
+
+  <div class="banner" id="banner" aria-hidden="true"><strong id="bannerBig"></strong><span id="bannerSmall"></span></div>
+
+  <section class="overlay" id="menu" aria-labelledby="menuTitle">
+    <div class="card">
+      <p class="eyebrow">方格压花玻璃 · 6 mm 厚 · 折射率 1.52</p>
+      <h1 id="menuTitle">格子玻璃冰球</h1>
+      <p class="lead">整张球台压在一块方格压花玻璃下面。每个小方格都是一枚透镜，冰球和球拍从底下滑过时，会被折成一片碎格。把玻璃抬高，每一格里都会出现一只倒过来的小冰球。</p>
+      <div class="field">
+        <span class="label" id="lblMode">对手</span>
+        <div class="seg" role="group" aria-labelledby="lblMode">
+          <button type="button" id="optCpu" data-mode="cpu">电脑</button>
+          <button type="button" id="optDuo" data-mode="duo">双人同屏</button>
+        </div>
+      </div>
+      <div class="field" id="fieldLevel">
+        <span class="label" id="lblLevel">电脑水平</span>
+        <div class="seg" role="group" aria-labelledby="lblLevel">
+          <button type="button" id="optLv0" data-level="0">新手</button>
+          <button type="button" id="optLv1" data-level="1">熟练</button>
+          <button type="button" id="optLv2" data-level="2">高手</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="label" id="lblGap">玻璃离台面</span>
+        <div class="seg" role="group" aria-labelledby="lblGap">
+          <button type="button" id="optGap0" data-gap="0"><b>2 mm</b><small>看得清</small></button>
+          <button type="button" id="optGap1" data-gap="1"><b>8 mm</b><small>碎影</small></button>
+          <button type="button" id="optGap2" data-gap="2"><b>15 mm</b><small>复眼</small></button>
+        </div>
+      </div>
+      <button type="button" class="primary" id="btnStart">开球</button>
+      <p class="hint" id="hint"></p>
+    </div>
+  </section>
+
+  <section class="overlay" id="pause" hidden aria-labelledby="pauseTitle">
+    <div class="card compact">
+      <p class="eyebrow" id="pauseScore">0 : 0</p>
+      <h2 id="pauseTitle">暂停中</h2>
+      <div class="row">
+        <button type="button" class="primary" id="btnResume">继续</button>
+        <button type="button" class="ghost" id="btnQuit">回到菜单</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="overlay" id="over" hidden aria-labelledby="overTitle">
+    <div class="card compact">
+      <p class="eyebrow">终局 · 先得 7 分</p>
+      <h2 id="overTitle">你赢了</h2>
+      <p class="final"><span class="f1" id="final1">7</span><span class="colon">:</span><span class="f2" id="final2">0</span></p>
+      <p class="stat" id="overStat"></p>
+      <div class="row">
+        <button type="button" class="primary" id="btnAgain">再来一局</button>
+        <button type="button" class="ghost" id="btnMenu">回到菜单</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="nogl" id="nogl" hidden><span class="card compact">这个浏览器没有开启 WebGL 2，画不出玻璃的折射。请换用新版的 Chrome、Edge、Safari 或 Firefox 打开。</span></p>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  document.documentElement.lang = 'zh-CN';
+  const $ = (id) => document.getElementById(id);
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  /* ---------- the table, measured in table widths ---------- */
+  let L = 1.75;             // length : width, set by the screen shape (1.5 to 2.1)
+  const GOAL_W = 0.34;
+  const PUCK_R = 0.044;
+  const MAL_R = 0.068;
+  const RR = PUCK_R + MAL_R;
+  const WIN = 7;
+  const PUCK_MAX = 4.0;     // widths per second
+  const FRICTION = 0.22;    // air-cushion drag, per second
+  const E_WALL = 0.9;
+  const E_MAL = 0.9;
+  const HUMAN_VMAX = 14;
+  const KEY_VMAX = 3.4;
+  const KEY_ACC = 38;
+  const TABLE_M = 1.22;     // a four-foot-wide table, for the km/h readout
+  const CELLS = 48;         // lenses across the table width
+  let POSTS = [];
+
+  // Each lens focuses about 1.6 mm behind the glass. t = depth / focal length for the
+  // mallet tops, the puck top and the table surface. Near t = 1 a lens shows one flat
+  // colour; past that every cell carries its own small, upside-down picture.
+  const GAPS = [
+    { mm: 2, t: [0.35, 0.45, 1.0] },
+    { mm: 8, t: [2.4, 2.8, 5.0] },
+    { mm: 15, t: [5.0, 5.5, 9.0] },
+  ];
+  const LEVELS = [
+    { vmax: 2.0, acc: 14, react: 0.2, aim: 0.12, guard: 0.15, bounce: false, strike: 0.7, bank: 0.1, runup: 0.06 },
+    { vmax: 2.9, acc: 22, react: 0.12, aim: 0.06, guard: 0.08, bounce: true, strike: 0.85, bank: 0.3, runup: 0.08 },
+    { vmax: 4.0, acc: 32, react: 0.06, aim: 0.025, guard: 0.035, bounce: true, strike: 1, bank: 0.45, runup: 0.1 },
+  ];
+
+  const store = {
+    get(k, d) {
+      try { const v = localStorage.getItem('gridglass.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; }
+    },
+    set(k, v) {
+      try { localStorage.setItem('gridglass.' + k, JSON.stringify(v)); } catch (e) { /* storage blocked */ }
+    },
+  };
+  const settings = {
+    mode: store.get('mode', 'cpu') === 'duo' ? 'duo' : 'cpu',
+    level: clamp(Number(store.get('level', 1)) | 0, 0, 2),
+    gap: clamp(Number(store.get('gap', 1)) | 0, 0, 2),
+    sound: store.get('sound', true) !== false,
+  };
+
+  const app = $('app');
+  const hud = document.querySelector('.hud');
+  const canvas = $('glass');
+
+  /* ---------- theme tokens ---------- */
+  const TOK = {};
+  const probe = document.createElement('i');
+  probe.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;visibility:hidden';
+  app.appendChild(probe);
+  function rgbOf(name) {
+    probe.style.color = 'var(' + name + ')';
+    const m = getComputedStyle(probe).color.match(/[\d.]+/g) || [0, 0, 0];
+    return [m[0] / 255, m[1] / 255, m[2] / 255];
+  }
+  function cssOf(name) {
+    probe.style.color = 'var(' + name + ')';
+    return getComputedStyle(probe).color;
+  }
+  function readTheme() {
+    for (const k of ['p1', 'p2', 'puck', 'env-hi', 'env-lo']) TOK[k] = rgbOf('--' + k);
+    for (const k of ['table', 'table-edge', 'mark-red', 'mark-blue', 'crease', 'numeral']) TOK[k] = cssOf('--' + k);
+  }
+  readTheme();
+
+  /* ---------- game state ---------- */
+  function mallet(i) {
+    const y = i === 0 ? L - 0.2 : 0.2;
+    return { i, x: 0.5, y, vx: 0, vy: 0, mode: 'hold', tx: 0.5, ty: y, t0x: 0.5, t0y: y, t1x: 0.5, t1y: y, vmax: 3, acc: 20, kvx: 0, kvy: 0 };
+  }
+  function brain() { return { cool: 0, tx: 0.5, ty: 0.2, v: 2, aim: null }; }
+  const G = {
+    state: 'menu',
+    prev: 'play',
+    timer: 0,
+    score: [0, 0],
+    ctrl: ['ai', 'ai'],
+    puck: { x: 0.5, y: L / 2, vx: 0, vy: 0, on: true, alpha: 1 },
+    mal: [mallet(0), mallet(1)],
+    ai: [brain(), brain()],
+    flash: null,
+    rip: [],
+    maxShot: [0, 0],
+    rally: 0,
+    longest: 0,
+    lastHit: -1,
+    lastScorer: 0,
+    still: 0,
+    menuWait: 0,
+  };
+  const curT = GAPS[settings.gap].t.slice();
+
+  /* ---------- geometry ---------- */
+  const GEO = { s: 100, land: false, gx: 0, gy: 0, gw: 100, gh: 175, dpr: 1, cell: 4, origin: [0, 0], rod: 12, over: 14 };
+  let renderScale = Math.min(window.devicePixelRatio || 1, 2);
+
+  // table units -> glass-local CSS px. Portrait: player 1 at the bottom. Landscape: player 1 on the left.
+  const scr = (x, y) => (GEO.land ? [(L - y) * GEO.s, x * GEO.s] : [x * GEO.s, y * GEO.s]);
+  const scrV = (vx, vy) => (GEO.land ? [-vy * GEO.s, vx * GEO.s] : [vx * GEO.s, vy * GEO.s]);
+  const tbl = (px, py) => (GEO.land ? [py / GEO.s, L - px / GEO.s] : [px / GEO.s, py / GEO.s]);
+
+  function place(el, x, y, w, h) {
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.width = Math.max(0, w) + 'px';
+    el.style.height = Math.max(0, h) + 'px';
+  }
+
+  // Stretch the table to the screen; everything measured along its length scales with it.
+  function setLength(nl) {
+    const k = nl / L;
+    L = nl;
+    POSTS = [[0.5 - GOAL_W / 2, 0], [0.5 + GOAL_W / 2, 0], [0.5 - GOAL_W / 2, L], [0.5 + GOAL_W / 2, L]];
+    if (Math.abs(k - 1) < 1e-6) return;
+    G.puck.y *= k;
+    for (const m of G.mal) {
+      m.y *= k;
+      m.ty *= k;
+      m.t0y *= k;
+      m.t1y *= k;
+      clampMallet(m);
+    }
+    for (const I of INPUT) I.y *= k;
+    for (const A of G.ai) { A.ty *= k; A.aim = null; }
+    for (const r of G.rip) r.y *= k;
+    if (G.flash) G.flash.y *= k;
+  }
+
+  function layout() {
+    const W = app.clientWidth;
+    const H = app.clientHeight;
+    const hudH = hud.offsetHeight;
+    const gut = 16;
+    const aw = Math.max(160, W - gut * 2);
+    const ah = Math.max(160, H - hudH - gut);
+    const land = aw > ah;
+    const rod = clamp(Math.round(Math.min(aw, ah) * 0.024), 10, 18);
+    const over = Math.round(rod * 1.3);
+    const along = (land ? aw : ah) - 2 * rod - 2 * over;
+    const across = (land ? ah : aw) - 2 * rod;
+    setLength(clamp(along / across, 1.5, 2.1));
+    const s = Math.max(80, Math.floor(Math.min(along / L, across)));
+    const gw = land ? Math.round(s * L) : s;
+    const gh = land ? s : Math.round(s * L);
+    const gx = Math.round(gut + (aw - gw) / 2);
+    const gy = Math.round(hudH + (ah - gh) / 2);
+    Object.assign(GEO, { s, land, gx, gy, gw, gh, rod, over });
+
+    canvas.style.left = gx + 'px';
+    canvas.style.top = gy + 'px';
+    canvas.style.width = gw + 'px';
+    canvas.style.height = gh + 'px';
+    canvas.width = Math.max(1, Math.round(gw * renderScale));
+    canvas.height = Math.max(1, Math.round(gh * renderScale));
+    GEO.dpr = canvas.width / gw;
+    const cellDev = Math.max(5, Math.round((s / CELLS) * GEO.dpr));
+    GEO.cell = cellDev / GEO.dpr;
+    const ox = Math.floor((canvas.width - Math.floor(canvas.width / cellDev) * cellDev) / 2);
+    const oy = Math.floor((canvas.height - Math.floor(canvas.height / cellDev) * cellDev) / 2);
+    GEO.origin = [ox / GEO.dpr, oy / GEO.dpr];
+
+    // aluminium frame: two long rods, short end rails split by the goal mouths, six clamps
+    const g0 = Math.round((0.5 - GOAL_W / 2) * s);
+    const g1 = Math.round((0.5 + GOAL_W / 2) * s);
+    const pd = Math.round(rod * 0.9);
+    const cs = Math.round(rod * 2.2);
+    const rodA = $('rodA'), rodB = $('rodB');
+    const rails = [0, 1, 2, 3].map((k) => $('rail' + k));
+    const pockets = [$('pocket0'), $('pocket1')];
+    const half = rod / 2;
+    let clampAt;
+    if (!land) {
+      rodA.className = rodB.className = 'rod v';
+      place(rodA, gx - rod, gy - rod - over, rod, gh + 2 * (rod + over));
+      place(rodB, gx + gw, gy - rod - over, rod, gh + 2 * (rod + over));
+      for (const r of rails) r.className = 'rod h';
+      place(rails[0], gx, gy - rod, g0, rod);
+      place(rails[1], gx + g1, gy - rod, gw - g1, rod);
+      place(rails[2], gx, gy + gh, g0, rod);
+      place(rails[3], gx + g1, gy + gh, gw - g1, rod);
+      place(pockets[1], gx + g0 - 2, gy - rod - pd, g1 - g0 + 4, rod + pd);
+      place(pockets[0], gx + g0 - 2, gy + gh, g1 - g0 + 4, rod + pd);
+      clampAt = [[gx - half, gy - half], [gx + gw + half, gy - half], [gx - half, gy + gh + half], [gx + gw + half, gy + gh + half], [gx - half, gy + gh / 2], [gx + gw + half, gy + gh / 2]];
+    } else {
+      rodA.className = rodB.className = 'rod h';
+      place(rodA, gx - rod - over, gy - rod, gw + 2 * (rod + over), rod);
+      place(rodB, gx - rod - over, gy + gh, gw + 2 * (rod + over), rod);
+      for (const r of rails) r.className = 'rod v';
+      place(rails[0], gx - rod, gy, rod, g0);
+      place(rails[1], gx - rod, gy + g1, rod, gh - g1);
+      place(rails[2], gx + gw, gy, rod, g0);
+      place(rails[3], gx + gw, gy + g1, rod, gh - g1);
+      place(pockets[0], gx - rod - pd, gy + g0 - 2, rod + pd, g1 - g0 + 4);
+      place(pockets[1], gx + gw, gy + g0 - 2, rod + pd, g1 - g0 + 4);
+      clampAt = [[gx - half, gy - half], [gx + gw + half, gy - half], [gx - half, gy + gh + half], [gx + gw + half, gy + gh + half], [gx + gw / 2, gy - half], [gx + gw / 2, gy + gh + half]];
+    }
+    clampAt.forEach(([cx, cy], k) => place($('clamp' + k), Math.round(cx - cs / 2), Math.round(cy - cs / 2), cs, cs));
+    place($('banner'), gx, gy, gw, gh);
+    drawTable();
+  }
+
+  /* ---------- the table surface under the glass (2D canvas -> texture) ---------- */
+  const tcv = document.createElement('canvas');
+  const tcx = tcv.getContext('2d');
+  let texScale = 1;
+  let tableDirty = true;
+
+  function drawTable() {
+    texScale = Math.min(renderScale, 1.5);
+    const w = Math.max(2, Math.round(GEO.gw * texScale));
+    const h = Math.max(2, Math.round(GEO.gh * texScale));
+    if (tcv.width !== w || tcv.height !== h) { tcv.width = w; tcv.height = h; }
+    const g = tcx;
+    const S = GEO.s * texScale;
+    const tex = (x, y) => (GEO.land ? [(L - y) * S, x * S] : [x * S, y * S]);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    const grad = g.createRadialGradient(w * 0.42, h * 0.34, 0, w * 0.5, h * 0.5, Math.hypot(w, h) * 0.62);
+    grad.addColorStop(0, TOK.table);
+    grad.addColorStop(1, TOK['table-edge']);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, w, h);
+
+    if (GEO.land) g.setTransform(0, S, -S, 0, L * S, 0);
+    else g.setTransform(S, 0, 0, S, 0, 0);
+    // goal creases
+    for (const y0 of [0, L]) {
+      g.beginPath();
+      g.arc(0.5, y0, 0.21, 0, Math.PI * 2);
+      g.fillStyle = TOK.crease;
+      g.fill();
+      g.lineWidth = 0.009;
+      g.strokeStyle = TOK['mark-blue'];
+      g.stroke();
+    }
+    // blue lines, red centre line, centre circle
+    g.fillStyle = TOK['mark-blue'];
+    g.fillRect(0, L / 2 - 0.32 - 0.01, 1, 0.02);
+    g.fillRect(0, L / 2 + 0.32 - 0.01, 1, 0.02);
+    g.fillStyle = TOK['mark-red'];
+    g.fillRect(0, L / 2 - 0.008, 1, 0.016);
+    g.beginPath();
+    g.arc(0.5, L / 2, 0.15, 0, Math.PI * 2);
+    g.lineWidth = 0.009;
+    g.strokeStyle = TOK['mark-blue'];
+    g.stroke();
+    g.beginPath();
+    g.arc(0.5, L / 2, 0.018, 0, Math.PI * 2);
+    g.fillStyle = TOK['mark-blue'];
+    g.fill();
+    // face-off spots
+    g.fillStyle = TOK['mark-red'];
+    for (const x of [0.25, 0.75]) {
+      for (const y of [0.4, L - 0.4]) {
+        g.beginPath();
+        g.arc(x, y, 0.02, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+    // the score, printed big on the table under each player's end
+    if (G.state !== 'menu') {
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.fillStyle = TOK.numeral;
+      g.font = '800 ' + Math.round(0.4 * S) + 'px "Archivo", "Helvetica Neue", Arial, sans-serif';
+      try { g.fontStretch = 'condensed'; } catch (e) { /* older canvas */ }
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      for (const [who, y] of [[0, L - 0.42], [1, 0.42]]) {
+        const [X, Y] = tex(0.5, y);
+        g.save();
+        g.translate(X, Y);
+        if (!GEO.land && settings.mode === 'duo' && who === 1) g.rotate(Math.PI);
+        g.fillText(String(G.score[who]), 0, 0);
+        g.restore();
+      }
+    }
+    tableDirty = true;
+  }
+
+  /* ---------- WebGL: everything under the glass, seen through it ---------- */
+  const VS = `#version 300 es
+void main() {
+  vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
+  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+}`;
+
+  const FS = `#version 300 es
+precision highp float;
+out vec4 outColor;
+
+uniform vec2 uRes;      // drawing buffer, device px
+uniform float uDpr;     // device px per CSS px
+uniform vec2 uSize;     // glass, CSS px
+uniform float uCell;    // lens pitch, CSS px
+uniform vec2 uOrigin;   // corner of the first whole lens, CSS px
+uniform vec3 uT;        // depth / focal length: mallet tops, puck top, table surface
+uniform float uBend;    // how much steeper each lens gets toward its rim
+uniform vec2 uAniso;    // lens strength across / along the rows
+uniform float uMicro;   // strength of the fine reeds
+uniform sampler2D uTable;
+uniform float uTexel;   // table texels per CSS px
+uniform vec2 uM1;
+uniform vec2 uM2;
+uniform float uMR;
+uniform vec2 uP;
+uniform float uPR;
+uniform vec2 uPV;       // puck velocity, CSS px / s
+uniform float uPA;      // puck opacity
+uniform vec3 uC1;
+uniform vec3 uC2;
+uniform vec3 uCP;
+uniform vec3 uEnvHi;
+uniform vec3 uEnvLo;
+uniform vec4 uFlash;    // x, y, radius, strength
+uniform vec3 uFlashC;
+uniform vec4 uRip[4];   // x, y, radius, strength
+uniform vec3 uRipC[4];
+uniform vec2 uShadow;   // shadow offset of a mallet-high object
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float phi(float u) { return (u + uBend * u * u * u) / (1.0 + uBend); }
+float dphi(float u) { return (1.0 + 3.0 * uBend * u * u) / (1.0 + uBend); }
+
+vec4 malletAt(vec2 q, vec3 col, float aa) {
+  float R = uMR;
+  float d = length(q);
+  float a = 1.0 - smoothstep(R - aa, R + aa, d);
+  if (a <= 0.0) return vec4(0.0);
+  float r = d / R;
+  vec2 dir = q / max(d, 1e-3);
+  vec3 c = col * mix(1.0, 0.74, smoothstep(0.78, 1.0, r));
+  c += 0.16 * smoothstep(0.82, 0.97, r) * max(dot(dir, vec2(-0.6, -0.8)), 0.0);
+  float seam = 1.0 - smoothstep(0.0, aa + 0.04 * R, abs(d - 0.6 * R));
+  c *= 1.0 - 0.3 * seam;
+  float kr = 0.5 * R;
+  float k = 1.0 - smoothstep(kr - aa, kr + aa, d);
+  vec2 kq = q / kr;
+  vec3 kn = normalize(vec3(kq, sqrt(max(1.0 - dot(kq, kq), 0.0)) + 0.2));
+  vec3 Ld = normalize(vec3(-0.45, -0.6, 0.66));
+  vec3 kc = mix(col, vec3(1.0), 0.08) * (0.6 + 0.5 * max(dot(kn, Ld), 0.0));
+  kc += 0.5 * pow(max(dot(reflect(-Ld, kn), vec3(0.0, 0.0, 1.0)), 0.0), 30.0);
+  c = mix(c, kc, k);
+  return vec4(c, a);
+}
+
+vec4 puckAt(vec2 s, float aa) {
+  vec2 v = uPV * 0.03;
+  float vl = length(v);
+  vec2 a0 = uP - v;
+  float hh = 1.0;
+  if (vl > 0.5) hh = clamp(dot(s - a0, v) / (vl * vl), 0.0, 1.0);
+  vec2 q = s - (a0 + v * hh);
+  float cov = 1.0 - smoothstep(uPR - aa, uPR + aa, length(q));
+  if (cov <= 0.0) return vec4(0.0);
+  float tail = mix(0.22, 1.0, hh * hh);
+  vec2 qh = s - uP;
+  float dh = length(qh);
+  vec3 hiC = mix(uCP, vec3(0.5), 0.35);
+  float ring = (1.0 - smoothstep(0.0, aa + 0.05 * uPR, abs(dh - 0.7 * uPR))) * step(dh, uPR);
+  vec3 c = mix(uCP, hiC, ring * 0.8);
+  c = mix(c, hiC, 0.4 * (1.0 - smoothstep(0.0, 0.7, length(qh / uPR - vec2(-0.35, -0.42)))));
+  return vec4(c, cov * tail);
+}
+
+vec2 at(vec2 c, vec2 u, vec2 ph, float t, float reed) {
+  return c + 0.5 * uCell * (u - t * uAniso * ph) + vec2(reed * t, 0.0);
+}
+float footprint(vec2 dp, float t) {
+  vec2 f = abs(1.0 - t * uAniso * dp);
+  return max(f.x, f.y);
+}
+
+void main() {
+  vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uDpr;
+  float px = 1.0 / uDpr;
+  vec2 g = (p - uOrigin) / uCell;
+  vec2 ci = floor(g);
+  vec2 u = fract(g) * 2.0 - 1.0;
+  float j = hash(ci);
+  // cast glass: no two lenses are quite alike
+  vec2 c = uOrigin + (ci + 0.5) * uCell + (vec2(j, hash(ci + 17.0)) - 0.5) * 0.08 * uCell;
+  float jt = 1.0 + (j - 0.5) * 0.1;
+  vec2 ph = vec2(phi(u.x), phi(u.y));
+  vec2 dp = vec2(dphi(u.x), dphi(u.y));
+
+  // fine vertical reeds rolled into every lens
+  float rw = uCell / 4.6;
+  float rf = fract((p.x - uOrigin.x) / rw) * 2.0 - 1.0;
+  float rj = hash(vec2(floor((p.x - uOrigin.x) / rw), 7.0));
+  float reed = -rf * (0.3 + 0.7 * rj) * rw * 0.5 * uMicro;
+
+  // ---- table surface, deepest, with a touch of dispersion
+  float tB = uT.z * jt;
+  vec2 sB = at(c, u, ph, tB, reed);
+  float lod = log2(max(footprint(dp, tB) * uTexel / uDpr, 1.0)) + 0.4 + 0.22 * tB;
+  vec3 col = vec3(
+    textureLod(uTable, at(c, u, ph, tB * 1.02, reed) / uSize, lod).r,
+    textureLod(uTable, sB / uSize, lod).g,
+    textureLod(uTable, at(c, u, ph, tB * 0.98, reed) / uSize, lod).b);
+
+  // shadows the pieces throw on the table
+  float sh = (1.0 - smoothstep(uMR * 0.5, uMR * 1.5, length(sB - uM1 - uShadow)))
+           + (1.0 - smoothstep(uMR * 0.5, uMR * 1.5, length(sB - uM2 - uShadow)));
+  sh = sh * 0.24 + uPA * 0.28 * (1.0 - smoothstep(uPR * 0.55, uPR * 1.4, length(sB - uP - uShadow * 0.35)));
+  col *= 1.0 - min(sh, 0.5);
+
+  // light under the table: hit rings and the goal flash
+  for (int i = 0; i < 4; i++) {
+    vec4 r = uRip[i];
+    if (r.w > 0.002) {
+      float d = length(sB - r.xy) - r.z;
+      float w = 3.0 + 0.06 * r.z;
+      col += uRipC[i] * r.w * exp(-d * d / (w * w));
+    }
+  }
+  if (uFlash.w > 0.002) {
+    float d = length(sB - uFlash.xy) / uFlash.z;
+    col += uFlashC * uFlash.w * exp(-d * d * 1.6);
+  }
+
+  // ---- puck, then mallets (their handles reach closest to the glass)
+  float tP = uT.y * jt;
+  float aP = max(footprint(dp, tP) * px * 0.75, 0.3) + 0.08 * tP * uCell;
+  vec4 pk = puckAt(at(c, u, ph, tP, reed), aP);
+  col = mix(col, pk.rgb, pk.a * uPA);
+  float tM = uT.x * jt;
+  float aM = max(footprint(dp, tM) * px * 0.75, 0.3) + 0.08 * tM * uCell;
+  vec2 sM = at(c, u, ph, tM, reed);
+  vec4 m1 = malletAt(sM - uM1, uC1, aM);
+  col = mix(col, m1.rgb, m1.a);
+  vec4 m2 = malletAt(sM - uM2, uC2, aM);
+  col = mix(col, m2.rgb, m2.a);
+
+  // ---- the glass itself
+  col *= vec3(0.95, 0.968, 0.964);
+  // each horizontal rib is darker at its top and clears toward its lower lip
+  col *= 0.95 + 0.075 * smoothstep(-1.0, 0.9, u.y);
+  // row seams: a bright lip, then a soft shadow line at the top of the next rib
+  float dy = (1.0 - abs(u.y)) * 0.5 * uCell;
+  float ey = 1.0 - smoothstep(0.0, max(1.2 * px, 0.05 * uCell), dy);
+  col = u.y > 0.0 ? mix(col, uEnvHi, ey * 0.3) : col * (1.0 - 0.13 * ey);
+  // column seams are fainter still
+  float dx = (1.0 - abs(u.x)) * 0.5 * uCell;
+  float ex = 1.0 - smoothstep(0.0, max(1.0 * px, 0.03 * uCell), dx);
+  col = u.x < 0.0 ? mix(col, uEnvHi, ex * 0.2) : col * (1.0 - 0.07 * ex);
+  // hairlines where the fine reeds meet
+  float re = 1.0 - smoothstep(0.0, 1.2 * px, (1.0 - abs(rf)) * 0.5 * rw);
+  col = rj > 0.5 ? mix(col, uEnvHi, re * 0.22 * (rj - 0.5)) : col * (1.0 - re * 0.14 * (0.5 - rj));
+  // a broad sheen across the panel
+  vec2 q = p / uSize;
+  col += uEnvHi * 0.035 * smoothstep(0.0, 1.0, 1.0 - abs(q.x * 0.8 + q.y - 0.55) * 2.2);
+
+  outColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}`;
+
+  const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, depth: false, stencil: false, powerPreference: 'high-performance' });
+  let prog = null;
+  let U = {};
+  let tableTex = null;
+  function initGL() {
+    const sh = (type, src) => {
+      const o = gl.createShader(type);
+      gl.shaderSource(o, src);
+      gl.compileShader(o);
+      if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o));
+      return o;
+    };
+    prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS));
+    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+    U = {};
+    const n = gl.getProgramParameter(prog, gl.ACTIVE_UNIFORMS);
+    for (let k = 0; k < n; k++) {
+      const name = gl.getActiveUniform(prog, k).name.replace(/\[0\]$/, '');
+      U[name] = gl.getUniformLocation(prog, name);
+    }
+    gl.bindVertexArray(gl.createVertexArray());
+    tableTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tableTex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    tableDirty = true;
+  }
+
+  const ripXY = new Float32Array(16);
+  const ripC = new Float32Array(12);
+  function render() {
+    if (!prog || gl.isContextLost()) return;
+    if (tableDirty) {
+      gl.bindTexture(gl.TEXTURE_2D, tableTex);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tcv);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      tableDirty = false;
+    }
+    const s = GEO.s;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.useProgram(prog);
+    gl.uniform2f(U.uRes, canvas.width, canvas.height);
+    gl.uniform1f(U.uDpr, GEO.dpr);
+    gl.uniform2f(U.uSize, GEO.gw, GEO.gh);
+    gl.uniform1f(U.uCell, GEO.cell);
+    gl.uniform2f(U.uOrigin, GEO.origin[0], GEO.origin[1]);
+    gl.uniform3f(U.uT, curT[0], curT[1], curT[2]);
+    gl.uniform1f(U.uBend, 0.2);
+    gl.uniform2f(U.uAniso, 0.75, 1);
+    gl.uniform1f(U.uMicro, 0.4);
+    gl.uniform1f(U.uTexel, texScale);
+    const m1 = scr(G.mal[0].x, G.mal[0].y);
+    const m2 = scr(G.mal[1].x, G.mal[1].y);
+    gl.uniform2f(U.uM1, m1[0], m1[1]);
+    gl.uniform2f(U.uM2, m2[0], m2[1]);
+    gl.uniform1f(U.uMR, MAL_R * s);
+    const P = G.puck;
+    const pp = scr(P.x, P.y);
+    const pv = scrV(P.vx, P.vy);
+    gl.uniform2f(U.uP, pp[0], pp[1]);
+    gl.uniform1f(U.uPR, PUCK_R * s);
+    gl.uniform2f(U.uPV, pv[0], pv[1]);
+    gl.uniform1f(U.uPA, P.on ? P.alpha : 0);
+    gl.uniform3fv(U.uC1, TOK.p1);
+    gl.uniform3fv(U.uC2, TOK.p2);
+    gl.uniform3fv(U.uCP, TOK.puck);
+    gl.uniform3fv(U.uEnvHi, TOK['env-hi']);
+    gl.uniform3fv(U.uEnvLo, TOK['env-lo']);
+    if (G.flash) {
+      const f = scr(G.flash.x, G.flash.y);
+      gl.uniform4f(U.uFlash, f[0], f[1], 0.55 * s, 0.85 * Math.exp(-G.flash.age * 2.2));
+      gl.uniform3fv(U.uFlashC, G.flash.col);
+    } else gl.uniform4f(U.uFlash, 0, 0, 1, 0);
+    for (let k = 0; k < 4; k++) {
+      const r = G.rip[k];
+      if (r) {
+        const f = r.age / 0.55;
+        const xy = scr(r.x, r.y);
+        ripXY.set([xy[0], xy[1], (PUCK_R + f * 0.22) * s, r.a * 0.5 * (1 - f) * (1 - f)], k * 4);
+        ripC.set(r.col, k * 3);
+      } else ripXY.set([0, 0, 0, 0], k * 4);
+    }
+    gl.uniform4fv(U.uRip, ripXY);
+    gl.uniform3fv(U.uRipC, ripC);
+    gl.uniform2f(U.uShadow, 0.2 * MAL_R * s, 0.3 * MAL_R * s);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tableTex);
+    gl.uniform1i(U.uTable, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  /* ---------- sound: plastic knocks, glassy tinks, a chime for goals ---------- */
+  const Sound = (() => {
+    let ctx = null;
+    let master = null;
+    let noise = null;
+    function ready() {
+      if (!settings.sound) return null;
+      if (!ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = 0.55;
+        master.connect(ctx.destination);
+        noise = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.25), ctx.sampleRate);
+        const d = noise.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    }
+    function env(gain, t0, peak, decay) {
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t0 + 0.004);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + decay);
+    }
+    function tone(f, t0, peak, decay, f2) {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.frequency.setValueAtTime(f, t0);
+      if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + decay);
+      env(g, t0, peak, decay);
+      o.connect(g).connect(master);
+      o.start(t0);
+      o.stop(t0 + decay + 0.03);
+    }
+    function hiss(t0, peak, decay, f, q) {
+      const src = ctx.createBufferSource();
+      const bp = ctx.createBiquadFilter();
+      const g = ctx.createGain();
+      src.buffer = noise;
+      bp.type = 'bandpass';
+      bp.frequency.value = f;
+      bp.Q.value = q;
+      env(g, t0, peak, decay);
+      src.connect(bp).connect(g).connect(master);
+      src.start(t0);
+      src.stop(t0 + decay + 0.03);
+    }
+    return {
+      unlock() { ready(); },
+      hit(a) {
+        if (!ready()) return;
+        const t = ctx.currentTime;
+        hiss(t, 0.5 * a, 0.05, 1600 + 900 * a, 1.1);
+        tone(360 + 180 * a, t, 0.34 * a, 0.09, 200);
+      },
+      wall(a) {
+        if (!ready()) return;
+        const t = ctx.currentTime;
+        tone(2150, t, 0.1 * a, 0.16);
+        tone(3480, t, 0.05 * a, 0.1);
+        hiss(t, 0.12 * a, 0.025, 4200, 2);
+      },
+      goal() {
+        if (!ready()) return;
+        const t = ctx.currentTime;
+        tone(150, t, 0.3, 0.18, 70);
+        [1318.5, 1661.2, 1975.5, 2637].forEach((f, k) => {
+          tone(f, t + 0.1 + k * 0.075, 0.13, 0.9);
+          tone(f * 2.76, t + 0.1 + k * 0.075, 0.025, 0.4);
+        });
+      },
+      start() {
+        if (!ready()) return;
+        const t = ctx.currentTime;
+        tone(1760, t, 0.08, 0.12);
+        tone(2637, t + 0.09, 0.08, 0.3);
+      },
+      end(happy) {
+        if (!ready()) return;
+        const t = ctx.currentTime;
+        const notes = happy ? [1046.5, 1318.5, 1568, 2093] : [1568, 1318.5, 1174.7, 1046.5];
+        notes.forEach((f, k) => tone(f, t + k * 0.13, 0.12, 0.8));
+      },
+    };
+  })();
+
+  /* ---------- physics ---------- */
+  function clampMallet(m) {
+    m.x = clamp(m.x, MAL_R, 1 - MAL_R);
+    m.y = m.i === 0 ? clamp(m.y, L / 2 + MAL_R, L - MAL_R) : clamp(m.y, MAL_R, L / 2 - MAL_R);
+  }
+
+  function moveMallet(m, h, f) {
+    const ox = m.x;
+    const oy = m.y;
+    if (m.mode === 'seek') {
+      const tx = lerp(m.t0x, m.t1x, f);
+      const ty = lerp(m.t0y, m.t1y, f);
+      let dx = tx - m.x;
+      let dy = ty - m.y;
+      const d = Math.hypot(dx, dy);
+      const st = m.vmax * h;
+      if (d > st) { dx *= st / d; dy *= st / d; }
+      m.x += dx;
+      m.y += dy;
+    } else if (m.mode === 'steer') {
+      const dx = m.tx - m.x;
+      const dy = m.ty - m.y;
+      const d = Math.hypot(dx, dy);
+      const want = Math.min(m.vmax, d * 9);
+      const wx = d > 1e-5 ? (dx / d) * want : 0;
+      const wy = d > 1e-5 ? (dy / d) * want : 0;
+      let ax = wx - m.vx;
+      let ay = wy - m.vy;
+      const a = Math.hypot(ax, ay);
+      const am = m.acc * h;
+      if (a > am) { ax *= am / a; ay *= am / a; }
+      m.x += (m.vx + ax) * h;
+      m.y += (m.vy + ay) * h;
+    } else if (m.mode === 'vel') {
+      m.x += m.kvx * h;
+      m.y += m.kvy * h;
+    }
+    clampMallet(m);
+    m.vx = (m.x - ox) / h;
+    m.vy = (m.y - oy) / h;
+    if (m.mode === 'vel') { m.kvx = m.vx; m.kvy = m.vy; }
+  }
+
+  function capSpeed(P) {
+    const sp = Math.hypot(P.vx, P.vy);
+    if (sp > PUCK_MAX) { P.vx *= PUCK_MAX / sp; P.vy *= PUCK_MAX / sp; }
+  }
+
+  const lastEv = { wall: 0, mallet: 0 };
+  function contact(kind, strength, x, y, who) {
+    if (strength < 0.12) return;
+    const now = performance.now();
+    if (now - lastEv[kind] < 45) return;
+    lastEv[kind] = now;
+    const a = clamp(strength / 3, 0.08, 1);
+    if (G.state !== 'menu') {
+      if (kind === 'mallet') Sound.hit(a);
+      else Sound.wall(a);
+    }
+    G.rip.push({ x, y, age: 0, a, col: kind === 'mallet' ? (who === 0 ? TOK.p1 : TOK.p2) : TOK['env-hi'] });
+    if (G.rip.length > 4) G.rip.shift();
+  }
+
+  function walls(P) {
+    const r = PUCK_R;
+    const gl0 = 0.5 - GOAL_W / 2;
+    const gl1 = 0.5 + GOAL_W / 2;
+    if (P.x < r) {
+      P.x = r;
+      if (P.vx < 0) { contact('wall', -P.vx, 0, P.y); P.vx = -P.vx * E_WALL; }
+    } else if (P.x > 1 - r) {
+      P.x = 1 - r;
+      if (P.vx > 0) { contact('wall', P.vx, 1, P.y); P.vx = -P.vx * E_WALL; }
+    }
+    // past the goal line only the sides of the pocket apply
+    if (P.y < 0 || P.y > L) {
+      if (P.x < gl0 + r) { P.x = gl0 + r; if (P.vx < 0) P.vx *= -0.4; }
+      if (P.x > gl1 - r) { P.x = gl1 - r; if (P.vx > 0) P.vx *= -0.4; }
+      return;
+    }
+    if (P.x <= gl0 || P.x >= gl1) {
+      if (P.y < r) {
+        P.y = r;
+        if (P.vy < 0) { contact('wall', -P.vy, P.x, 0); P.vy = -P.vy * E_WALL; }
+      } else if (P.y > L - r) {
+        P.y = L - r;
+        if (P.vy > 0) { contact('wall', P.vy, P.x, L); P.vy = -P.vy * E_WALL; }
+      }
+    }
+    for (const [px, py] of POSTS) {
+      const dx = P.x - px;
+      const dy = P.y - py;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < r * r && d2 > 1e-12) {
+        const d = Math.sqrt(d2);
+        const nx = dx / d;
+        const ny = dy / d;
+        P.x = px + nx * r;
+        P.y = py + ny * r;
+        const vn = P.vx * nx + P.vy * ny;
+        if (vn < 0) {
+          contact('wall', -vn, px, py);
+          P.vx -= (1 + E_WALL) * vn * nx;
+          P.vy -= (1 + E_WALL) * vn * ny;
+        }
+      }
+    }
+  }
+
+  function strike(P, m) {
+    const dx = P.x - m.x;
+    const dy = P.y - m.y;
+    const d2 = dx * dx + dy * dy;
+    if (d2 >= RR * RR) return;
+    const d = Math.sqrt(d2);
+    let nx = 0;
+    let ny = m.i === 0 ? -1 : 1;
+    if (d > 1e-6) { nx = dx / d; ny = dy / d; }
+    P.x = m.x + nx * RR;
+    P.y = m.y + ny * RR;
+    const vn = (P.vx - m.vx) * nx + (P.vy - m.vy) * ny;
+    if (vn < 0) {
+      P.vx -= (1 + E_MAL) * vn * nx;
+      P.vy -= (1 + E_MAL) * vn * ny;
+      capSpeed(P);
+      if (G.state === 'play') {
+        G.maxShot[m.i] = Math.max(G.maxShot[m.i], Math.hypot(P.vx, P.vy));
+        if (G.lastHit !== m.i) G.rally += 1;
+        G.lastHit = m.i;
+      }
+      contact('mallet', -vn, P.x - nx * PUCK_R, P.y - ny * PUCK_R, m.i);
+    }
+    // a mallet can pin the puck against a wall but never push it through
+    const bx = P.x;
+    const by = P.y;
+    walls(P);
+    if (Math.abs(P.x - bx) > 1e-9 || Math.abs(P.y - by) > 1e-9) {
+      const ex = m.x - P.x;
+      const ey = m.y - P.y;
+      const e = Math.hypot(ex, ey) || 1e-6;
+      if (e < RR) { m.x = P.x + (ex / e) * RR; m.y = P.y + (ey / e) * RR; clampMallet(m); }
+    }
+  }
+
+  function stepPuck(h) {
+    const P = G.puck;
+    P.x += P.vx * h;
+    P.y += P.vy * h;
+    const fr = Math.exp(-FRICTION * h);
+    P.vx *= fr;
+    P.vy *= fr;
+    walls(P);
+    strike(P, G.mal[0]);
+    strike(P, G.mal[1]);
+    if (P.y < -PUCK_R) goal(0);
+    else if (P.y > L + PUCK_R) goal(1);
+  }
+
+  /* ---------- the computer player ---------- */
+  // Works in its own frame: own goal at y = 0, attacking toward y = L.
+  function toAI(i, x, y) { return i === 1 ? [x, y] : [1 - x, L - y]; }
+  function fold(x) {
+    const a = PUCK_R;
+    const w = 1 - 2 * PUCK_R;
+    let u = (x - a) % (2 * w);
+    if (u < 0) u += 2 * w;
+    return u <= w ? a + u : a + 2 * w - u;
+  }
+  function predictX(p, yLine, lv, A) {
+    if (p.vy > -1e-3 || p.y < yLine) return p.x;
+    const x = p.x + p.vx * ((yLine - p.y) / p.vy);
+    return (lv.bounce ? fold(x) : clamp(x, PUCK_R, 1 - PUCK_R)) + (A.err || 0);
+  }
+
+  function decide(p, me, lv, A) {
+    const half = L / 2;
+    if (p.y > half + 0.02) {
+      A.aim = null;
+      if (p.vy < -0.25) return { x: 0.5 + (predictX(p, 0.14, lv, A) - 0.5) * 0.9, y: 0.14, v: lv.vmax };
+      return { x: 0.5 + (p.x - 0.5) * 0.35, y: 0.17, v: lv.vmax * 0.55 };
+    }
+    if (p.vy < -1.4 && p.y > me.y + RR) {
+      const x = predictX(p, me.y, lv, A);
+      if (Math.abs(x - me.x) > MAL_R * 0.6) return { x, y: Math.min(me.y, 0.2), v: lv.vmax };
+    }
+    if (p.y < me.y - PUCK_R * 0.3) {
+      // the puck slipped behind: go round it and stay goal-side
+      let side = me.x >= p.x ? 1 : -1;
+      let x = p.x + side * (RR + 0.035);
+      if (x < MAL_R || x > 1 - MAL_R) { side = -side; x = p.x + side * (RR + 0.035); }
+      return { x, y: Math.max(MAL_R, p.y - RR * 0.6), v: lv.vmax };
+    }
+    if (!A.aim) {
+      let gx = 0.5 + (Math.random() * 2 - 1) * (GOAL_W / 2 - PUCK_R) * 0.75;
+      if (Math.random() < lv.bank) gx = Math.random() < 0.5 ? 2 * PUCK_R - gx : 2 * (1 - PUCK_R) - gx;
+      A.aim = { x: gx + (Math.random() * 2 - 1) * lv.aim, y: L + 0.1 };
+    }
+    const lead = Math.min(0.15, lv.react);
+    const px = p.x + p.vx * lead;
+    const py = p.y + p.vy * lead;
+    let dx = A.aim.x - px;
+    let dy = A.aim.y - py;
+    const d = Math.hypot(dx, dy) || 1;
+    dx /= d;
+    dy /= d;
+    const back = RR + lv.runup;
+    const bx = clamp(px - dx * back, MAL_R, 1 - MAL_R);
+    const by = clamp(py - dy * back, MAL_R, half - MAL_R);
+    const tol = 0.04 + Math.hypot(p.vx, p.vy) * 0.03;
+    if (Math.hypot(me.x - bx, me.y - by) > tol) return { x: bx, y: by, v: lv.vmax };
+    return { x: px + dx * 0.3, y: py + dy * 0.3, v: lv.vmax * lv.strike };
+  }
+
+  function aiControl(i, dt) {
+    const m = G.mal[i];
+    const A = G.ai[i];
+    const lv = LEVELS[G.state === 'menu' ? 1 : settings.level];
+    A.cool -= dt;
+    if (A.cool <= 0) {
+      A.cool = lv.react * (0.6 + Math.random() * 0.8);
+      // misjudge each incoming shot a little, the same way until the puck turns round
+      const P0 = G.puck;
+      const incoming = (i === 1 ? P0.vy : -P0.vy) < -0.25;
+      if (!incoming || A.err == null) A.err = incoming ? (Math.random() * 2 - 1) * lv.guard : null;
+      const P = G.puck;
+      let T;
+      if (!P.on || G.state === 'ready') T = { x: 0.5, y: 0.17, v: lv.vmax * 0.6 };
+      else {
+        const [px, py] = toAI(i, P.x, P.y);
+        const [mx, my] = toAI(i, m.x, m.y);
+        const s = i === 1 ? 1 : -1;
+        T = decide({ x: px, y: py, vx: P.vx * s, vy: P.vy * s }, { x: mx, y: my }, lv, A);
+      }
+      const [tx, ty] = toAI(i, T.x, T.y);
+      A.tx = tx;
+      A.ty = ty;
+      A.v = T.v;
+    }
+    m.mode = 'steer';
+    m.tx = A.tx;
+    m.ty = A.ty;
+    m.vmax = A.v;
+    m.acc = lv.acc;
+  }
+
+  /* ---------- people ---------- */
+  const INPUT = [
+    { has: false, x: 0.5, y: L - 0.2, src: 'pointer' },
+    { has: false, x: 0.5, y: 0.2, src: 'pointer' },
+  ];
+  const keys = new Set();
+  const KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+  function keyDir(i) {
+    let sx = 0;
+    let sy = 0;
+    const wasd = i === 0;
+    const arrows = (i === 1 && settings.mode === 'duo') || (i === 0 && settings.mode === 'cpu');
+    if (wasd) {
+      if (keys.has('KeyA')) sx -= 1;
+      if (keys.has('KeyD')) sx += 1;
+      if (keys.has('KeyW')) sy -= 1;
+      if (keys.has('KeyS')) sy += 1;
+    }
+    if (arrows) {
+      if (keys.has('ArrowLeft')) sx -= 1;
+      if (keys.has('ArrowRight')) sx += 1;
+      if (keys.has('ArrowUp')) sy -= 1;
+      if (keys.has('ArrowDown')) sy += 1;
+    }
+    return GEO.land ? [sy, -sx] : [sx, sy];
+  }
+
+  function control(i, dt) {
+    if (G.ctrl[i] === 'ai') { aiControl(i, dt); return; }
+    const m = G.mal[i];
+    const I = INPUT[i];
+    const [kx, ky] = keyDir(i);
+    if (kx || ky) I.src = 'key';
+    if (I.src === 'key') {
+      if (m.mode !== 'vel') { m.kvx = 0; m.kvy = 0; }
+      m.mode = 'vel';
+      const len = Math.hypot(kx, ky);
+      if (len) {
+        m.kvx += (kx / len) * KEY_ACC * dt;
+        m.kvy += (ky / len) * KEY_ACC * dt;
+        const sp = Math.hypot(m.kvx, m.kvy);
+        if (sp > KEY_VMAX) { m.kvx *= KEY_VMAX / sp; m.kvy *= KEY_VMAX / sp; }
+      } else {
+        const k = Math.exp(-16 * dt);
+        m.kvx *= k;
+        m.kvy *= k;
+      }
+    } else if (I.has) {
+      if (m.mode !== 'seek') { m.t1x = m.x; m.t1y = m.y; }
+      m.mode = 'seek';
+      m.t0x = m.t1x;
+      m.t0y = m.t1y;
+      m.t1x = clamp(I.x, MAL_R, 1 - MAL_R);
+      m.t1y = i === 0 ? clamp(I.y, L / 2 + MAL_R, L - MAL_R) : clamp(I.y, MAL_R, L / 2 - MAL_R);
+      m.vmax = HUMAN_VMAX;
+    } else m.mode = 'hold';
+  }
+
+  function pointToTable(e) {
+    const r = canvas.getBoundingClientRect();
+    return tbl(((e.clientX - r.left) * GEO.gw) / r.width, ((e.clientY - r.top) * GEO.gh) / r.height);
+  }
+  function setInput(i, x, y) {
+    const I = INPUT[i];
+    I.has = true;
+    I.x = x;
+    I.y = y;
+    I.src = 'pointer';
+  }
+  const touches = new Map();
+  app.addEventListener('pointerdown', (e) => {
+    Sound.unlock();
+    if (e.pointerType === 'mouse' || e.target.closest('button, .card')) return;
+    const [x, y] = pointToTable(e);
+    const who = settings.mode === 'duo' ? (y > L / 2 ? 0 : 1) : 0;
+    touches.set(e.pointerId, who);
+    try { app.setPointerCapture(e.pointerId); } catch (err) { /* not capturable */ }
+    setInput(who, x, y);
+  });
+  app.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'mouse') {
+      const [x, y] = pointToTable(e);
+      setInput(0, x, y);
+    } else if (touches.has(e.pointerId)) {
+      const [x, y] = pointToTable(e);
+      setInput(touches.get(e.pointerId), x, y);
+    }
+  });
+  const lift = (e) => touches.delete(e.pointerId);
+  app.addEventListener('pointerup', lift);
+  app.addEventListener('pointercancel', lift);
+
+  const live = () => G.state === 'play' || G.state === 'ready' || G.state === 'goal';
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Escape' || e.code === 'KeyP' || (e.code === 'Space' && live())) {
+      if (live()) { pause(); e.preventDefault(); } else if (G.state === 'paused' && e.code !== 'Space') { resume(); e.preventDefault(); }
+      return;
+    }
+    if (e.code === 'KeyG' && !e.metaKey && !e.ctrlKey && !e.altKey) { cycleGap(); return; }
+    if (KEYS.has(e.code)) {
+      keys.add(e.code);
+      if (live()) e.preventDefault();
+    }
+  });
+  window.addEventListener('keyup', (e) => keys.delete(e.code));
+  window.addEventListener('blur', () => { keys.clear(); pause(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+
+  /* ---------- flow ---------- */
+  const isCpu = () => settings.mode === 'cpu';
+  const nameOf = (i) => (isCpu() ? (i === 0 ? '你' : '电脑') : i === 0 ? '橙方' : '蓝方');
+
+  function faceoff(receiver) {
+    const P = G.puck;
+    P.x = 0.5;
+    P.y = receiver === 0 ? L * 0.73 : receiver === 1 ? L * 0.27 : L / 2;
+    P.vx = 0;
+    P.vy = 0;
+    P.on = true;
+    P.alpha = 0;
+    G.rally = 0;
+    G.lastHit = -1;
+    for (const m of G.mal) {
+      if (Math.hypot(m.x - P.x, m.y - P.y) < RR + 0.02) {
+        m.y += (m.i === 0 ? 1 : -1) * (RR + 0.04);
+        clampMallet(m);
+      }
+    }
+  }
+
+  function kick() {
+    const a = Math.random() * Math.PI * 2;
+    G.puck.vx = Math.cos(a) * 1.6;
+    G.puck.vy = Math.sin(a) * 1.6 + (Math.random() < 0.5 ? -0.8 : 0.8);
+  }
+
+  let pocketTimer = 0;
+  function lightPocket(k, scorer) {
+    const el = $('pocket' + k);
+    el.style.setProperty('--glow', scorer === 0 ? 'var(--p1)' : 'var(--p2)');
+    el.classList.add('lit');
+    clearTimeout(pocketTimer);
+    pocketTimer = setTimeout(() => el.classList.remove('lit'), 900);
+  }
+
+  function goal(scorer) {
+    const P = G.puck;
+    P.on = false;
+    G.flash = { x: 0.5, y: scorer === 0 ? 0 : L, age: 0, col: scorer === 0 ? TOK.p1 : TOK.p2 };
+    lightPocket(scorer === 0 ? 1 : 0, scorer);
+    if (G.state === 'menu') { G.menuWait = 0; return; }
+    G.longest = Math.max(G.longest, G.rally);
+    G.score[scorer] += 1;
+    G.lastScorer = scorer;
+    G.state = 'goal';
+    G.timer = 0;
+    Sound.goal();
+    hudScore();
+    drawTable();
+    const sub = nameOf(scorer) + '得分 · ' + G.score[0] + ' : ' + G.score[1];
+    banner('进球', sub, scorer === 0 ? 'var(--p1)' : 'var(--p2)');
+  }
+
+  function banner(big, small, color) {
+    const b = $('banner');
+    $('bannerBig').textContent = big;
+    $('bannerSmall').textContent = small || '';
+    b.style.setProperty('--bc', color || 'var(--ink)');
+    b.classList.remove('show');
+    void b.offsetWidth;
+    b.classList.add('show');
+  }
+
+  function hudScore() {
+    $('sc1').textContent = G.score[0];
+    $('sc2').textContent = G.score[1];
+  }
+  function hudNames() {
+    $('name1').textContent = nameOf(0);
+    $('name2').textContent = nameOf(1);
+  }
+
+  function showOnly(id) {
+    for (const k of ['menu', 'pause', 'over']) $(k).hidden = k !== id;
+  }
+
+  function showMenu() {
+    G.state = 'menu';
+    app.dataset.state = 'menu';
+    G.ctrl = ['ai', 'ai'];
+    G.score = [0, 0];
+    G.ai = [brain(), brain()];
+    showOnly('menu');
+    faceoff(-1);
+    kick();
+    drawTable();
+    syncMenu();
+  }
+
+  function startGame() {
+    Sound.unlock();
+    G.score = [0, 0];
+    G.maxShot = [0, 0];
+    G.longest = 0;
+    G.ctrl = isCpu() ? ['human', 'ai'] : ['human', 'human'];
+    G.mal = [mallet(0), mallet(1)];
+    G.ai = [brain(), brain()];
+    G.rip = [];
+    G.flash = null;
+    for (const I of INPUT) I.src = 'pointer';
+    INPUT[1].has = false;
+    touches.clear();
+    faceoff(-1);
+    G.state = 'ready';
+    G.timer = 0;
+    app.dataset.state = 'play';
+    showOnly(null);
+    hudNames();
+    hudScore();
+    drawTable();
+    banner('开球', '先得 ' + WIN + ' 分获胜');
+    Sound.start();
+  }
+
+  function endGame(winner) {
+    G.state = 'over';
+    const title = isCpu() ? (winner === 0 ? '你赢了' : '电脑赢了') : nameOf(winner) + '赢了';
+    $('overTitle').textContent = title;
+    $('final1').textContent = G.score[0];
+    $('final2').textContent = G.score[1];
+    const kmh = (v) => Math.round(v * TABLE_M * 3.6);
+    $('overStat').textContent = '最快一球 ' + kmh(Math.max(G.maxShot[0], G.maxShot[1])) + ' km/h（' + nameOf(G.maxShot[0] >= G.maxShot[1] ? 0 : 1) + '）· 最长一回合 ' + G.longest + ' 拍';
+    showOnly('over');
+    Sound.end(!isCpu() || winner === 0);
+    $('btnAgain').focus({ preventScroll: true });
+  }
+
+  function pause() {
+    if (!live()) return;
+    G.prev = G.state;
+    G.state = 'paused';
+    $('pauseScore').textContent = nameOf(0) + ' ' + G.score[0] + ' : ' + G.score[1] + ' ' + nameOf(1);
+    showOnly('pause');
+    $('btnResume').focus({ preventScroll: true });
+  }
+  function resume() {
+    if (G.state !== 'paused') return;
+    G.state = G.prev;
+    showOnly(null);
+    for (const m of G.mal) { m.t0x = m.t1x = m.x; m.t0y = m.t1y = m.y; }
+  }
+
+  function setGap(k) {
+    settings.gap = (k + 3) % 3;
+    store.set('gap', settings.gap);
+    syncMenu();
+  }
+  function cycleGap() { setGap(settings.gap + 1); }
+
+  function syncMenu() {
+    for (const b of document.querySelectorAll('[data-mode]')) b.setAttribute('aria-pressed', String(b.dataset.mode === settings.mode));
+    for (const b of document.querySelectorAll('[data-level]')) b.setAttribute('aria-pressed', String(Number(b.dataset.level) === settings.level));
+    for (const b of document.querySelectorAll('[data-gap]')) b.setAttribute('aria-pressed', String(Number(b.dataset.gap) === settings.gap));
+    $('fieldLevel').setAttribute('aria-disabled', String(!isCpu()));
+    $('hint').textContent = isCpu()
+      ? '先得 7 分获胜。移动鼠标或手指控制橙色球拍，也可以用 WASD。空格或 Esc 暂停，G 键换玻璃距离。'
+      : '先得 7 分获胜。橙方用鼠标或 WASD，蓝方用方向键；触屏时各自按住自己的半场。空格或 Esc 暂停。';
+    $('btnGap').textContent = GAPS[settings.gap].mm + ' mm';
+    $('btnSound').setAttribute('aria-pressed', String(settings.sound));
+    $('btnSound').setAttribute('aria-label', settings.sound ? '关闭声音' : '打开声音');
+  }
+
+  $('menu').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.mode) { settings.mode = b.dataset.mode; store.set('mode', settings.mode); }
+    if (b.dataset.level) { settings.level = Number(b.dataset.level); store.set('level', settings.level); }
+    if (b.dataset.gap) setGap(Number(b.dataset.gap));
+    syncMenu();
+  });
+  $('btnStart').addEventListener('click', startGame);
+  $('btnResume').addEventListener('click', resume);
+  $('btnQuit').addEventListener('click', showMenu);
+  $('btnAgain').addEventListener('click', startGame);
+  $('btnMenu').addEventListener('click', showMenu);
+  $('btnPause').addEventListener('click', () => (G.state === 'paused' ? resume() : pause()));
+  $('btnGap').addEventListener('click', cycleGap);
+  $('btnSound').addEventListener('click', () => {
+    settings.sound = !settings.sound;
+    store.set('sound', settings.sound);
+    syncMenu();
+    if (settings.sound) Sound.unlock();
+  });
+
+  /* ---------- loop ---------- */
+  function step(dt) {
+    const st = G.state;
+    if (st !== 'paused' && st !== 'over' && dt > 0) {
+      control(0, dt);
+      control(1, dt);
+      const N = 10;
+      const h = dt / N;
+      for (let k = 0; k < N; k++) {
+        const f = (k + 1) / N;
+        moveMallet(G.mal[0], h, f);
+        moveMallet(G.mal[1], h, f);
+        if (G.puck.on && G.state !== 'ready') stepPuck(h);
+      }
+      G.timer += dt;
+      if (G.state === 'ready' && G.timer > 0.7) {
+        G.state = 'play';
+        G.timer = 0;
+      } else if (G.state === 'goal' && G.timer > 1.3) {
+        const w = G.score[0] >= WIN ? 0 : G.score[1] >= WIN ? 1 : -1;
+        if (w >= 0) endGame(w);
+        else {
+          faceoff(1 - G.lastScorer);
+          G.state = 'play';
+          G.timer = 0;
+        }
+      } else if (G.state === 'menu') {
+        const P = G.puck;
+        if (!P.on) {
+          G.menuWait += dt;
+          if (G.menuWait > 1) { faceoff(-1); kick(); }
+        } else {
+          G.still = Math.hypot(P.vx, P.vy) < 0.06 ? G.still + dt : 0;
+          if (G.still > 3) { G.still = 0; kick(); }
+        }
+      }
+    }
+    for (const r of G.rip) r.age += dt;
+    while (G.rip.length && G.rip[0].age > 0.55) G.rip.shift();
+    if (G.flash) {
+      G.flash.age += dt;
+      if (G.flash.age > 2) G.flash = null;
+    }
+    const P = G.puck;
+    if (P.on && P.alpha < 1) P.alpha = Math.min(1, P.alpha + dt * 4);
+    const t = GAPS[settings.gap].t;
+    const k = 1 - Math.exp(-dt * 5);
+    for (let n = 0; n < 3; n++) curT[n] += (t[n] - curT[n]) * k;
+  }
+
+  let last = 0;
+  let pAcc = 0;
+  let pN = 0;
+  function frame(now) {
+    requestAnimationFrame(frame);
+    if (!last) last = now;
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    step(dt);
+    render();
+    pAcc += dt;
+    pN += 1;
+    if (pN === 120) {
+      if (pAcc / pN > 0.026 && renderScale > 0.75) {
+        renderScale = Math.max(0.75, renderScale - 0.5);
+        layout();
+      }
+      pAcc = 0;
+      pN = 0;
+    }
+  }
+
+  /* ---------- boot ---------- */
+  function start(data) {
+    if (!gl) {
+      $('nogl').hidden = false;
+      showOnly(null);
+      return;
+    }
+    try {
+      initGL();
+    } catch (err) {
+      console.error(err);
+      $('nogl').hidden = false;
+      showOnly(null);
+      return;
+    }
+    layout();
+    const d = data || {};
+    if (d.state && d.state !== 'menu' && Array.isArray(d.score)) {
+      // reopened after an update: put the match back, paused
+      G.score = d.score.slice(0, 2).map((v) => clamp(Number(v) | 0, 0, WIN));
+      G.ctrl = isCpu() ? ['human', 'ai'] : ['human', 'human'];
+      app.dataset.state = 'play';
+      hudNames();
+      hudScore();
+      drawTable();
+      if (d.state === 'over') showMenu();
+      else {
+        faceoff(-1);
+        G.state = 'play';
+        pause();
+      }
+    } else showMenu();
+    syncMenu();
+    requestAnimationFrame(frame);
+  }
+
+  canvas.addEventListener('webglcontextlost', (e) => e.preventDefault());
+  canvas.addEventListener('webglcontextrestored', () => { initGL(); drawTable(); });
+  new ResizeObserver(() => layout()).observe(app);
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const onTheme = () => { readTheme(); drawTable(); };
+  if (mq.addEventListener) mq.addEventListener('change', onTheme);
+  new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  if (document.fonts && document.fonts.load) {
+    document.fonts.load('800 100px "Archivo"').then(() => drawTable()).catch(() => {});
+    document.fonts.ready.then(() => layout()).catch(() => {});
+  }
+
+  const hot = window.claude && window.claude.hot;
+  if (hot && typeof hot.snapshot === 'function') {
+    hot.snapshot(() => ({ state: G.state === 'paused' ? G.prev : G.state, score: G.score.slice() }));
+  }
+  if (hot && typeof hot.ready === 'function') hot.ready(start);
+  else start((hot && hot.data) || {});
+})();
+</script>
+</body>
+</html>
